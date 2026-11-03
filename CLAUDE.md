@@ -13,6 +13,12 @@ flutter test
 flutter build apk --debug
 flutter gen-l10n              # after editing lib/l10n/*.arb; the generated files are committed
 
+# Firestore rules, from firebase/
+npm ci
+npm run typecheck
+npm test                      # rules tests on the Firestore emulator (demo-hopin, never the live project)
+firebase deploy --only firestore   # from the repo root, only after the rules tests pass, and with an OK
+
 # Release tooling, from the repo root with .venv active
 pip install -r scripts/requirements-dev.txt
 ruff format .                 # CI fails on unformatted code
@@ -56,7 +62,7 @@ The repo is public, and whatever it ever held stays public. Keep it free of anyt
 
 - No names, places, phone models or email addresses of the riders, and no other projects, in code, comments, docs, commits or pull requests.
 - No real GPS data. Test traces are synthetic; recorded rides stay in Firestore.
-- The Firestore rules identify the riders by Firebase account ID (opaque), never by email.
+- Riders are marked by a custom claim (`rider: true`) on their sign-in token, set outside the repo; the rules never hold account IDs or emails.
 - Secrets live only in GitHub's encrypted secrets; signing keys and `key.properties` never enter the repo. Workflows never use `pull_request_target`, so pull requests from forks get no secrets.
 - Firebase config files are public by design: their API keys carry app and API restrictions, and access rests on the rules alone.
 

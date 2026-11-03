@@ -10,6 +10,7 @@ A bus companion for Android: it notices when you are on a bus, tells you when yo
 
 ```text
 app/              Flutter app (Android)
+firebase/         Firestore rules and their tests (emulator)
 scripts/release/  next version and release notes (Python, standard library)
 docs/             plan and architecture
 ```

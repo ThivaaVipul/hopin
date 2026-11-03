@@ -1,0 +1,42 @@
+rules_version = '2';
+
+// Who may read and write what. Only riders get in: accounts whose sign-in
+// token carries the custom claim `rider: true`, set by the project owner
+// outside the app (docs/ARCHITECTURE.md, Access). No account IDs or emails
+// live here. Each collection opens in the milestone that needs it; anything
+// not matched below stays closed. Every change starts with a failing test in
+// test/.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isRider() {
+      return request.auth != null && request.auth.token.rider == true;
+    }
+
+    function isSelf(uid) {
+      return isRider() && request.auth.uid == uid;
+    }
+
+    function isString(value, minLength, maxLength) {
+      return value is string && value.size() >= minLength && value.size() <= maxLength;
+    }
+
+    // A rider's profile. Both riders read it; only its owner writes it, and
+    // never deletes it.
+    match /people/{uid} {
+      function validProfile() {
+        let data = request.resource.data;
+        return data.keys().hasOnly(['name', 'photoUrl', 'language', 'updatedAt'])
+          && data.keys().hasAll(['name', 'language', 'updatedAt'])
+          && isString(data.name, 1, 80)
+          && (!('photoUrl' in data) || data.photoUrl == null || isString(data.photoUrl, 1, 2048))
+          && data.language in ['en', 'ta']
+          && data.updatedAt == request.time;
+      }
+
+      allow read: if isRider();
+      allow create, update: if isSelf(uid) && validProfile();
+      allow delete: if false;
+    }
+  }
+}

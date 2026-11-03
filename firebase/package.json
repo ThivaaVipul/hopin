@@ -1,0 +1,21 @@
+{
+  "name": "hopin-firebase",
+  "private": true,
+  "description": "Firestore rules and their tests, run on the emulator.",
+  "type": "module",
+  "engines": {
+    "node": ">=24.12"
+  },
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project demo-hopin --config ../firebase.json \"vitest run\"",
+    "typecheck": "tsc"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "6.0.0",
+    "@types/node": "24.19.2",
+    "firebase": "13.1.0",
+    "firebase-tools": "15.33.0",
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
+  }
+}

@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# One job, on pull requests only, so a pull request gets its answer fast: it
+# checks the title, then only the parts the pull request changed. The APK is
+# built locally before each push and by the release workflow, not here.
+# Every workflow pins ubuntu-24.04. Moving to a newer image is its own change,
+# tested first, so a new image never breaks a build by surprise.
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      # Pull requests are squash-merged, so the title becomes the commit on
+      # main and decides the release.
+      - name: Conventional title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern='^(feat|fix|perf|revert|docs|chore|ci|test|refactor|style|build)(\([a-z0-9-]+\))?!?: .+'
+          if [[ ! "$TITLE" =~ $pattern ]]; then
+            echo "::error::Use a Conventional Commit title, e.g. \"feat: add the get-off guide\". Got: $TITLE"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2 # the merge commit and main, to see what changed
+
+      - name: What changed
+        id: changed
+        run: |
+          files=$(git diff --name-only HEAD^1 HEAD)
+          echo "$files"
+          # A change to this workflow checks everything.
+          has() {
+            if grep -qE "$1|^\.github/workflows/ci\.yml$" <<< "$files"; then echo true; else echo false; fi
+          }
+          {
+            echo "app=$(has '^app/')"
+            echo "rules=$(has '^firebase/|^firebase\.json$')"
+            echo "tooling=$(has '^scripts/|^ruff\.toml$')"
+          } >> "$GITHUB_OUTPUT"
+
+      # The app: translations, format, analyzer and tests.
+      - if: steps.changed.outputs.app == 'true'
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.2
+          channel: stable
+          cache: true
+
+      - if: steps.changed.outputs.app == 'true'
+        name: App
+        working-directory: app
+        run: |
+          flutter pub get
+          flutter gen-l10n
+          if [ -n "$(git status --porcelain -- lib/l10n)" ]; then
+            echo "::error::Run flutter gen-l10n in app/ and commit lib/l10n."
+            git status --porcelain -- lib/l10n
+            exit 1
+          fi
+          if [ "$(tr -d '[:space:]' < build/untranslated-messages.json)" != "{}" ]; then
+            echo "::error::Some messages have no Tamil translation:"
+            cat build/untranslated-messages.json
+            exit 1
+          fi
+          dart format --output=none --set-exit-if-changed lib test
+          flutter analyze
+          flutter test
+
+      # The Firestore rules, on the emulator (a Java program). From M0b.
+      - if: steps.changed.outputs.rules == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: firebase/package-lock.json
+
+      - if: steps.changed.outputs.rules == 'true'
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - if: steps.changed.outputs.rules == 'true'
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ hashFiles('firebase/package-lock.json') }}
+
+      - if: steps.changed.outputs.rules == 'true'
+        name: Rules
+        working-directory: firebase
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
+
+      # The release tooling.
+      - if: steps.changed.outputs.tooling == 'true'
+        uses: actions/setup-python@v7
+        with:
+          # The oldest supported version, so newer-only syntax fails here.
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/requirements-dev.txt
+
+      - if: steps.changed.outputs.tooling == 'true'
+        name: Release tooling
+        run: |
+          pip install -r scripts/requirements-dev.txt
+          ruff format --check .
+          ruff check .
+          pytest scripts/release

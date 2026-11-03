@@ -1,0 +1,3 @@
+# Release tooling checks, pinned so CI and local runs agree.
+pytest==9.1.1
+ruff==0.17.1

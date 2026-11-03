@@ -1,0 +1,7 @@
+{
+  "@@locale": "en",
+  "appTitle": "Hopin",
+  "@appTitle": {
+    "description": "The app's name. A brand name: kept as is in every language."
+  }
+}

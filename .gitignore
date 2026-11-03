@@ -1,0 +1,35 @@
+# Python (release tooling)
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Node (Firestore rules tests)
+node_modules/
+
+# Firebase CLI and emulator logs, deploy cache
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+.firebase/
+
+# Kotlin compiler sessions (created by Gradle builds)
+.kotlin/
+
+# Release workflow output
+release-notes.md
+dist/
+
+# Signing keys never enter the repo
+*.jks
+*.keystore
+key.properties
+
+# Editors and OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db

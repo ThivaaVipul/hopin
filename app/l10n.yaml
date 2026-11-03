@@ -1,0 +1,8 @@
+# English is the template; every message also needs its Tamil translation.
+# The generated files are committed (CI checks they are current).
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+nullable-getter: false
+format: true
+untranslated-messages-file: build/untranslated-messages.json

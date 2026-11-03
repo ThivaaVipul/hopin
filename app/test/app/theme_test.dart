@@ -21,6 +21,7 @@ void main() {
         expect(contrast(c.onBoard, c.board), greaterThanOrEqualTo(7));
         expect(contrast(c.onBoardMuted, c.board), greaterThanOrEqualTo(4.5));
         expect(contrast(c.amber, c.board), greaterThanOrEqualTo(7));
+        expect(contrast(c.onBoardUrgent, c.board), greaterThanOrEqualTo(4.5));
       });
 
       test('text on the page', () {

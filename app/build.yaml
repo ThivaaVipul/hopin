@@ -1,0 +1,8 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # Queries go through drift's core API; the manager API would only add
+          # generated code.
+          generate_manager: false

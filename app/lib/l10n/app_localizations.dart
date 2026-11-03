@@ -146,17 +146,173 @@ abstract class AppLocalizations {
   /// **'Check again'**
   String get checkAgain;
 
-  /// Stand-in note on the first release's home page, before the map exists.
-  ///
-  /// In en, this message translates to:
-  /// **'The map arrives in the next update.'**
-  String get mapNext;
-
   /// Signs out of the app.
   ///
   /// In en, this message translates to:
   /// **'Sign out'**
   String get signOut;
+
+  /// The search bar on Home and the search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Where to?'**
+  String get whereTo;
+
+  /// Chip that opens search to save a new place.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get add;
+
+  /// Kind of saved place.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get kindHome;
+
+  /// Kind of saved place.
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get kindWork;
+
+  /// Kind of saved place: university.
+  ///
+  /// In en, this message translates to:
+  /// **'Uni'**
+  String get kindUni;
+
+  /// Kind of saved place.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get kindOther;
+
+  /// The one-time card before Android asks for location.
+  ///
+  /// In en, this message translates to:
+  /// **'Hopin uses your location to show where you are and to buzz before your stop.'**
+  String get locationWhy;
+
+  /// Goes on to Android's location popup.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get continueLabel;
+
+  /// Skips location for now.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get notNow;
+
+  /// Asks for location again after it was refused.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on location'**
+  String get turnOnLocation;
+
+  /// Tooltip of the button that moves the map to you.
+  ///
+  /// In en, this message translates to:
+  /// **'Show where I am'**
+  String get showMe;
+
+  /// Tooltip of the button that opens the account sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get account;
+
+  /// Straight-line distance from you, in kilometres.
+  ///
+  /// In en, this message translates to:
+  /// **'{km} km away'**
+  String awayKm(String km);
+
+  /// Straight-line distance from you, in metres.
+  ///
+  /// In en, this message translates to:
+  /// **'{m} m away'**
+  String awayM(String m);
+
+  /// Title of a place picked by long-pressing the map, before or without a name.
+  ///
+  /// In en, this message translates to:
+  /// **'Dropped pin'**
+  String get droppedPin;
+
+  /// Saves a place.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// Edits a saved place.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// Closes the destination sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// Title of the sheet that saves a new place.
+  ///
+  /// In en, this message translates to:
+  /// **'Save place'**
+  String get savePlace;
+
+  /// Title of the sheet that edits a saved place.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit place'**
+  String get editPlace;
+
+  /// Field for a saved place's name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get placeName;
+
+  /// Deletes a saved place.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// Heading over the last few destinations in search.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get recent;
+
+  /// Runs the search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
+
+  /// Leaves search.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// Shown when Nominatim cannot be reached.
+  ///
+  /// In en, this message translates to:
+  /// **'Search didn\'t work. Check your internet and try again.'**
+  String get searchFailed;
+
+  /// Shown when a search finds no place.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing found. Try another name.'**
+  String get nothingFound;
 }
 
 class _AppLocalizationsDelegate

@@ -19,6 +19,7 @@ class HopinColors extends ThemeExtension<HopinColors> {
     required this.inkMuted,
     required this.line,
     required this.urgent,
+    required this.onBoardUrgent,
   });
 
   /// The page behind everything that isn't a board.
@@ -42,6 +43,9 @@ class HopinColors extends ThemeExtension<HopinColors> {
   final Color line;
   final Color urgent;
 
+  /// Warnings on the board, lighter than [urgent] so they stay readable there.
+  final Color onBoardUrgent;
+
   static const light = HopinColors(
     page: Color(0xFFF2F4F1),
     board: Color(0xFF18241F),
@@ -54,6 +58,7 @@ class HopinColors extends ThemeExtension<HopinColors> {
     inkMuted: Color(0xFF5B6660),
     line: Color(0xFFD5DBD6),
     urgent: Color(0xFFE5484D),
+    onBoardUrgent: Color(0xFFFF7A7D),
   );
 
   static const dark = HopinColors(
@@ -68,6 +73,7 @@ class HopinColors extends ThemeExtension<HopinColors> {
     inkMuted: Color(0xFF8A9A91),
     line: Color(0xFF26332D),
     urgent: Color(0xFFFF6B6E),
+    onBoardUrgent: Color(0xFFFF7A7D),
   );
 
   @override
@@ -83,6 +89,7 @@ class HopinColors extends ThemeExtension<HopinColors> {
     Color? inkMuted,
     Color? line,
     Color? urgent,
+    Color? onBoardUrgent,
   }) => HopinColors(
     page: page ?? this.page,
     board: board ?? this.board,
@@ -95,6 +102,7 @@ class HopinColors extends ThemeExtension<HopinColors> {
     inkMuted: inkMuted ?? this.inkMuted,
     line: line ?? this.line,
     urgent: urgent ?? this.urgent,
+    onBoardUrgent: onBoardUrgent ?? this.onBoardUrgent,
   );
 
   @override
@@ -113,6 +121,7 @@ class HopinColors extends ThemeExtension<HopinColors> {
       inkMuted: mix(inkMuted, other.inkMuted),
       line: mix(line, other.line),
       urgent: mix(urgent, other.urgent),
+      onBoardUrgent: mix(onBoardUrgent, other.onBoardUrgent),
     );
   }
 }

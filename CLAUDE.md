@@ -24,7 +24,8 @@ firebase deploy --only firestore   # from the repo root, only after the rules te
 pip install -r scripts/requirements-dev.txt
 ruff format .                 # CI fails on unformatted code
 ruff check .
-pytest scripts/release
+pytest scripts
+python scripts/map_style/build_styles.py   # regenerate app/assets/map/board_*.json from OpenFreeMap; the outputs are committed
 ```
 
 Dart tests mirror `lib/` under `app/test/`.

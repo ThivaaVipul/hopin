@@ -6,11 +6,18 @@ import 'package:go_router/go_router.dart';
 import 'package:hopin/app/router.dart';
 import 'package:hopin/app/session/session_cubit.dart';
 import 'package:hopin/app/theme.dart';
+import 'package:hopin/app/workspace.dart';
 import 'package:hopin/core/auth/auth_repository.dart';
+import 'package:hopin/core/data/remote/remote.dart';
+import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/profile/profile_repository.dart';
+import 'package:hopin/core/search/nominatim.dart';
+import 'package:hopin/features/home/widgets/hopin_map.dart';
 import 'package:hopin/l10n/app_localizations.dart';
 
-/// The app shell: theme, language, session and routes.
+/// The app shell: theme, language, session, the signed-in person's workspace,
+/// and routes. Everything that reaches the outside world comes in here, so
+/// tests can pass fakes.
 ///
 /// English by default; Tamil once the person picks it in Settings (M1a4),
 /// independent of the phone's language.
@@ -19,11 +26,21 @@ class HopinApp extends StatefulWidget {
     super.key,
     required this.auth,
     required this.profiles,
+    required this.remote,
+    required this.openDatabase,
+    required this.location,
+    required this.nominatim,
+    required this.mapBuilder,
     this.locale = const Locale('en'),
   });
 
   final AuthRepository auth;
   final ProfileRepository profiles;
+  final Remote remote;
+  final DatabaseOpener openDatabase;
+  final LocationService location;
+  final Nominatim nominatim;
+  final MapBuilder mapBuilder;
   final Locale locale;
 
   @override
@@ -48,20 +65,29 @@ class _HopinAppState extends State<HopinApp> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      RepositoryProvider<AuthRepository>.value(
-        value: widget.auth,
-        child: BlocProvider.value(
-          value: _session,
-          child: MaterialApp.router(
-            onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-            theme: hopinTheme(Brightness.light),
-            darkTheme: hopinTheme(Brightness.dark),
-            locale: widget.locale,
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            routerConfig: _router,
-          ),
+  Widget build(BuildContext context) => MultiRepositoryProvider(
+    providers: [
+      RepositoryProvider<AuthRepository>.value(value: widget.auth),
+      RepositoryProvider<LocationService>.value(value: widget.location),
+      RepositoryProvider<Nominatim>.value(value: widget.nominatim),
+      RepositoryProvider<MapBuilder>.value(value: widget.mapBuilder),
+    ],
+    child: BlocProvider.value(
+      value: _session,
+      child: MaterialApp.router(
+        onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+        theme: hopinTheme(Brightness.light),
+        darkTheme: hopinTheme(Brightness.dark),
+        locale: widget.locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: _router,
+        builder: (context, child) => WorkspaceScope(
+          open: widget.openDatabase,
+          remote: widget.remote,
+          child: child ?? const SizedBox(),
         ),
-      );
+      ),
+    ),
+  );
 }

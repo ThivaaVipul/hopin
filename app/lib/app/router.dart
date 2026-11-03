@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hopin/app/session/session_cubit.dart';
+import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/features/home/view/home_page.dart';
+import 'package:hopin/features/search/view/search_page.dart';
 import 'package:hopin/features/sign_in/view/sign_in_page.dart';
 import 'package:hopin/features/start/start_page.dart';
 
@@ -11,6 +13,7 @@ abstract final class Routes {
   static const start = '/start';
   static const signIn = '/sign-in';
   static const home = '/';
+  static const search = '/search';
 }
 
 /// Where the session says you belong: the start screen until it knows, then
@@ -37,6 +40,10 @@ GoRouter buildRouter(SessionCubit session, Listenable refresh) => GoRouter(
       builder: (context, state) => const SignInPage(),
     ),
     GoRoute(path: Routes.home, builder: (context, state) => const HomePage()),
+    GoRoute(
+      path: Routes.search,
+      builder: (context, state) => SearchPage(near: state.extra as GeoPoint?),
+    ),
   ],
 );
 

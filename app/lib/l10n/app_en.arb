@@ -38,12 +38,128 @@
   "@checkAgain": {
     "description": "Looks again for rider access."
   },
-  "mapNext": "The map arrives in the next update.",
-  "@mapNext": {
-    "description": "Stand-in note on the first release's home page, before the map exists."
-  },
   "signOut": "Sign out",
   "@signOut": {
     "description": "Signs out of the app."
+  },
+  "whereTo": "Where to?",
+  "@whereTo": {
+    "description": "The search bar on Home and the search field."
+  },
+  "add": "Add",
+  "@add": {
+    "description": "Chip that opens search to save a new place."
+  },
+  "kindHome": "Home",
+  "@kindHome": {
+    "description": "Kind of saved place."
+  },
+  "kindWork": "Work",
+  "@kindWork": {
+    "description": "Kind of saved place."
+  },
+  "kindUni": "Uni",
+  "@kindUni": {
+    "description": "Kind of saved place: university."
+  },
+  "kindOther": "Other",
+  "@kindOther": {
+    "description": "Kind of saved place."
+  },
+  "locationWhy": "Hopin uses your location to show where you are and to buzz before your stop.",
+  "@locationWhy": {
+    "description": "The one-time card before Android asks for location."
+  },
+  "continueLabel": "Continue",
+  "@continueLabel": {
+    "description": "Goes on to Android's location popup."
+  },
+  "notNow": "Not now",
+  "@notNow": {
+    "description": "Skips location for now."
+  },
+  "turnOnLocation": "Turn on location",
+  "@turnOnLocation": {
+    "description": "Asks for location again after it was refused."
+  },
+  "showMe": "Show where I am",
+  "@showMe": {
+    "description": "Tooltip of the button that moves the map to you."
+  },
+  "account": "Account",
+  "@account": {
+    "description": "Tooltip of the button that opens the account sheet."
+  },
+  "awayKm": "{km} km away",
+  "@awayKm": {
+    "description": "Straight-line distance from you, in kilometres.",
+    "placeholders": {
+      "km": {
+        "type": "String",
+        "example": "2.4"
+      }
+    }
+  },
+  "awayM": "{m} m away",
+  "@awayM": {
+    "description": "Straight-line distance from you, in metres.",
+    "placeholders": {
+      "m": {
+        "type": "String",
+        "example": "450"
+      }
+    }
+  },
+  "droppedPin": "Dropped pin",
+  "@droppedPin": {
+    "description": "Title of a place picked by long-pressing the map, before or without a name."
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Saves a place."
+  },
+  "edit": "Edit",
+  "@edit": {
+    "description": "Edits a saved place."
+  },
+  "close": "Close",
+  "@close": {
+    "description": "Closes the destination sheet."
+  },
+  "savePlace": "Save place",
+  "@savePlace": {
+    "description": "Title of the sheet that saves a new place."
+  },
+  "editPlace": "Edit place",
+  "@editPlace": {
+    "description": "Title of the sheet that edits a saved place."
+  },
+  "placeName": "Name",
+  "@placeName": {
+    "description": "Field for a saved place's name."
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Deletes a saved place."
+  },
+  "recent": "Recent",
+  "@recent": {
+    "description": "Heading over the last few destinations in search."
+  },
+  "search": "Search",
+  "@search": {
+    "description": "Runs the search."
+  },
+  "back": "Back",
+  "@back": {
+    "description": "Leaves search."
+  },
+  "searchFailed": "Search didn't work. Check your internet and try again.",
+  "@searchFailed": {
+    "description": "Shown when Nominatim cannot be reached."
+  },
+  "nothingFound": "Nothing found. Try another name.",
+  "@nothingFound": {
+    "description": "Shown when a search finds no place."
   }
 }

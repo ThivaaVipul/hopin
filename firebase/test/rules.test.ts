@@ -96,6 +96,70 @@ describe('who gets in', () => {
   });
 });
 
+function place(changes: Fields = {}): Fields {
+  return {
+    name: 'Uni',
+    kind: 'uni',
+    lat: 6.9733,
+    lng: 79.9157,
+    placeEn: 'University',
+    placeTa: null,
+    placeSi: 'විශ්වවිද්‍යාලය',
+    updatedAt: serverTimestamp(),
+    deletedAt: null,
+    ...changes,
+  };
+}
+
+describe('places', () => {
+  it('lets a rider keep their own places', async () => {
+    const db = rider('r1');
+    await assertSucceeds(setDoc(doc(db, 'people/r1/places/p1'), place()));
+    await assertSucceeds(getDoc(doc(db, 'people/r1/places/p1')));
+    await assertSucceeds(updateDoc(doc(db, 'people/r1/places/p1'), { name: 'Campus', updatedAt: serverTimestamp() }));
+  });
+
+  it("keeps places private, even from the other rider", async () => {
+    await seed('people/r1/places/p1', place({ updatedAt: Timestamp.now() }));
+    await assertFails(getDoc(doc(rider('r2'), 'people/r1/places/p1')));
+    await assertFails(setDoc(doc(rider('r2'), 'people/r1/places/p2'), place()));
+  });
+
+  it('needs the rider claim, even for your own', async () => {
+    await assertFails(setDoc(doc(stranger('r1'), 'people/r1/places/p1'), place()));
+  });
+
+  it('removes by marking, never by deleting', async () => {
+    const db = rider('r1');
+    await assertSucceeds(setDoc(doc(db, 'people/r1/places/p1'), place()));
+    await assertSucceeds(
+      updateDoc(doc(db, 'people/r1/places/p1'), { deletedAt: serverTimestamp(), updatedAt: serverTimestamp() }),
+    );
+    await assertFails(deleteDoc(doc(db, 'people/r1/places/p1')));
+  });
+
+  it('checks every field', async () => {
+    const db = rider('r1');
+    const bad: Fields[] = [
+      { kind: 'school' },
+      { name: '' },
+      { name: 'x'.repeat(41) },
+      { lat: 91 },
+      { lng: -181 },
+      { lat: '6.9' },
+      { placeSi: 'x'.repeat(201) },
+      { colour: 'amber' },
+      { updatedAt: Timestamp.now() },
+      { deletedAt: Timestamp.now() },
+    ];
+    for (const changes of bad) {
+      await assertFails(setDoc(doc(db, 'people/r1/places/p1'), place(changes)));
+    }
+    const { lat: _lat, ...noLat } = place();
+    await assertFails(setDoc(doc(db, 'people/r1/places/p1'), noLat));
+  });
+});
+
 describe('people', () => {
   it('lets a rider create and update their own profile', async () => {
     const db = rider('r1');

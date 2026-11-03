@@ -37,6 +37,34 @@ service cloud.firestore {
       allow read: if isRider();
       allow create, update: if isSelf(uid) && validProfile();
       allow delete: if false;
+
+      // Saved places: private to their owner. Removing one marks it with
+      // deletedAt (so the other device hears of it); nothing is deleted.
+      match /places/{placeId} {
+        function optionalName(data, key) {
+          return !(key in data) || data[key] == null || isString(data[key], 1, 200);
+        }
+
+        function validPlace() {
+          let data = request.resource.data;
+          let before = resource == null ? null : resource.data.get('deletedAt', null);
+          return data.keys().hasOnly(['name', 'kind', 'lat', 'lng', 'placeEn', 'placeTa', 'placeSi', 'updatedAt', 'deletedAt'])
+            && data.keys().hasAll(['name', 'kind', 'lat', 'lng', 'updatedAt'])
+            && isString(data.name, 1, 40)
+            && data.kind in ['home', 'work', 'uni', 'other']
+            && data.lat is number && data.lat >= -90 && data.lat <= 90
+            && data.lng is number && data.lng >= -180 && data.lng <= 180
+            && optionalName(data, 'placeEn')
+            && optionalName(data, 'placeTa')
+            && optionalName(data, 'placeSi')
+            && data.updatedAt == request.time
+            && (!('deletedAt' in data) || data.deletedAt == null || data.deletedAt == request.time || data.deletedAt == before);
+        }
+
+        allow read: if isSelf(uid);
+        allow create, update: if isSelf(uid) && validPlace();
+        allow delete: if false;
+      }
     }
   }
 }

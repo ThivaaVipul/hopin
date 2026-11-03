@@ -122,4 +122,4 @@ jobs:
           pip install -r scripts/requirements-dev.txt
           ruff format --check .
           ruff check .
-          pytest scripts/release
+          pytest scripts

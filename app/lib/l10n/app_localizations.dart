@@ -313,6 +313,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing found. Try another name.'**
   String get nothingFound;
+
+  /// Starts the get-off guide to the chosen place.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get start;
+
+  /// Ends the guide, on the ride board and in its notification.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get end;
+
+  /// An earlier alert stage: your stop is coming up.
+  ///
+  /// In en, this message translates to:
+  /// **'Get ready'**
+  String get getReady;
+
+  /// The last alert stage: get off at the next stop. The board turns amber.
+  ///
+  /// In en, this message translates to:
+  /// **'Get off next'**
+  String get getOffNext;
+
+  /// Urgent alert: the bus went past the stop.
+  ///
+  /// In en, this message translates to:
+  /// **'You passed your stop'**
+  String get passedStop;
+
+  /// Shown when the guide ends by itself at the stop.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve arrived'**
+  String get arrived;
+
+  /// A distance in kilometres.
+  ///
+  /// In en, this message translates to:
+  /// **'{km} km'**
+  String distanceKm(String km);
+
+  /// A distance in metres.
+  ///
+  /// In en, this message translates to:
+  /// **'{m} m'**
+  String distanceM(String m);
+
+  /// Time left to the stop, in minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String minutesLeft(int minutes);
+
+  /// In the guide notification: how far to the stop.
+  ///
+  /// In en, this message translates to:
+  /// **'{distance} to {place}'**
+  String distanceTo(String distance, String place);
+
+  /// On the ride board: the area you are passing.
+  ///
+  /// In en, this message translates to:
+  /// **'Now near {place}'**
+  String nowNear(String place);
+
+  /// The guide is waiting for its first GPS fix.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding you'**
+  String get findingYou;
+
+  /// The one-time card before Android asks for notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Hopin shows the guide in your notifications and alerts you before your stop, even with the screen off.'**
+  String get notificationsWhy;
+
+  /// Title of the phone maker's battery steps, shown at the first guide.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Hopin running'**
+  String get keepRunning;
+
+  /// Xiaomi phones: first battery step. "Autostart" is the setting's name on the phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on Autostart for Hopin'**
+  String get xiaomiAutostart;
+
+  /// Xiaomi phones: second battery step, in the app's settings. Setting names as on the phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery saver: No restrictions'**
+  String get xiaomiBattery;
+
+  /// Samsung phones: first battery step, in the app's settings. Setting names as on the phone.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery: Unrestricted'**
+  String get samsungBattery;
+
+  /// Samsung phones: second battery step, under Battery in the phone's settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Hopin to Never sleeping apps'**
+  String get samsungNeverSleeping;
+
+  /// Opens the phone's settings for Hopin.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get openSettings;
+
+  /// Closes the battery steps.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
+  /// Android's name for the guide's ongoing notification.
+  ///
+  /// In en, this message translates to:
+  /// **'Ride guide'**
+  String get channelGuide;
+
+  /// Android's name for the alerts before your stop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop alerts'**
+  String get channelAlerts;
+
+  /// Shown when Android refuses to start the guide.
+  ///
+  /// In en, this message translates to:
+  /// **'The guide didn\'t start. Try again.'**
+  String get guideFailed;
+
+  /// Shown when Start is pressed without location access.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on location to start a guide.'**
+  String get guideNeedsLocation;
 }
 
 class _AppLocalizationsDelegate

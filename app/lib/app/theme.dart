@@ -215,6 +215,15 @@ ThemeData hopinTheme(Brightness brightness) {
   );
   final t = base.textTheme.apply(bodyColor: c.ink, displayColor: c.ink);
   return base.copyWith(
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: c.board,
+      contentTextStyle: t.bodyLarge?.copyWith(
+        color: c.onBoard,
+        fontWeight: FontWeight.w500,
+      ),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    ),
     textTheme: t.copyWith(
       displayLarge: display(t.displayLarge, FontWeight.w700),
       displayMedium: display(t.displayMedium, FontWeight.w700),

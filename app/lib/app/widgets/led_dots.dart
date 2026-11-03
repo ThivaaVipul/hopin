@@ -14,12 +14,18 @@ class LedDots extends StatefulWidget {
     int? lit,
     this.lightUp = false,
     this.size = 8,
+    this.litColor,
+    this.dimColor,
   }) : lit = lit ?? count;
 
   final int count;
   final int lit;
   final bool lightUp;
   final double size;
+
+  /// The board's amber and unlit lights unless given, as on an amber board.
+  final Color? litColor;
+  final Color? dimColor;
 
   @override
   State<LedDots> createState() => _LedDotsState();
@@ -55,6 +61,8 @@ class _LedDotsState extends State<LedDots> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     final colors = context.colors;
     final motion = context.motion;
+    final on = widget.litColor ?? colors.amber;
+    final off = widget.dimColor ?? colors.amberDim;
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) => Row(
@@ -74,14 +82,14 @@ class _LedDotsState extends State<LedDots> with SingleTickerProviderStateMixin {
                   shape: BoxShape.circle,
                   color: i < widget.lit
                       ? Color.lerp(
-                          colors.amberDim,
-                          colors.amber,
+                          off,
+                          on,
                           Interval(
                             i / widget.count,
                             (i + 1) / widget.count,
                           ).transform(_controller.value),
                         )
-                      : colors.amberDim,
+                      : off,
                 ),
               ),
             ),

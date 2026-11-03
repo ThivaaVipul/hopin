@@ -7,8 +7,10 @@ import 'package:hopin/core/auth/auth_repository.dart';
 import 'package:hopin/core/data/local/database.dart';
 import 'package:hopin/core/data/remote/remote.dart';
 import 'package:hopin/core/geo/geo.dart';
+import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/profile/profile_repository.dart';
+import 'package:hopin/core/ride/guide.dart';
 import 'package:hopin/core/search/nominatim.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
 import 'package:http/http.dart' as http;
@@ -73,6 +75,10 @@ class FakeRemote implements Remote {
   final queried = <(String, int)>[];
   bool offline = false;
 
+  /// While set, uploads wait for it; [waiting] counts the ones held.
+  Completer<void>? hold;
+  int waiting = 0;
+
   @override
   Stream<List<RemoteDoc>> changes(String collection, int after) {
     queried.add((collection, after));
@@ -91,6 +97,11 @@ class FakeRemote implements Remote {
     bool deleted = false,
   }) async {
     if (offline) throw StateError('offline');
+    final hold = this.hold;
+    if (hold != null) {
+      waiting++;
+      await hold.future;
+    }
     puts.add((path, data, deleted));
   }
 }
@@ -152,3 +163,62 @@ HopinDatabase memoryDatabase([String _ = '']) {
 Nominatim fakeNominatim(
   Future<http.Response> Function(http.Request request) respond,
 ) => Nominatim(client: MockClient(respond), wait: (_) async {});
+
+/// The ride service without Android. [emit] stands in for its news; events
+/// arrive synchronously.
+class FakeGuide implements GuideService {
+  FakeGuide({this.ride, this.phoneMaker = PhoneMaker.xiaomi});
+
+  /// The running guide.
+  GuideRide? ride;
+  PhoneMaker phoneMaker;
+  bool startWorks = true;
+  bool notifications = false;
+  bool allowOnAsk = true;
+  final started = <GuideRide>[];
+  int ends = 0;
+  int notificationAsks = 0;
+  int backgroundAsks = 0;
+  int settingsOpened = 0;
+  final _events = StreamController<GuideEvent>.broadcast(sync: true);
+
+  void emit(GuideEvent event) => _events.add(event);
+
+  @override
+  Stream<GuideEvent> get events => _events.stream;
+
+  @override
+  Future<GuideRide?> running() async => ride;
+
+  @override
+  Future<bool> start(GuideRide ride) async {
+    started.add(ride);
+    if (!startWorks) return false;
+    this.ride = ride;
+    return true;
+  }
+
+  @override
+  Future<void> end() async {
+    ends++;
+    ride = null;
+  }
+
+  @override
+  Future<bool> notificationsAllowed() async => notifications;
+
+  @override
+  Future<bool> askForNotifications() async {
+    notificationAsks++;
+    return notifications = allowOnAsk;
+  }
+
+  @override
+  Future<void> askToRunInBackground() async => backgroundAsks++;
+
+  @override
+  Future<PhoneMaker> maker() async => phoneMaker;
+
+  @override
+  Future<void> openMakerSettings() async => settingsOpened++;
+}

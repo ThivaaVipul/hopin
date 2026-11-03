@@ -15,6 +15,7 @@ class PlacesRepository {
   final HopinDatabase _db;
   final DateTime Function() _clock;
   final Random _random;
+  var _lastStamp = 0;
 
   /// Called after every local change (the sync uploads pending rows).
   void Function()? onChange;
@@ -53,7 +54,7 @@ class PlacesRepository {
   Future<void> update(SavedPlace place) => _write(place);
 
   Future<void> remove(String id) async {
-    final now = _clock().microsecondsSinceEpoch;
+    final now = _stamp();
     await (_db.update(_db.places)..where((p) => p.id.equals(id))).write(
       PlacesCompanion(
         deletedAt: Value(now),
@@ -65,7 +66,7 @@ class PlacesRepository {
   }
 
   Future<void> _write(SavedPlace place) async {
-    final now = _clock().microsecondsSinceEpoch;
+    final now = _stamp();
     await _db
         .into(_db.places)
         .insertOnConflictUpdate(
@@ -84,6 +85,15 @@ class PlacesRepository {
           ),
         );
     onChange?.call();
+  }
+
+  /// When a change was made, in microseconds, and always after the change
+  /// before it. The sync clears a row's pending mark only while the row still
+  /// carries the stamp it uploaded, so two changes on one tick of a coarse
+  /// clock must not share a stamp.
+  int _stamp() {
+    final now = _clock().microsecondsSinceEpoch;
+    return _lastStamp = now > _lastStamp ? now : _lastStamp + 1;
   }
 
   /// A Firestore-style random ID, made on the phone so places work offline.

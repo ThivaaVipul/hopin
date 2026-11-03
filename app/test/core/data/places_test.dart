@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hopin/core/data/local/database.dart';
 import 'package:hopin/core/data/places_repository.dart';
@@ -84,6 +86,24 @@ void main() {
     await places.remove(place.id);
     await sync.push();
     expect(remote.puts.last.$3, isTrue);
+  });
+
+  test('a removal on the same clock tick as an upload still goes up', () async {
+    // A coarse clock gives both changes one time; the upload of the first
+    // must not count for the second.
+    final frozen = PlacesRepository(db, clock: () => DateTime.utc(2026))
+      ..onChange = sync.push;
+    await sync.start();
+    remote.hold = Completer<void>();
+    final place = await frozen.add(uni, name: 'Uni', kind: PlaceKind.uni);
+    while (remote.waiting == 0) {
+      await pumpEventQueue();
+    }
+    await frozen.remove(place.id);
+    remote.hold!.complete();
+    await sync.push();
+    expect(remote.puts.last.$3, isTrue);
+    expect((await rows()).single.pendingSince, isNull);
   });
 
   test('keeps a change pending while offline, and sends it later', () async {

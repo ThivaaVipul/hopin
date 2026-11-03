@@ -61,16 +61,17 @@ class Nominatim {
     return results;
   }
 
-  /// The place at [point], for a dropped pin and "Now near".
-  Future<Destination?> reverse(GeoPoint point) async {
+  /// The place at [point]: the nearest named place for a dropped pin, or at
+  /// [zoom] 14 the suburb or village around it, for "Now near".
+  Future<Destination?> reverse(GeoPoint point, {int zoom = 16}) async {
     final key =
-        'r|${point.lat.toStringAsFixed(4)},${point.lng.toStringAsFixed(4)}';
+        'r$zoom|${point.lat.toStringAsFixed(4)},${point.lng.toStringAsFixed(4)}';
     final cached = _cache[key];
     if (cached is Destination) return cached;
     final body = await _get('/reverse', {
       'lat': '${point.lat}',
       'lon': '${point.lng}',
-      'zoom': '16',
+      'zoom': '$zoom',
       'format': 'jsonv2',
       'namedetails': '1',
       'addressdetails': '1',

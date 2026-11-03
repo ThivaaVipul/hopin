@@ -75,4 +75,10 @@ class SettingsStore {
       .insertOnConflictUpdate(SettingsCompanion.insert(key: key, value: value));
 
   static const locationExplained = 'card.location';
+
+  /// The card before Android's notification popup, at the first Start.
+  static const notificationsExplained = 'card.notifications';
+
+  /// Android's background popup and the maker's steps, at the first Start.
+  static const batteryExplained = 'card.battery';
 }

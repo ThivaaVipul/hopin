@@ -83,13 +83,16 @@ Every synced document carries `updatedAt` (a server timestamp) and is soft-delet
 
 ## Get-off guide
 
-- A destination is a saved place, a search result or a dropped pin. During a guided ride the service samples GPS every 5 s at high accuracy.
-- The alert fires once when the bus is about 2 minutes or 600 m away, whichever comes first (exact rules in M1a's grilling): a distinct vibration pattern, a notification showing the stop's name with the Sinhala name beside it, and the optional spoken line.
-- The ride screen shows the map, your position, the next known stop or town and the distance and time to go.
+- **Start:** a destination is a saved place, a search result or a dropped pin; Start, in its panel, turns Home into ride mode on the same map (the ride board, the map framing you and the stop). The first Start explains notifications before Android's popup, asks Android to let Hopin run in the background, and shows the maker's steps (below).
+- **The service:** the guide runs in a foreground service of type location (`flutter_foreground_task`), in its own isolate, so it keeps guiding with the app swiped away. It is started while the app is open, which lets "while using the app" location cover it after the app closes. It never restarts by itself: a service started from the background gets no location without "Allow all the time", which waits for M1b, so the maker's steps are what keep it alive.
+- **The maths** (`lib/core/ride/guide_engine.dart`, plain Dart, tested on synthetic traces): GPS every 5 s at high accuracy. Each alert stage fires once, at its distance or, on a fast bus, about 45 seconds before the stop; when several come due at once only the innermost fires. Within 100 m and walking or still (under 2.5 m/s) for a minute ends the guide with a gentle tap. Having been within 400 m, 300 m further on is a missed stop: the strongest pattern and "You passed your stop", once, and the guide goes on. Speeds come from how far you moved over the last 30 s and 2 min, so GPS jitter while still reads as still; the time left uses the 2-minute speed and hides under 1 m/s. Fixes vaguer than 100 m are ignored, and the guide ends or warns only on fixes within 50 m.
+- **An alert:** the stage's pattern twice (Android's alarm vibration, which plays with the screen off), plus a silent alert on the lock screen ("Stop alerts"). The ongoing notification ("Ride guide") shows the distance and time left, with End.
+- **The app and the service** talk through the plugin's ports: the service sends its status after every fix and a last message when it ends; the ride itself is kept in the plugin's storage, so a reopened app finds the running guide and asks for its status.
+- **"Now near"** is the suburb or village around you (Nominatim at zoom 14), looked up by the app at most once a minute while it is open; nothing on the ride waits on it.
 
 ## Phones that kill background apps
 
-Xiaomi and Samsung both stop background services beyond Android's own rules, and the riders use one of each. Onboarding checks the battery optimisation state, asks for the exemption, and shows a one-time screen for the maker: on Xiaomi (MIUI or HyperOS), Autostart on and battery saver "No restrictions"; on Samsung (One UI), Hopin in "Never sleeping apps" and battery "Unrestricted". The transition receiver needs no running process, so detection survives even when the service has been stopped.
+Xiaomi and Samsung both stop background services beyond Android's own rules, and the riders use one of each. The first Start asks Android for the battery exemption (unless Hopin has it), then shows the maker's steps once: on Xiaomi (MIUI or HyperOS), Autostart on and battery saver "No restrictions", with a button to Xiaomi's Autostart list; on Samsung (One UI), battery "Unrestricted" and Hopin in "Never sleeping apps", with a button to Hopin's settings. A small method channel in `MainActivity` reports the maker and opens the Autostart list, which Dart can't do without a plugin. The transition receiver needs no running process, so detection survives even when the service has been stopped.
 
 ## Permissions
 

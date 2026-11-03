@@ -124,4 +124,89 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get nothingFound => 'எதுவும் கிடைக்கவில்லை. வேறு பெயரில் தேடவும்.';
+
+  @override
+  String get start => 'தொடங்கு';
+
+  @override
+  String get end => 'முடி';
+
+  @override
+  String get getReady => 'தயாராகுங்கள்';
+
+  @override
+  String get getOffNext => 'அடுத்து இறங்குங்கள்';
+
+  @override
+  String get passedStop => 'உங்கள் நிறுத்தத்தைக் கடந்துவிட்டீர்கள்';
+
+  @override
+  String get arrived => 'வந்துசேர்ந்துவிட்டீர்கள்';
+
+  @override
+  String distanceKm(String km) {
+    return '$km கி.மீ';
+  }
+
+  @override
+  String distanceM(String m) {
+    return '$m மீ';
+  }
+
+  @override
+  String minutesLeft(int minutes) {
+    return '$minutes நிமி';
+  }
+
+  @override
+  String distanceTo(String distance, String place) {
+    return '$place வரை $distance';
+  }
+
+  @override
+  String nowNear(String place) {
+    return 'இப்போது $place அருகில்';
+  }
+
+  @override
+  String get findingYou => 'உங்களைக் கண்டறிகிறது';
+
+  @override
+  String get notificationsWhy =>
+      'திரை அணைந்திருந்தாலும், Hopin வழிகாட்டலை அறிவிப்புகளில் காட்டி, உங்கள் நிறுத்தத்துக்கு முன் எச்சரிக்கும்.';
+
+  @override
+  String get keepRunning => 'Hopin தொடர்ந்து இயங்கட்டும்';
+
+  @override
+  String get xiaomiAutostart => 'Hopin க்கு Autostart ஐ இயக்குங்கள்';
+
+  @override
+  String get xiaomiBattery => 'Battery saver: No restrictions';
+
+  @override
+  String get samsungBattery => 'Battery: Unrestricted';
+
+  @override
+  String get samsungNeverSleeping =>
+      'Never sleeping apps இல் Hopin ஐச் சேருங்கள்';
+
+  @override
+  String get openSettings => 'அமைப்புகளைத் திற';
+
+  @override
+  String get done => 'சரி';
+
+  @override
+  String get channelGuide => 'பயண வழிகாட்டி';
+
+  @override
+  String get channelAlerts => 'நிறுத்த எச்சரிக்கைகள்';
+
+  @override
+  String get guideFailed => 'வழிகாட்டி தொடங்கவில்லை. மீண்டும் முயலவும்.';
+
+  @override
+  String get guideNeedsLocation =>
+      'வழிகாட்டியைத் தொடங்க இருப்பிடத்தை இயக்குங்கள்.';
 }

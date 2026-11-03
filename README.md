@@ -15,6 +15,10 @@ scripts/release/  next version and release notes (Python, standard library)
 docs/             plan and architecture
 ```
 
+## Releases
+
+Merging a change that ships (a `feat` or `fix` in `app/`) publishes a release: `.github/workflows/release.yml` builds the signed APK and attaches it to a GitHub Release. The signing key lives outside the repo; the workflow reads it from four repository secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`. Run the workflow by hand with "build only" to test the build and the signing without publishing.
+
 ## Getting started
 
 ```bash

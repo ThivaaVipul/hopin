@@ -30,7 +30,7 @@ Dart tests mirror `lib/` under `app/test/`.
 
 ## Architecture rules
 
-- Firebase Spark plan only: Firestore, Authentication (Google) and App Distribution. Nothing that needs the Blaze plan or a card: no Cloud Functions, Cloud Storage, Hosting of APKs, scheduled backups or point-in-time recovery.
+- Firebase Spark plan only: Firestore and Authentication (Google). Nothing that needs the Blaze plan or a card: no Cloud Functions, Cloud Storage, scheduled backups or point-in-time recovery.
 - Screens read only the local drift database. Repositories write to drift and Firestore together; the sync engine pulls changes after its cursor (`updatedAt > cursor`). Never query Firestore from a screen or a Cubit.
 - Every synced document has `updatedAt` (a server timestamp). Deletes are soft (`deletedAt`).
 - Access is enforced in `firebase/firestore.rules`, never only in the UI. A rules change starts with a failing rules test.
@@ -44,7 +44,7 @@ Dart tests mirror `lib/` under `app/test/`.
 
 - Branches `feat/...`, `fix/...`, `docs/...`, `chore/...` off `main`; a pull request, CI green, then squash merge with a Conventional Commit title.
 - The commit type decides the release: `feat` is minor, `fix`/`perf`/`revert` patch, `!` or `BREAKING CHANGE:` major, everything else none. Pick the type honestly. Only commits that change `app/` count toward releases.
-- A release builds the signed arm64 APK, sends it to the riders through Firebase App Distribution and records a GitHub Release (from M0c).
+- A release (`release.yml`) builds the signed arm64 APK, checks that it carries the release key's certificate, and publishes it as a GitHub Release, where the app looks for updates. Run it by hand with "build only" to test the pipeline without publishing.
 - Never create `v*` tags by hand, and never change the version in `app/pubspec.yaml` unless asked to force one.
 - Release logic lives in `scripts/release/` (Python, standard library only). Change it test-first.
 
@@ -52,7 +52,7 @@ Dart tests mirror `lib/` under `app/test/`.
 
 - Fully free: GitHub Free with a public repo (GitHub's standard runners cost nothing there), Firebase Spark, nothing that needs a card. CI (`ci.yml`) stays one quick job on pull requests that runs only the checks for what changed and builds nothing, so pull requests merge fast. Before every push, run those checks locally, plus `flutter build apk --debug` when `app/android/` or the pubspec changed.
 - Workflows pin `ubuntu-24.04`. Moving to a newer runner image is its own change, tested first.
-- Android only, min SDK 26, arm64 release APK. Sideloaded through App Distribution, never the Play Store.
+- Android only, min SDK 26, arm64 release APK. Installed from GitHub Releases, never the Play Store.
 - Add a package only in the change that first uses it. Declare an Android permission only in the change that uses it.
 - Check versions and APIs against current docs (Context7) before adding or upgrading a dependency or a GitHub Action.
 

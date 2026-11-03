@@ -9,7 +9,7 @@ How Hopin is built. Decisions and progress are in [PLAN.md](PLAN.md); this file 
 - **The vehicle trigger is native.** A small Kotlin receiver registers Google's Activity Recognition Transition API for entering and leaving IN_VEHICLE (plus WALKING and STILL). The system delivers those events even when the app is closed, and an activity transition is one of the cases where Android lets an app start a foreground service from the background. The Flutter activity plugins only stream while the app runs, so they can't do this part.
 - **Rides run in a location foreground service:** `flutter_foreground_task` (MIT, maintained) with a Dart task handler that reads GPS through `geolocator`. On Android 14 and later, starting a location service from the background needs "Allow all the time" location, which this sideloaded app asks for once, with a short reason screen.
 - **Bus logic is plain Dart** (`lib/core/ride/`), with no Flutter or plugin imports, so it is unit tested against synthetic GPS traces: generated bus-like and car-like rides, since the repo is public and real rides never go in it.
-- **No server code.** Firebase Spark only (Firestore, Google sign-in, App Distribution); access is enforced by Firestore rules that admit only the two riders' accounts.
+- **No server code.** Firebase Spark only (Firestore and Google sign-in); access is enforced by Firestore rules that admit only the two riders' accounts.
 - **Map:** `flutter_map` with OpenStreetMap tiles (two riders is light use, inside OSM's tile policy, with a proper user agent and tile caching); place search through Photon (komoot's free OSM search, which allows search as you type, unlike Nominatim). Names in English, Tamil and Sinhala come from OSM's `name`, `name:ta` and `name:si`.
 - **Notifications and alerts are local:** `flutter_local_notifications` for "On a bus?" (with action buttons) and the get-off alert; the phone's vibrator for the buzz; `flutter_tts` for the optional spoken line, only if M1a shows it's easy.
 
@@ -33,7 +33,7 @@ How Hopin is built. Decisions and progress are in [PLAN.md](PLAN.md); this file 
         | Firestore (Spark) + rules (the two riders)      |
         | Firebase Authentication (Google sign-in)        |
         +------------------------------------------------+
-        GitHub Actions: release -> Firebase App Distribution (APK)
+        GitHub Actions: release -> GitHub Releases (signed APK)
         GitHub Actions (M2): route data job, if the data check finds a usable source
 ```
 
@@ -96,7 +96,8 @@ Each is declared in the change that first uses it: `ACCESS_FINE_LOCATION`, `ACCE
 
 ## Releases and CI
 
-- Conventional Commits decide the version; a release workflow builds the signed arm64 APK and sends it to an App Distribution group of the two riders (App Tester tells them about updates); a GitHub Release records it. No Hosting.
+- Conventional Commits decide the version. A release workflow builds the signed arm64 APK, checks that it carries the release key's certificate (the build falls back to the debug key without one), and publishes a GitHub Release with the APK and its checksum. A manual build-only run tests the pipeline without publishing. The signing key lives outside the repo, in GitHub's encrypted secrets for the workflow, which runs only on main and by hand.
+- Updates (from M1a): the app reads the repo's latest release from GitHub's public API about once a day, compares its build number with its own (`HOPIN_BUILD`), and offers the update; a tap downloads the APK and Android installs it over the old one.
 - CI is one job on pull requests that runs only the checks for what changed (format, analyze, tests, rules tests, release script tests) and builds nothing, so a pull request gets its answer fast. The repo is public, so GitHub's standard runners cost nothing.
 
 ## Testing

@@ -161,5 +161,135 @@
   "nothingFound": "Nothing found. Try another name.",
   "@nothingFound": {
     "description": "Shown when a search finds no place."
+  },
+  "start": "Start",
+  "@start": {
+    "description": "Starts the get-off guide to the chosen place."
+  },
+  "end": "End",
+  "@end": {
+    "description": "Ends the guide, on the ride board and in its notification."
+  },
+  "getReady": "Get ready",
+  "@getReady": {
+    "description": "An earlier alert stage: your stop is coming up."
+  },
+  "getOffNext": "Get off next",
+  "@getOffNext": {
+    "description": "The last alert stage: get off at the next stop. The board turns amber."
+  },
+  "passedStop": "You passed your stop",
+  "@passedStop": {
+    "description": "Urgent alert: the bus went past the stop."
+  },
+  "arrived": "You've arrived",
+  "@arrived": {
+    "description": "Shown when the guide ends by itself at the stop."
+  },
+  "distanceKm": "{km} km",
+  "@distanceKm": {
+    "description": "A distance in kilometres.",
+    "placeholders": {
+      "km": {
+        "type": "String",
+        "example": "2.4"
+      }
+    }
+  },
+  "distanceM": "{m} m",
+  "@distanceM": {
+    "description": "A distance in metres.",
+    "placeholders": {
+      "m": {
+        "type": "String",
+        "example": "450"
+      }
+    }
+  },
+  "minutesLeft": "{minutes} min",
+  "@minutesLeft": {
+    "description": "Time left to the stop, in minutes.",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "6"
+      }
+    }
+  },
+  "distanceTo": "{distance} to {place}",
+  "@distanceTo": {
+    "description": "In the guide notification: how far to the stop.",
+    "placeholders": {
+      "distance": {
+        "type": "String",
+        "example": "2.4 km"
+      },
+      "place": {
+        "type": "String",
+        "example": "Colombo Fort"
+      }
+    }
+  },
+  "nowNear": "Now near {place}",
+  "@nowNear": {
+    "description": "On the ride board: the area you are passing.",
+    "placeholders": {
+      "place": {
+        "type": "String",
+        "example": "Kollupitiya"
+      }
+    }
+  },
+  "findingYou": "Finding you",
+  "@findingYou": {
+    "description": "The guide is waiting for its first GPS fix."
+  },
+  "notificationsWhy": "Hopin shows the guide in your notifications and alerts you before your stop, even with the screen off.",
+  "@notificationsWhy": {
+    "description": "The one-time card before Android asks for notifications."
+  },
+  "keepRunning": "Keep Hopin running",
+  "@keepRunning": {
+    "description": "Title of the phone maker's battery steps, shown at the first guide."
+  },
+  "xiaomiAutostart": "Turn on Autostart for Hopin",
+  "@xiaomiAutostart": {
+    "description": "Xiaomi phones: first battery step. \"Autostart\" is the setting's name on the phone."
+  },
+  "xiaomiBattery": "Battery saver: No restrictions",
+  "@xiaomiBattery": {
+    "description": "Xiaomi phones: second battery step, in the app's settings. Setting names as on the phone."
+  },
+  "samsungBattery": "Battery: Unrestricted",
+  "@samsungBattery": {
+    "description": "Samsung phones: first battery step, in the app's settings. Setting names as on the phone."
+  },
+  "samsungNeverSleeping": "Add Hopin to Never sleeping apps",
+  "@samsungNeverSleeping": {
+    "description": "Samsung phones: second battery step, under Battery in the phone's settings."
+  },
+  "openSettings": "Open settings",
+  "@openSettings": {
+    "description": "Opens the phone's settings for Hopin."
+  },
+  "done": "Done",
+  "@done": {
+    "description": "Closes the battery steps."
+  },
+  "channelGuide": "Ride guide",
+  "@channelGuide": {
+    "description": "Android's name for the guide's ongoing notification."
+  },
+  "channelAlerts": "Stop alerts",
+  "@channelAlerts": {
+    "description": "Android's name for the alerts before your stop."
+  },
+  "guideFailed": "The guide didn't start. Try again.",
+  "@guideFailed": {
+    "description": "Shown when Android refuses to start the guide."
+  },
+  "guideNeedsLocation": "Turn on location to start a guide.",
+  "@guideNeedsLocation": {
+    "description": "Shown when Start is pressed without location access."
   }
 }

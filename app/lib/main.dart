@@ -4,6 +4,7 @@ import 'package:hopin/app/app.dart';
 import 'package:hopin/core/auth/firebase_auth_repository.dart';
 import 'package:hopin/core/data/local/database.dart';
 import 'package:hopin/core/data/remote/remote.dart';
+import 'package:hopin/core/guide/foreground_guide.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/profile/profile_repository.dart';
 import 'package:hopin/core/search/nominatim.dart';
@@ -19,6 +20,7 @@ Future<void> main() async {
   }
   WidgetsFlutterBinding.ensureInitialized();
   prepareBoardMap();
+  ForegroundGuideService.prepare();
   await Firebase.initializeApp(options: HopinFirebase.android);
   runApp(
     HopinApp(
@@ -29,6 +31,7 @@ Future<void> main() async {
       location: GeolocatorLocation(),
       nominatim: Nominatim(),
       mapBuilder: boardMap,
+      guide: ForegroundGuideService(),
     ),
   );
 }

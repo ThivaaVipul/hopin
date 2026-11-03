@@ -17,6 +17,8 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.1
+  flutter_foreground_task: ^11.0.3
+  flutter_local_notifications: ^22.3.3
   flutter_localizations:
     sdk: flutter
   geolocator: ^14.1.2
@@ -25,6 +27,7 @@ dependencies:
   http: ^1.6.0
   intl: any # the version flutter_localizations pins
   maplibre_gl: ^0.27.1
+  vibration: ^3.2.1
 
 dev_dependencies:
   bloc_test: ^10.0.0

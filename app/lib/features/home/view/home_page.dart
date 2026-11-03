@@ -8,12 +8,15 @@ import 'package:hopin/app/session/session_cubit.dart';
 import 'package:hopin/app/theme.dart';
 import 'package:hopin/app/widgets/led_dots.dart';
 import 'package:hopin/app/workspace.dart';
+import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/places/place.dart';
 import 'package:hopin/core/search/nominatim.dart';
 import 'package:hopin/features/home/cubit/home_cubit.dart';
 import 'package:hopin/features/home/widgets/home_parts.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
+import 'package:hopin/features/home/widgets/maker_steps.dart';
+import 'package:hopin/features/home/widgets/ride_board.dart';
 import 'package:hopin/l10n/app_localizations.dart';
 
 /// Home: the map, where to, and saved places (docs/PLAN.md, Home and places).
@@ -31,6 +34,7 @@ class HomePage extends StatelessWidget {
           workspace,
           context.read<LocationService>(),
           context.read<Nominatim>(),
+          context.read<GuideService>(),
         );
         unawaited(cubit.start());
         return cubit;
@@ -120,30 +124,121 @@ class _HomeViewState extends State<_HomeView> {
     }
   }
 
+  void _start(BuildContext context, Destination destination) {
+    final language = Localizations.localeOf(context).languageCode;
+    unawaited(
+      context.read<HomeCubit>().startGuide(
+        title: destinationTitle(
+          AppLocalizations.of(context),
+          destination,
+          language,
+        ),
+        language: language,
+      ),
+    );
+  }
+
+  /// The map frames the ride: you and your stop, clear of the board.
+  void _frame(BuildContext context, HomeState state) {
+    final ride = state.ride;
+    final me = state.me;
+    if (ride != null) {
+      if (me == null) {
+        _camera.flyTo(ride.to, zoom: 14);
+      } else {
+        final screen = MediaQuery.sizeOf(context);
+        final top = MediaQuery.paddingOf(context).top;
+        _camera.fit(
+          me,
+          ride.to,
+          padding: EdgeInsets.fromLTRB(56, top + 56, 56, screen.height * 0.5),
+        );
+      }
+      return;
+    }
+    final target = state.destination?.point ?? me;
+    if (target != null) {
+      _camera.flyTo(target, zoom: state.destination == null ? 15 : 15.5);
+    }
+  }
+
+  void _notify(BuildContext context, HomeNotice notice) {
+    final l = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(switch (notice) {
+            HomeNotice.arrived => l.arrived,
+            HomeNotice.guideFailed => l.guideFailed,
+            HomeNotice.needsLocation => l.guideNeedsLocation,
+          }),
+        ),
+      );
+    context.read<HomeCubit>().noticed();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final colors = context.colors;
     final motion = context.motion;
+    final still = MediaQuery.disableAnimationsOf(context);
+    final language = Localizations.localeOf(context).languageCode;
     final mapBuilder = context.read<MapBuilder>();
     final cubit = context.read<HomeCubit>();
-    return BlocListener<HomeCubit, HomeState>(
-      listenWhen: (before, now) =>
-          before.destination?.point != now.destination?.point ||
-          (before.me == null && now.me != null),
-      listener: (context, state) {
-        final target = state.destination?.point ?? state.me;
-        if (target != null) {
-          _camera.flyTo(target, zoom: state.destination == null ? 15 : 15.5);
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<HomeCubit, HomeState>(
+          listenWhen: (before, now) =>
+              before.destination?.point != now.destination?.point ||
+              (before.me == null && now.me != null) ||
+              (before.ride == null && now.ride != null),
+          listener: _frame,
+        ),
+        BlocListener<HomeCubit, HomeState>(
+          listenWhen: (before, now) =>
+              now.notice != null && before.notice != now.notice,
+          listener: (context, state) => _notify(context, state.notice!),
+        ),
+        BlocListener<HomeCubit, HomeState>(
+          listenWhen: (before, now) =>
+              before.makerSteps == null && now.makerSteps != null,
+          listener: (context, state) {
+            cubit.makerStepsSeen();
+            unawaited(
+              showMakerSteps(
+                context,
+                state.makerSteps!,
+                onOpenSettings: () => unawaited(cubit.openMakerSettings()),
+              ),
+            );
+          },
+        ),
+      ],
       child: BlocBuilder<HomeCubit, HomeState>(
         builder: (context, state) {
+          final riding = state.ride != null;
+          final near = state.near;
           final Widget bottom = switch (state) {
-            HomeState(location: LocationStatus.explain) => LocationCard(
+            HomeState(:final ride?) => RideBoard(
+              key: const ValueKey('ride'),
+              ride: ride,
+              status: state.status,
+              near: near?.names.inLanguage(language) ?? near?.area,
+              onEnd: cubit.endGuide,
+            ),
+            HomeState(location: LocationStatus.explain) => ReasonCard(
               key: const ValueKey('location'),
+              reason: l.locationWhy,
               onContinue: cubit.continueToPermission,
               onNotNow: cubit.notNow,
+            ),
+            HomeState(explainNotifications: true) => ReasonCard(
+              key: const ValueKey('notifications'),
+              reason: l.notificationsWhy,
+              onContinue: cubit.continueToNotifications,
+              onNotNow: cubit.skipNotifications,
             ),
             HomeState(:final destination?) => DestinationPanel(
               key: ValueKey(destination.point),
@@ -151,6 +246,7 @@ class _HomeViewState extends State<_HomeView> {
               me: state.me,
               resolving: state.resolving,
               onSave: () => _savePlace(context),
+              onStart: () => _start(context, destination),
               onClose: cubit.clear,
             ),
             _ => const SizedBox(key: ValueKey('none'), width: double.infinity),
@@ -173,25 +269,39 @@ class _HomeViewState extends State<_HomeView> {
                     ),
                   ),
                 ),
+                // Ride mode slides the search bar and chips away.
                 SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SearchBarButton(
-                          onTap: () => _search(context),
-                          onAccount: () => showAccountSheet(context),
+                  child: AnimatedSlide(
+                    offset: riding ? const Offset(0, -1.4) : Offset.zero,
+                    duration: still ? Duration.zero : motion.base,
+                    curve: motion.ease,
+                    child: AnimatedOpacity(
+                      opacity: riding ? 0 : 1,
+                      duration: still ? Duration.zero : motion.base,
+                      child: IgnorePointer(
+                        ignoring: riding,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SearchBarButton(
+                                onTap: () => _search(context),
+                                onAccount: () => showAccountSheet(context),
+                              ),
+                              const SizedBox(height: 10),
+                              PlaceChips(
+                                places: state.places,
+                                onTap: (place) =>
+                                    cubit.select(Destination.fromSaved(place)),
+                                onLongPress: (place) =>
+                                    _editPlace(context, place),
+                                onAdd: () => _search(context),
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 10),
-                        PlaceChips(
-                          places: state.places,
-                          onTap: (place) =>
-                              cubit.select(Destination.fromSaved(place)),
-                          onLongPress: (place) => _editPlace(context, place),
-                          onAdd: () => _search(context),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -245,7 +355,7 @@ class _HomeViewState extends State<_HomeView> {
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: AnimatedSwitcher(
-                    duration: motion.base,
+                    duration: still ? Duration.zero : motion.base,
                     switchInCurve: motion.ease,
                     switchOutCurve: motion.ease,
                     transitionBuilder: (child, animation) => SlideTransition(

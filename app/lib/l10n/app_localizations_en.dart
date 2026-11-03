@@ -124,4 +124,87 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nothingFound => 'Nothing found. Try another name.';
+
+  @override
+  String get start => 'Start';
+
+  @override
+  String get end => 'End';
+
+  @override
+  String get getReady => 'Get ready';
+
+  @override
+  String get getOffNext => 'Get off next';
+
+  @override
+  String get passedStop => 'You passed your stop';
+
+  @override
+  String get arrived => 'You\'ve arrived';
+
+  @override
+  String distanceKm(String km) {
+    return '$km km';
+  }
+
+  @override
+  String distanceM(String m) {
+    return '$m m';
+  }
+
+  @override
+  String minutesLeft(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String distanceTo(String distance, String place) {
+    return '$distance to $place';
+  }
+
+  @override
+  String nowNear(String place) {
+    return 'Now near $place';
+  }
+
+  @override
+  String get findingYou => 'Finding you';
+
+  @override
+  String get notificationsWhy =>
+      'Hopin shows the guide in your notifications and alerts you before your stop, even with the screen off.';
+
+  @override
+  String get keepRunning => 'Keep Hopin running';
+
+  @override
+  String get xiaomiAutostart => 'Turn on Autostart for Hopin';
+
+  @override
+  String get xiaomiBattery => 'Battery saver: No restrictions';
+
+  @override
+  String get samsungBattery => 'Battery: Unrestricted';
+
+  @override
+  String get samsungNeverSleeping => 'Add Hopin to Never sleeping apps';
+
+  @override
+  String get openSettings => 'Open settings';
+
+  @override
+  String get done => 'Done';
+
+  @override
+  String get channelGuide => 'Ride guide';
+
+  @override
+  String get channelAlerts => 'Stop alerts';
+
+  @override
+  String get guideFailed => 'The guide didn\'t start. Try again.';
+
+  @override
+  String get guideNeedsLocation => 'Turn on location to start a guide.';
 }

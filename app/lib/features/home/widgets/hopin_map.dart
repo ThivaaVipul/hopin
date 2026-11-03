@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:math' show Point;
 
 import 'package:flutter/material.dart';
@@ -9,8 +10,13 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 /// Moves the map's camera from outside the map widget.
 class MapCamera {
   void Function(GeoPoint point, double zoom)? _fly;
+  void Function(GeoPoint a, GeoPoint b, EdgeInsets padding)? _fit;
 
   void flyTo(GeoPoint point, {double zoom = 15}) => _fly?.call(point, zoom);
+
+  /// Shows both points, clear of [padding] (logical pixels) at the edges.
+  void fit(GeoPoint a, GeoPoint b, {EdgeInsets padding = EdgeInsets.zero}) =>
+      _fit?.call(a, b, padding);
 }
 
 /// What the home map shows. The map itself is swappable ([MapBuilder]), so
@@ -95,9 +101,25 @@ class _BoardMapState extends State<BoardMap> {
   }
 
   void _bindCamera() {
-    widget.props.camera._fly = (point, zoom) => unawaited(
+    final camera = widget.props.camera;
+    camera._fly = (point, zoom) => unawaited(
       _controller?.animateCamera(
         CameraUpdate.newLatLngZoom(LatLng(point.lat, point.lng), zoom),
+        duration: const Duration(milliseconds: 700),
+      ),
+    );
+    camera._fit = (a, b, padding) => unawaited(
+      _controller?.animateCamera(
+        CameraUpdate.newLatLngBounds(
+          LatLngBounds(
+            southwest: LatLng(math.min(a.lat, b.lat), math.min(a.lng, b.lng)),
+            northeast: LatLng(math.max(a.lat, b.lat), math.max(a.lng, b.lng)),
+          ),
+          left: padding.left,
+          top: padding.top,
+          right: padding.right,
+          bottom: padding.bottom,
+        ),
         duration: const Duration(milliseconds: 700),
       ),
     );

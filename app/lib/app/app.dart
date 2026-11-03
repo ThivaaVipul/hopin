@@ -9,6 +9,7 @@ import 'package:hopin/app/theme.dart';
 import 'package:hopin/app/workspace.dart';
 import 'package:hopin/core/auth/auth_repository.dart';
 import 'package:hopin/core/data/remote/remote.dart';
+import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/profile/profile_repository.dart';
 import 'package:hopin/core/search/nominatim.dart';
@@ -31,6 +32,7 @@ class HopinApp extends StatefulWidget {
     required this.location,
     required this.nominatim,
     required this.mapBuilder,
+    required this.guide,
     this.locale = const Locale('en'),
   });
 
@@ -41,6 +43,7 @@ class HopinApp extends StatefulWidget {
   final LocationService location;
   final Nominatim nominatim;
   final MapBuilder mapBuilder;
+  final GuideService guide;
   final Locale locale;
 
   @override
@@ -71,6 +74,7 @@ class _HopinAppState extends State<HopinApp> {
       RepositoryProvider<LocationService>.value(value: widget.location),
       RepositoryProvider<Nominatim>.value(value: widget.nominatim),
       RepositoryProvider<MapBuilder>.value(value: widget.mapBuilder),
+      RepositoryProvider<GuideService>.value(value: widget.guide),
     ],
     child: BlocProvider.value(
       value: _session,

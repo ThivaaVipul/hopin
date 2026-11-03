@@ -19,6 +19,18 @@ String kindLabel(AppLocalizations l, PlaceKind kind) => switch (kind) {
   PlaceKind.other => l.kindOther,
 };
 
+/// What the panel and the guide call [destination]: your name for it, its
+/// name in [language], its area, or "Dropped pin".
+String destinationTitle(
+  AppLocalizations l,
+  Destination destination,
+  String language,
+) =>
+    destination.saved?.name ??
+    destination.names.inLanguage(language) ??
+    destination.area ??
+    l.droppedPin;
+
 /// The bar at the top of Home: a board with an amber mark, like the bus's own.
 class SearchBarButton extends StatelessWidget {
   const SearchBarButton({
@@ -170,6 +182,7 @@ class DestinationPanel extends StatelessWidget {
     required this.me,
     required this.resolving,
     required this.onSave,
+    required this.onStart,
     required this.onClose,
   });
 
@@ -177,6 +190,9 @@ class DestinationPanel extends StatelessWidget {
   final GeoPoint? me;
   final bool resolving;
   final VoidCallback onSave;
+
+  /// Starts the guide to [destination].
+  final VoidCallback onStart;
   final VoidCallback onClose;
 
   @override
@@ -187,7 +203,7 @@ class DestinationPanel extends StatelessWidget {
     final names = destination.names;
     final saved = destination.saved;
     final placeName = names.inLanguage(language);
-    final title = saved?.name ?? placeName ?? destination.area ?? l.droppedPin;
+    final title = destinationTitle(l, destination, language);
     final detail = [
       if (saved != null && placeName != null && placeName != saved.name)
         placeName,
@@ -249,43 +265,56 @@ class DestinationPanel extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: Row(
-                children: [
-                  if (resolving)
-                    const LedDots(count: 6, lightUp: true)
-                  else if (away != null)
-                    Text(
-                      away.km ? l.awayKm(away.value) : l.awayM(away.value),
+            const SizedBox(height: 6),
+            SizedBox(
+              height: 28,
+              child: resolving
+                  ? const Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: LedDots(count: 6, lightUp: true),
+                    )
+                  : Text(
+                      away == null
+                          ? ''
+                          : away.km
+                          ? l.awayKm(away.value)
+                          : l.awayM(away.value),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: context.text.titleMedium?.copyWith(
                         color: colors.onBoardMuted,
                       ),
                     ),
-                  const Spacer(),
-                  if (saved != null)
-                    OutlinedButton.icon(
-                      onPressed: onSave,
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                      label: Text(l.edit),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: colors.onBoard,
-                        side: BorderSide(
-                          color: colors.onBoardMuted,
-                          width: 1.5,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        minimumSize: const Size(0, 48),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Row(
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: resolving ? null : onSave,
+                    icon: Icon(
+                      saved == null ? Icons.star_outline : Icons.edit_outlined,
+                      size: 18,
+                    ),
+                    label: Text(saved == null ? l.save : l.edit),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colors.onBoard,
+                      disabledForegroundColor: colors.onBoardMuted,
+                      side: BorderSide(color: colors.onBoardMuted, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                    )
-                  else
-                    FilledButton.icon(
-                      onPressed: resolving ? null : onSave,
-                      icon: const Icon(Icons.star_outline, size: 18),
-                      label: Text(l.save),
+                      minimumSize: const Size(0, 52),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: resolving ? null : onStart,
+                      icon: const Icon(Icons.navigation_rounded, size: 20),
+                      label: Text(l.start),
                       style: FilledButton.styleFrom(
                         backgroundColor: colors.amber,
                         foregroundColor: colors.onAmber,
@@ -293,9 +322,10 @@ class DestinationPanel extends StatelessWidget {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        minimumSize: const Size(0, 48),
+                        minimumSize: const Size(0, 52),
                       ),
                     ),
+                  ),
                 ],
               ),
             ),
@@ -306,14 +336,17 @@ class DestinationPanel extends StatelessWidget {
   }
 }
 
-/// The one-time reason before Android's location popup.
-class LocationCard extends StatelessWidget {
-  const LocationCard({
+/// The one-time reason before one of Android's popups: location on Home,
+/// notifications at the first Start.
+class ReasonCard extends StatelessWidget {
+  const ReasonCard({
     super.key,
+    required this.reason,
     required this.onContinue,
     required this.onNotNow,
   });
 
+  final String reason;
   final VoidCallback onContinue;
   final VoidCallback onNotNow;
 
@@ -337,15 +370,17 @@ class LocationCard extends StatelessWidget {
             const LedDots(count: 5, lightUp: true),
             const SizedBox(height: 16),
             Text(
-              l.locationWhy,
+              reason,
               style: context.text.titleMedium?.copyWith(
                 color: colors.onBoard,
                 height: 1.4,
               ),
             ),
             const SizedBox(height: 18),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            OverflowBar(
+              alignment: MainAxisAlignment.end,
+              overflowAlignment: OverflowBarAlignment.end,
+              spacing: 8,
               children: [
                 TextButton(
                   onPressed: onNotNow,
@@ -354,7 +389,6 @@ class LocationCard extends StatelessWidget {
                   ),
                   child: Text(l.notNow),
                 ),
-                const SizedBox(width: 8),
                 FilledButton(
                   onPressed: onContinue,
                   style: FilledButton.styleFrom(

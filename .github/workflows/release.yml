@@ -102,10 +102,12 @@ jobs:
         with:
           python-version: '3.12'
 
+      # Java 21: MapLibre's Android module compiles for Java 21
+      # (maplibre_gl's sourceCompatibility), so Java 17 cannot build it.
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
           cache: gradle
 
       - uses: subosito/flutter-action@v2

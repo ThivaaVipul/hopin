@@ -103,6 +103,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hopin'**
   String get appTitle;
+
+  /// One line under the name on the sign-in page.
+  ///
+  /// In en, this message translates to:
+  /// **'Never miss your stop.'**
+  String get tagline;
+
+  /// The sign-in button.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get continueWithGoogle;
+
+  /// Shown when Google sign-in fails for a reason other than the person closing it.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in didn\'t work. Check your internet and try again.'**
+  String get signInFailed;
+
+  /// Greeting on the home page.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi, {name}'**
+  String hello(String name);
+
+  /// The account can sync: the owner has made it a rider.
+  ///
+  /// In en, this message translates to:
+  /// **'Rider access is on'**
+  String get riderOn;
+
+  /// Signed in, but the owner hasn't made the account a rider yet; nothing syncs until then.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for rider access'**
+  String get riderWaiting;
+
+  /// Looks again for rider access.
+  ///
+  /// In en, this message translates to:
+  /// **'Check again'**
+  String get checkAgain;
+
+  /// Stand-in note on the first release's home page, before the map exists.
+  ///
+  /// In en, this message translates to:
+  /// **'The map arrives in the next update.'**
+  String get mapNext;
+
+  /// Signs out of the app.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get signOut;
 }
 
 class _AppLocalizationsDelegate

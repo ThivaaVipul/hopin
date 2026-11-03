@@ -10,7 +10,8 @@ flutter pub get
 dart format lib test          # CI fails on unformatted code
 flutter analyze               # strict mode, must be clean
 flutter test
-flutter build apk --debug
+flutter run --dart-define-from-file=firebase.local.json        # the app needs the Firebase API key, which is not in the repo
+flutter build apk --debug --dart-define-from-file=firebase.local.json
 flutter gen-l10n              # after editing lib/l10n/*.arb; the generated files are committed
 
 # Firestore rules, from firebase/
@@ -30,6 +31,7 @@ Dart tests mirror `lib/` under `app/test/`.
 
 ## Architecture rules
 
+- Firebase config lives in `lib/firebase_options.dart`, written from `firebase apps:sdkconfig ANDROID` (no Google services Gradle plugin); Google sign-in asks for an ID token for the project's web OAuth client (`googleServerClientId`). The API key is not in it: it comes from `app/firebase.local.json` (git-ignored, `{"HOPIN_FIREBASE_API_KEY": "..."}`) on this PC and from the `FIREBASE_API_KEY` secret in Actions, and the app refuses to start without it.
 - Firebase Spark plan only: Firestore and Authentication (Google). Nothing that needs the Blaze plan or a card: no Cloud Functions, Cloud Storage, scheduled backups or point-in-time recovery.
 - Screens read only the local drift database. Repositories write to drift and Firestore together; the sync engine pulls changes after its cursor (`updatedAt > cursor`). Never query Firestore from a screen or a Cubit.
 - Every synced document has `updatedAt` (a server timestamp). Deletes are soft (`deletedAt`).
@@ -64,7 +66,7 @@ The repo is public, and whatever it ever held stays public. Keep it free of anyt
 - No real GPS data. Test traces are synthetic; recorded rides stay in Firestore.
 - Riders are marked by a custom claim (`rider: true`) on their sign-in token, set outside the repo; the rules never hold account IDs or emails.
 - Secrets live only in GitHub's encrypted secrets; signing keys and `key.properties` never enter the repo. Workflows never use `pull_request_target`, so pull requests from forks get no secrets.
-- Firebase config files are public by design: their API keys carry app and API restrictions, and access rests on the rules alone.
+- No API keys in the repo, not even Firebase's: GitHub's secret scanning flags them in a public repo. The key carries app and API restrictions, and access rests on the rules alone.
 
 ## Conventions
 

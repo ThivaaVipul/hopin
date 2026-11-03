@@ -3,5 +3,47 @@
   "appTitle": "Hopin",
   "@appTitle": {
     "description": "The app's name. A brand name: kept as is in every language."
+  },
+  "tagline": "Never miss your stop.",
+  "@tagline": {
+    "description": "One line under the name on the sign-in page."
+  },
+  "continueWithGoogle": "Continue with Google",
+  "@continueWithGoogle": {
+    "description": "The sign-in button."
+  },
+  "signInFailed": "Sign-in didn't work. Check your internet and try again.",
+  "@signInFailed": {
+    "description": "Shown when Google sign-in fails for a reason other than the person closing it."
+  },
+  "hello": "Hi, {name}",
+  "@hello": {
+    "description": "Greeting on the home page.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Kavin"
+      }
+    }
+  },
+  "riderOn": "Rider access is on",
+  "@riderOn": {
+    "description": "The account can sync: the owner has made it a rider."
+  },
+  "riderWaiting": "Waiting for rider access",
+  "@riderWaiting": {
+    "description": "Signed in, but the owner hasn't made the account a rider yet; nothing syncs until then."
+  },
+  "checkAgain": "Check again",
+  "@checkAgain": {
+    "description": "Looks again for rider access."
+  },
+  "mapNext": "The map arrives in the next update.",
+  "@mapNext": {
+    "description": "Stand-in note on the first release's home page, before the map exists."
+  },
+  "signOut": "Sign out",
+  "@signOut": {
+    "description": "Signs out of the app."
   }
 }

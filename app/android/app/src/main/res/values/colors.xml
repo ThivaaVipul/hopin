@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The Board look's board colour (lib/app/theme.dart), behind the launch. -->
+    <color name="board">#FF18241F</color>
+    <color name="amber">#FFFFB020</color>
+</resources>

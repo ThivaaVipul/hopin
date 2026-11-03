@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hopin's mark: an amber signage H over three board lights, inside the
+     adaptive icon's 66dp safe zone (108dp canvas). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="@color/amber"
+        android:pathData="M37,28h9v36h-9z M62,28h9v36h-9z M46,41.5h16v8h-16z" />
+    <path
+        android:fillColor="@color/amber"
+        android:pathData="M45,76m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0 M54,76m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0 M63,76m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+</vector>

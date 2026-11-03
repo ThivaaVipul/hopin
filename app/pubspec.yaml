@@ -8,17 +8,63 @@ environment:
   sdk: ^3.12.2
 
 dependencies:
+  cloud_firestore: ^7.1.0
+  equatable: ^3.0.0
+  firebase_auth: ^7.0.1
+  firebase_core: ^5.1.0
   flutter:
     sdk: flutter
+  flutter_bloc: ^9.1.1
   flutter_localizations:
     sdk: flutter
+  go_router: ^17.5.0 # 18 moves to the standalone material_ui library
+  google_sign_in: ^7.2.0
   intl: any # the version flutter_localizations pins
 
 dev_dependencies:
+  bloc_test: ^10.0.0
+  flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
 
 flutter:
   generate: true
   uses-material-design: true
+  # All four families are under the SIL Open Font License (OFL.txt beside each).
+  fonts:
+    - family: Barlow
+      fonts:
+        - asset: assets/fonts/barlow/Barlow-400.ttf
+          weight: 400
+        - asset: assets/fonts/barlow/Barlow-500.ttf
+          weight: 500
+        - asset: assets/fonts/barlow/Barlow-600.ttf
+          weight: 600
+    - family: Barlow Semi Condensed
+      fonts:
+        - asset: assets/fonts/barlow_semi_condensed/BarlowSemiCondensed-500.ttf
+          weight: 500
+        - asset: assets/fonts/barlow_semi_condensed/BarlowSemiCondensed-600.ttf
+          weight: 600
+        - asset: assets/fonts/barlow_semi_condensed/BarlowSemiCondensed-700.ttf
+          weight: 700
+    - family: Anek Tamil
+      fonts:
+        - asset: assets/fonts/anek_tamil/AnekTamil-400.ttf
+          weight: 400
+        - asset: assets/fonts/anek_tamil/AnekTamil-500.ttf
+          weight: 500
+        - asset: assets/fonts/anek_tamil/AnekTamil-600.ttf
+          weight: 600
+        - asset: assets/fonts/anek_tamil/AnekTamil-700.ttf
+          weight: 700
+    - family: Noto Sans Sinhala
+      fonts:
+        - asset: assets/fonts/noto_sans_sinhala/NotoSansSinhala-400.ttf
+          weight: 400
+        - asset: assets/fonts/noto_sans_sinhala/NotoSansSinhala-500.ttf
+          weight: 500
+        - asset: assets/fonts/noto_sans_sinhala/NotoSansSinhala-600.ttf
+          weight: 600
+        - asset: assets/fonts/noto_sans_sinhala/NotoSansSinhala-700.ttf
+          weight: 700

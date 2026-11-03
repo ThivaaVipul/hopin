@@ -67,11 +67,11 @@ jobs:
         env:
           DUE: ${{ steps.next.outputs.release }}
           BUILD_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.build_only }}
-          HAS_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+          HAS_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.FIREBASE_API_KEY != '' }}
         run: |
           if [ "$HAS_KEY" != "true" ]; then
             if [ "$DUE" = "true" ] || [ "$BUILD_ONLY" = "true" ]; then
-              echo "::warning::The signing key secrets are missing (README, Releases), so nothing was built."
+              echo "::warning::The signing key or Firebase API key secrets are missing (README, Releases), so nothing was built."
             fi
             build=false; publish=false
           elif [ "$BUILD_ONLY" = "true" ]; then
@@ -130,9 +130,13 @@ jobs:
           } > app/android/key.properties
 
       # HOPIN_BUILD tells the app its own number, so it can spot a newer release.
+      # The Firebase API key comes from a secret, never the repo.
       - name: Check and build
         working-directory: app
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
         run: |
+          printf '{"HOPIN_FIREBASE_API_KEY": "%s"}\n' "$FIREBASE_API_KEY" > "$RUNNER_TEMP/firebase.json"
           flutter pub get
           flutter analyze
           flutter test
@@ -140,7 +144,8 @@ jobs:
           # which adds 2000 to the version code.
           flutter build apk --release --target-platform android-arm64 \
             --build-name "$VERSION" --build-number "$BUILD_NUMBER" \
-            --dart-define=HOPIN_BUILD="$BUILD_NUMBER"
+            --dart-define=HOPIN_BUILD="$BUILD_NUMBER" \
+            --dart-define-from-file="$RUNNER_TEMP/firebase.json"
 
       - name: Check the signature
         run: |

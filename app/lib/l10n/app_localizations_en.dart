@@ -10,4 +10,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appTitle => 'Hopin';
+
+  @override
+  String get tagline => 'Never miss your stop.';
+
+  @override
+  String get continueWithGoogle => 'Continue with Google';
+
+  @override
+  String get signInFailed =>
+      'Sign-in didn\'t work. Check your internet and try again.';
+
+  @override
+  String hello(String name) {
+    return 'Hi, $name';
+  }
+
+  @override
+  String get riderOn => 'Rider access is on';
+
+  @override
+  String get riderWaiting => 'Waiting for rider access';
+
+  @override
+  String get checkAgain => 'Check again';
+
+  @override
+  String get mapNext => 'The map arrives in the next update.';
+
+  @override
+  String get signOut => 'Sign out';
 }

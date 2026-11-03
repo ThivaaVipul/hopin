@@ -17,7 +17,7 @@ docs/             plan and architecture
 
 ## Releases
 
-Merging a change that ships (a `feat` or `fix` in `app/`) publishes a release: `.github/workflows/release.yml` builds the signed APK and attaches it to a GitHub Release. The signing key lives outside the repo; the workflow reads it from four repository secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`. Run the workflow by hand with "build only" to test the build and the signing without publishing.
+Merging a change that ships (a `feat` or `fix` in `app/`) publishes a release: `.github/workflows/release.yml` builds the signed APK and attaches it to a GitHub Release. The signing key and the Firebase API key live outside the repo; the workflow reads them from five repository secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` and `FIREBASE_API_KEY`. Run the workflow by hand with "build only" to test the build and the signing without publishing.
 
 ## Getting started
 
@@ -25,5 +25,5 @@ Merging a change that ships (a `feat` or `fix` in `app/`) publishes a release: `
 cd app
 flutter pub get
 flutter test
-flutter run
+flutter run --dart-define-from-file=firebase.local.json   # holds {"HOPIN_FIREBASE_API_KEY": "..."}; git-ignored
 ```

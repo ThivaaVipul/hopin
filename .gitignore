@@ -33,3 +33,7 @@ key.properties
 *.iml
 .DS_Store
 Thumbs.db
+
+# The Firebase API key stays out of the repo: builds read it from this file
+# (flutter --dart-define-from-file) or, in Actions, from a repository secret.
+*.local.json

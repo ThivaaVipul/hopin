@@ -11,9 +11,11 @@ import 'package:hopin/core/ride/bus_logic.dart';
 import 'package:hopin/core/ride/guide.dart';
 import 'package:hopin/core/ride/patterns.dart';
 import 'package:hopin/core/ride/ride_record.dart';
+import 'package:hopin/core/search/overpass.dart';
 import 'package:hopin/core/share/share.dart';
 import 'package:hopin/features/home/cubit/home_cubit.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 
 import '../../helpers/fakes.dart';
 
@@ -42,7 +44,7 @@ void main() {
 
   tearDown(() => workspace.close());
 
-  HomeCubit cubit({List<Object>? reverse}) => HomeCubit(
+  HomeCubit cubit({List<Object>? reverse, Overpass? overpass}) => HomeCubit(
     workspace,
     location,
     fakeNominatim((request) async {
@@ -66,7 +68,7 @@ void main() {
     }),
     guide,
     shares: shares,
-    overpass: emptyOverpass(),
+    overpass: overpass ?? emptyOverpass(),
     clock: () => now,
   );
 
@@ -634,23 +636,33 @@ void main() {
     const sw = GeoPoint(6.90, 79.83);
     const ne = GeoPoint(6.95, 79.88);
 
-    test('show at street level, and only those in view', () async {
-      await twoBusRides();
-      final home = cubit();
-      await home.start();
-      await pumpEventQueue();
-      home.cameraIdle(sw, ne, 13);
-      expect(home.state.stops, isEmpty);
-      home.cameraIdle(sw, ne, 16);
-      expect(home.state.stops.single.learned, isTrue);
-      home.cameraIdle(
-        const GeoPoint(7.0, 80.0),
-        const GeoPoint(7.05, 80.05),
-        16,
-      );
-      expect(home.state.stops, isEmpty);
-      await home.close();
-    });
+    test(
+      'every stop goes to the map; zoomed in, squares are fetched',
+      () async {
+        await twoBusRides();
+        final asked = <http.Request>[];
+        final home = cubit(
+          overpass: Overpass(
+            client: MockClient((request) async {
+              asked.add(request);
+              return http.Response('{"elements": []}', 200);
+            }),
+            wait: (_) async {},
+          ),
+        );
+        await home.start();
+        await pumpEventQueue();
+        expect(home.state.stops.single.learned, isTrue);
+
+        home.cameraIdle(sw, ne, 13);
+        await pumpEventQueue();
+        expect(asked, isEmpty);
+        home.cameraIdle(sw, ne, 16);
+        await pumpEventQueue();
+        expect(asked, isNotEmpty);
+        await home.close();
+      },
+    );
 
     test("a tap opens the stop's panel, named at street level", () async {
       await twoBusRides();

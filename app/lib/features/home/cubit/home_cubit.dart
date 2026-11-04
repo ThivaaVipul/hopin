@@ -91,8 +91,8 @@ class HomeState extends Equatable {
   final LiveShare? other;
   final bool watching;
 
-  /// The bus stops in view, from street level in (docs/PLAN.md, Sharing and
-  /// stops).
+  /// Every bus stop known (docs/PLAN.md, Sharing and stops); the map shows
+  /// them from street level in.
   final List<Stop> stops;
 
   /// The stop whose panel is open; the destination is its spot.
@@ -203,14 +203,9 @@ class HomeCubit extends Cubit<HomeState> {
   StreamSubscription<List<Stop>>? _stopsWatch;
   List<Stop> _allStops = const [];
 
-  /// The map's view when it last settled: corners and zoom.
-  (GeoPoint, GeoPoint, double)? _view;
-
-  /// Stop dots show from this zoom in (street level).
+  /// Zoomed in this far, the squares of OSM's stops around the view are
+  /// fetched (the map shows the dots from here too).
   static const stopsFrom = 15.0;
-
-  /// At most this many dots at once.
-  static const mostStops = 400;
   StreamSubscription<List<SavedPlace>>? _places;
   StreamSubscription<GeoPoint>? _positions;
   StreamSubscription<GuideEvent>? _guideEvents;
@@ -623,11 +618,9 @@ class HomeCubit extends Cubit<HomeState> {
     emit(state.copyWith(other: null, watching: false));
   }
 
-  /// The map settled: its corners and zoom. From street level in, the stops
-  /// in view show, and OSM's around are fetched if missing.
+  /// The map settled: its corners and zoom. From street level in, OSM's
+  /// stops around are fetched if missing.
   void cameraIdle(GeoPoint southWest, GeoPoint northEast, double zoom) {
-    _view = (southWest, northEast, zoom);
-    _showStops();
     if (zoom < stopsFrom) return;
     final centre = GeoPoint(
       (southWest.lat + northEast.lat) / 2,
@@ -639,23 +632,7 @@ class HomeCubit extends Cubit<HomeState> {
   }
 
   void _showStops() {
-    final view = _view;
-    final List<Stop> shown;
-    if (view == null || view.$3 < stopsFrom) {
-      shown = const [];
-    } else {
-      final (sw, ne, _) = view;
-      shown = _allStops
-          .where(
-            (s) =>
-                s.point.lat >= sw.lat &&
-                s.point.lat <= ne.lat &&
-                s.point.lng >= sw.lng &&
-                s.point.lng <= ne.lng,
-          )
-          .take(mostStops)
-          .toList();
-    }
+    final shown = _allStops;
     if (isClosed) return;
     // The open stop follows its rename; a removed one closes.
     final open = state.stop;

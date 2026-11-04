@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:equatable/equatable.dart';
 import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/core/places/place.dart';
@@ -194,4 +196,31 @@ class _Cluster {
     _lng += point.lng;
     _count++;
   }
+}
+
+/// The stop a tap at [at] meant, at map [zoom]: the nearest within a
+/// fingertip ([reachPixels] logical pixels, in metres at this zoom); none
+/// when nothing is that close. Taps go by place, not by hitting the drawn
+/// dot, which the map counts only within a few pixels.
+Stop? stopAt(
+  List<Stop> stops,
+  GeoPoint at,
+  double zoom, {
+  double reachPixels = 24,
+}) {
+  // MapLibre's 512-pixel tiles: metres per logical pixel at this latitude.
+  final metresPerPixel =
+      40075016.686 *
+      math.cos(at.lat * math.pi / 180) /
+      (512 * math.pow(2, zoom));
+  var best = reachPixels * metresPerPixel;
+  Stop? nearest;
+  for (final stop in stops) {
+    final away = stop.point.distanceTo(at);
+    if (away <= best) {
+      best = away;
+      nearest = stop;
+    }
+  }
+  return nearest;
 }

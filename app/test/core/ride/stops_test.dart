@@ -152,4 +152,27 @@ void main() {
     final again = finder.find(rides: rides.reversed.toList());
     expect(again, once);
   });
+
+  group('a tap on the map', () {
+    final near = Stop(id: 'osm:1', point: lakeRoad, source: StopSource.osm);
+    final next = Stop(
+      id: 'osm:2',
+      point: east(lakeRoad, 60),
+      source: StopSource.osm,
+    );
+
+    test('finds the nearest stop within a fingertip', () {
+      // At zoom 16 a fingertip (24 pixels) is about 28 m here.
+      expect(stopAt([near, next], east(lakeRoad, 15), 16)?.id, 'osm:1');
+      expect(stopAt([near, next], east(lakeRoad, 45), 16)?.id, 'osm:2');
+      expect(stopAt([near, next], east(lakeRoad, 25), 16)?.id, 'osm:1');
+    });
+
+    test('nothing when no stop is that close', () {
+      expect(stopAt([near], east(lakeRoad, 40), 16), isNull);
+      // Zoomed in further, the same finger covers fewer metres.
+      expect(stopAt([near], east(lakeRoad, 20), 18), isNull);
+      expect(stopAt(const [], lakeRoad, 16), isNull);
+    });
+  });
 }

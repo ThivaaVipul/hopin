@@ -215,7 +215,7 @@ class _BoardMapState extends State<BoardMap> {
       return;
     }
     _stopsAdded = true;
-    await controller.addGeoJsonSource(_stopSource, data, promoteId: 'sid');
+    await controller.addGeoJsonSource(_stopSource, data);
     await controller.addCircleLayer(
       _stopSource,
       _stopLayer,
@@ -246,6 +246,7 @@ class _BoardMapState extends State<BoardMap> {
       for (final stop in stops)
         {
           'type': 'Feature',
+          'id': stop.id,
           'properties': {'sid': stop.id, 'learned': stop.learned},
           'geometry': {
             'type': 'Point',
@@ -255,6 +256,19 @@ class _BoardMapState extends State<BoardMap> {
     ],
   };
 
+  /// A tap on the map, or one the map matched to a dot: the stop nearest
+  /// the tapped spot, within a fingertip.
+  void _tappedAt(LatLng at) {
+    final zoom = _controller?.cameraPosition?.zoom;
+    if (zoom == null || zoom < stopsFrom) return;
+    final stop = stopAt(
+      widget.props.stops,
+      GeoPoint(at.latitude, at.longitude),
+      zoom,
+    );
+    if (stop != null) widget.props.onStopTap?.call(stop.id);
+  }
+
   void _featureTapped(
     Point<double> point,
     LatLng at,
@@ -262,7 +276,7 @@ class _BoardMapState extends State<BoardMap> {
     String layerId,
     Annotation? annotation,
   ) {
-    if (layerId == _stopLayer) widget.props.onStopTap?.call(id);
+    if (layerId == _stopLayer) _tappedAt(at);
   }
 
   Future<void> _idle() async {
@@ -304,6 +318,7 @@ class _BoardMapState extends State<BoardMap> {
       },
       trackCameraPosition: true,
       onCameraIdle: () => unawaited(_idle()),
+      onMapClick: (Point<double> _, LatLng at) => _tappedAt(at),
       onMapLongClick: (Point<double> _, LatLng at) =>
           props.onLongPress(GeoPoint(at.latitude, at.longitude)),
       compassEnabled: false,

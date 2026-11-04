@@ -19,13 +19,14 @@ npm ci
 npm run typecheck
 npm test                      # rules tests on the Firestore emulator (demo-hopin, never the live project)
 firebase deploy --only firestore   # from the repo root, only after the rules tests pass, and with an OK
+firebase deploy --only hosting     # the shared ride's page (firebase/hosting/public), with an OK
 
 # Release tooling, from the repo root with .venv active
 pip install -r scripts/requirements-dev.txt
 ruff format .                 # CI fails on unformatted code
 ruff check .
 pytest scripts
-python scripts/map_style/build_styles.py   # regenerate app/assets/map/board_*.json from OpenFreeMap; the outputs are committed
+python scripts/map_style/build_styles.py   # regenerate the Board map styles from OpenFreeMap (app/assets/map and firebase/hosting/public/map); the outputs are committed
 ```
 
 Dart tests mirror `lib/` under `app/test/`.
@@ -33,8 +34,8 @@ Dart tests mirror `lib/` under `app/test/`.
 ## Architecture rules
 
 - Firebase config lives in `lib/firebase_options.dart`, written from `firebase apps:sdkconfig ANDROID` (no Google services Gradle plugin); Google sign-in asks for an ID token for the project's web OAuth client (`googleServerClientId`). The API key is not in it: it comes from `app/firebase.local.json` (git-ignored, `{"HOPIN_FIREBASE_API_KEY": "..."}`) on this PC and from the `FIREBASE_API_KEY` secret in Actions, and the app refuses to start without it.
-- Firebase Spark plan only: Firestore and Authentication (Google). Nothing that needs the Blaze plan or a card: no Cloud Functions, Cloud Storage, scheduled backups or point-in-time recovery.
-- Screens read only the local drift database. Repositories write to drift and Firestore together; the sync engine pulls changes after its cursor (`updatedAt > cursor`). Never query Firestore from a screen or a Cubit.
+- Firebase Spark plan only: Firestore, Authentication (Google) and Hosting (the shared ride's page). Nothing that needs the Blaze plan or a card: no Cloud Functions, Cloud Storage, scheduled backups or point-in-time recovery.
+- Screens read only the local drift database. Repositories write to drift and Firestore together; the sync engine pulls changes after its cursor (`updatedAt > cursor`). Never query Firestore from a screen or a Cubit. The one exception is a live share: the other rider's open share comes straight from Firestore through `Shares` (`lib/core/share/`), since a live position has nothing worth keeping.
 - Every synced document has `updatedAt` (a server timestamp). Deletes are soft (`deletedAt`).
 - Access is enforced in `firebase/firestore.rules`, never only in the UI. A rules change starts with a failing rules test.
 - Bus logic and guide maths live in `lib/core/ride/` as plain Dart with no Flutter or plugin imports, tested against synthetic traces in `test/fixtures/traces/` (never real rides).

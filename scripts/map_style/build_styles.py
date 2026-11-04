@@ -3,9 +3,10 @@
 Run from the repo root: `python scripts/map_style/build_styles.py`. It fetches
 OpenFreeMap's Positron (day) and Dark (night) styles, keeps only what Hopin
 shows (land, water, parks, buildings, streets and town names), recolours them
-to the Board palette (app/lib/app/theme.dart), and writes
-app/assets/map/board_light.json and board_dark.json. Tiles, fonts and the
-attribution still come from OpenFreeMap at run time.
+to the Board palette (app/lib/app/theme.dart), and writes board_light.json
+and board_dark.json for the app (app/assets/map) and for the shared ride's
+web page (firebase/hosting/public/map). Tiles, fonts and the attribution
+still come from OpenFreeMap at run time.
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ from pathlib import Path
 
 SOURCE = "https://tiles.openfreemap.org/styles/{name}"
 AGENT = "hopin-map-style/1 (https://github.com/ThivaaVipul/hopin)"
-OUT = Path("app/assets/map")
+OUT = (Path("app/assets/map"), Path("firebase/hosting/public/map"))
 
 PALETTES: dict[str, dict[str, str]] = {
     "light": {
@@ -111,13 +112,23 @@ def fetch(name: str) -> dict:
         return json.load(response)
 
 
+def write(style: dict, mode: str, outs: tuple[Path, ...] | list[Path] = OUT) -> list[Path]:
+    """Writes `style` as board_<mode>.json into each of `outs`, the same text in each."""
+    text = json.dumps(style, indent=1, ensure_ascii=False) + "\n"
+    written = []
+    for out in outs:
+        out.mkdir(parents=True, exist_ok=True)
+        path = out / f"board_{mode}.json"
+        path.write_text(text, encoding="utf-8")
+        written.append(path)
+    return written
+
+
 def main() -> None:
-    OUT.mkdir(parents=True, exist_ok=True)
     for mode, base in (("light", "positron"), ("dark", "dark")):
         style = recolor(fetch(base), PALETTES[mode])
-        path = OUT / f"board_{mode}.json"
-        path.write_text(json.dumps(style, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-        print(f"{path}: {len(style['layers'])} layers")
+        for path in write(style, mode):
+            print(f"{path}: {len(style['layers'])} layers")
 
 
 if __name__ == "__main__":

@@ -121,5 +121,18 @@
   "notBusQuestion": "பஸ் அல்லாத பயணத்துக்கு வழி சேமிக்கப்படாது. நீக்கவா?",
   "durationMinutes": "{minutes} நிமி",
   "durationHours": "{hours} மணி {minutes} நிமி",
-  "timeRange": "{start} - {end}"
+  "timeRange": "{start} - {end}",
+  "share": "பகிர்",
+  "sharingRide": "இந்தப் பயணம் பகிரப்படுகிறது",
+  "sendLink": "இணைப்பை அனுப்பு",
+  "stopSharing": "பகிர்வதை நிறுத்து",
+  "followMyRide": "என் பஸ் பயணத்தை நேரலையில் பாருங்கள்: {link}",
+  "sharedRide": "பகிர்ந்த பயணம்",
+  "sharedRideTo": "{stop} நோக்கிப் பகிர்ந்த பயணம்",
+  "watch": "பார்",
+  "updatedJustNow": "இப்போது புதுப்பிக்கப்பட்டது",
+  "updatedSecondsAgo": "{seconds} வினாடி முன் புதுப்பிக்கப்பட்டது",
+  "updatedMinutesAgo": "{minutes} நிமி முன் புதுப்பிக்கப்பட்டது",
+  "lostContact": "தொடர்பு இல்லை",
+  "shareRidesHere": "இங்கு செல்லும் பயணங்களைப் பகிர்"
 }

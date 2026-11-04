@@ -81,6 +81,7 @@ class PlacesSync {
             'placeTa': row.placeTa,
             'placeSi': row.placeSi,
             'order': row.position,
+            'shareRides': row.shareRides,
           }, deleted: row.deletedAt != null);
         } on Object catch (error, stack) {
           // Refused or unreachable: the row stays pending and goes up with
@@ -122,6 +123,7 @@ class PlacesSync {
                 placeTa: Value(d['placeTa'] as String?),
                 placeSi: Value(d['placeSi'] as String?),
                 position: Value(d['order'] as int? ?? 0),
+                shareRides: Value(d['shareRides'] == true),
                 updatedAt: doc.updatedAt,
                 deletedAt: Value(d['deletedAt'] as int?),
                 pendingSince: const Value(null),

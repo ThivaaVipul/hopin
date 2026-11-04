@@ -142,6 +142,13 @@ describe('places', () => {
     await assertFails(deleteDoc(doc(db, 'people/r1/places/p1')));
   });
 
+  it('can share rides there, or not', async () => {
+    const db = rider('r1');
+    await assertSucceeds(setDoc(doc(db, 'people/r1/places/p1'), place({ shareRides: true })));
+    await assertSucceeds(setDoc(doc(db, 'people/r1/places/p2'), place({ shareRides: false })));
+    await assertFails(setDoc(doc(db, 'people/r1/places/p3'), place({ shareRides: 'yes' })));
+  });
+
   it('keeps your own order', async () => {
     const db = rider('r1');
     await assertSucceeds(setDoc(doc(db, 'people/r1/places/p1'), place({ order: 0 })));
@@ -372,3 +379,115 @@ describe('rides', () => {
   });
 });
 
+// A live share (docs/PLAN.md, Sharing and stops): an unguessable id, the
+// rider's position and where they are going; no name.
+const shareId = 'Kq3vT9xLmP2wZr7NbY4c';
+
+function share(changes: Fields = {}): Fields {
+  return {
+    uid: 'r1',
+    lat: 6.9101,
+    lng: 79.8523,
+    toName: 'Fort',
+    toTa: 'கோட்டை',
+    toLat: 6.9344,
+    toLng: 79.8501,
+    leftMin: 12,
+    metresLeft: 2400,
+    startedAt: Timestamp.now(),
+    endedAt: null,
+    updatedAt: serverTimestamp(),
+    ...changes,
+  };
+}
+
+describe('shares', () => {
+  it('lets a rider share a ride, and anyone with its link watch it', async () => {
+    await assertSucceeds(setDoc(doc(rider('r1'), `shares/${shareId}`), share()));
+    await assertSucceeds(getDoc(doc(signedOut(), `shares/${shareId}`)));
+    await assertSucceeds(getDoc(doc(stranger('s1'), `shares/${shareId}`)));
+  });
+
+  it('lets only riders look for open shares', async () => {
+    await seed(`shares/${shareId}`, share({ updatedAt: Timestamp.now() }));
+    const open = (db: Firestore) => getDocs(query(collection(db, 'shares'), where('endedAt', '==', null)));
+    await assertSucceeds(open(rider('r2')));
+    await assertFails(open(signedOut()));
+    await assertFails(open(stranger('s1')));
+  });
+
+  it('only its rider writes or removes it', async () => {
+    await seed(`shares/${shareId}`, share({ updatedAt: Timestamp.now() }));
+    await assertFails(updateDoc(doc(rider('r2'), `shares/${shareId}`), { lat: 6.92, updatedAt: serverTimestamp() }));
+    await assertFails(deleteDoc(doc(rider('r2'), `shares/${shareId}`)));
+    await assertFails(setDoc(doc(rider('r2'), 'shares/Zz9vT9xLmP2wZr7NbY4c'), share()));
+    await assertFails(setDoc(doc(signedOut(), 'shares/Zz9vT9xLmP2wZr7NbY4c'), share()));
+    await assertSucceeds(updateDoc(doc(rider('r1'), `shares/${shareId}`), { lat: 6.92, updatedAt: serverTimestamp() }));
+    await assertSucceeds(deleteDoc(doc(rider('r1'), `shares/${shareId}`)));
+  });
+
+  it('ends without a position, for good', async () => {
+    const db = rider('r1');
+    await assertSucceeds(setDoc(doc(db, `shares/${shareId}`), share()));
+    await assertFails(
+      updateDoc(doc(db, `shares/${shareId}`), { endedAt: Timestamp.now(), updatedAt: serverTimestamp() }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(db, `shares/${shareId}`), {
+        endedAt: Timestamp.now(),
+        lat: null,
+        lng: null,
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(db, `shares/${shareId}`), { endedAt: null, lat: 6.92, lng: 79.85, updatedAt: serverTimestamp() }),
+    );
+    await assertFails(setDoc(doc(db, 'shares/Yy9vT9xLmP2wZr7NbY4c'), share({ endedAt: Timestamp.now(), lat: null, lng: null })));
+  });
+
+  it('needs a long, plain link', async () => {
+    const db = rider('r1');
+    await assertFails(setDoc(doc(db, 'shares/abc'), share()));
+    await assertFails(setDoc(doc(db, 'shares/Kq3vT9xLmP2wZr7NbY4c-x'), share()));
+  });
+
+  it('checks every field, and holds no name', async () => {
+    const db = rider('r1');
+    const bad: Fields[] = [
+      { uid: 'r2' },
+      { name: 'Rider One' },
+      { lat: 91 },
+      { lng: '79.8' },
+      { toName: 'x'.repeat(201) },
+      { toTa: '' },
+      { toLat: -91 },
+      { leftMin: -1 },
+      { leftMin: 1.5 },
+      { leftMin: 1441 },
+      { metresLeft: 2_000_001 },
+      { startedAt: 'now' },
+      { updatedAt: Timestamp.now() },
+    ];
+    for (const changes of bad) {
+      await assertFails(setDoc(doc(db, `shares/${shareId}`), share(changes)));
+    }
+    const { startedAt: _s, ...noStart } = share();
+    await assertFails(setDoc(doc(db, `shares/${shareId}`), noStart));
+    // A noticed ride has no destination.
+    await assertSucceeds(
+      setDoc(
+        doc(db, `shares/${shareId}`),
+        share({ toName: null, toTa: null, toLat: null, toLng: null, leftMin: null, metresLeft: null }),
+      ),
+    );
+  });
+
+  it("can't move its start or change hands", async () => {
+    const db = rider('r1');
+    await assertSucceeds(setDoc(doc(db, `shares/${shareId}`), share()));
+    await assertFails(
+      updateDoc(doc(db, `shares/${shareId}`), { startedAt: Timestamp.fromMillis(0), updatedAt: serverTimestamp() }),
+    );
+  });
+});

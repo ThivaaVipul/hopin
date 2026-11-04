@@ -8,10 +8,12 @@ import 'package:hopin/core/guide/foreground_guide.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/profile/profile_repository.dart';
 import 'package:hopin/core/search/nominatim.dart';
+import 'package:hopin/core/share/shares.dart';
 import 'package:hopin/core/update/updates.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
 import 'package:hopin/features/rides/widgets/ride_map.dart';
 import 'package:hopin/firebase_options.dart';
+import 'package:share_plus/share_plus.dart';
 
 Future<void> main() async {
   if (HopinFirebase.apiKey.isEmpty) {
@@ -35,6 +37,9 @@ Future<void> main() async {
       mapBuilder: boardMap,
       rideMapBuilder: boardRideMap,
       guide: ForegroundGuideService(),
+      shares: FirestoreShares(),
+      shareSheet: (text) async =>
+          SharePlus.instance.share(ShareParams(text: text)),
       updates: GitHubUpdates(),
     ),
   );

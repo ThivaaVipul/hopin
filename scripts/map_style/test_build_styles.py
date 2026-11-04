@@ -1,4 +1,4 @@
-from build_styles import PALETTES, recolor
+from build_styles import OUT, PALETTES, recolor, write
 
 STYLE = {
     "version": 8,
@@ -63,3 +63,15 @@ def test_town_names_in_english_with_a_halo():
 def test_leaves_the_source_style_alone():
     recolor(STYLE, PALETTES["light"])
     assert "paint" not in STYLE["layers"][0]
+
+
+def test_writes_each_style_for_the_app_and_the_web_page(tmp_path):
+    assert [str(path).replace("\\", "/") for path in OUT] == [
+        "app/assets/map",
+        "firebase/hosting/public/map",
+    ]
+    outs = [tmp_path / "app", tmp_path / "web"]
+    style = recolor(STYLE, PALETTES["dark"])
+    written = write(style, "dark", outs)
+    assert [path.name for path in written] == ["board_dark.json", "board_dark.json"]
+    assert written[0].read_text(encoding="utf-8") == written[1].read_text(encoding="utf-8")

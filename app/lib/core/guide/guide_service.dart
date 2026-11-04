@@ -66,6 +66,26 @@ class RideLogged extends GuideEvent {
   List<Object?> get props => [ride];
 }
 
+/// The ride's share started under [id], or stopped (null).
+class ShareChanged extends GuideEvent {
+  const ShareChanged(this.id);
+
+  final String? id;
+
+  @override
+  List<Object?> get props => [id];
+}
+
+/// A bus ride with no guide is on, since [since]: Home shows its bar.
+class RideNoticed extends GuideEvent {
+  const RideNoticed(this.since);
+
+  final DateTime since;
+
+  @override
+  List<Object?> get props => [since];
+}
+
 /// Whether Hopin notices bus rides (docs/PLAN.md, Ride detection), and the
 /// two permissions it needs.
 class Detection extends Equatable {
@@ -93,6 +113,9 @@ enum PhoneMaker { xiaomi, samsung, other }
 abstract interface class GuideService {
   /// The guide running now, if any; it outlives the app's screens.
   Future<GuideRide?> running();
+
+  /// Whether the ride service runs at all (a guide, or a watched ride).
+  Future<bool> serviceRunning();
 
   /// Starts a guide; false when Android refuses.
   Future<bool> start(GuideRide ride);
@@ -148,4 +171,10 @@ abstract interface class GuideService {
 
   /// Test builds: starts watching a ride now, without a vehicle.
   Future<void> detectNow();
+
+  /// Shares the running ride under [id] (its link is shareLink(id)); the
+  /// service answers with [ShareChanged].
+  Future<void> share(String id);
+
+  Future<void> stopSharing();
 }

@@ -4,7 +4,9 @@ import 'package:hopin/app/widgets/led_dots.dart';
 import 'package:hopin/app/widgets/rolling.dart';
 import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/core/ride/guide.dart';
+import 'package:hopin/features/home/widgets/share_parts.dart';
 import 'package:hopin/l10n/app_localizations.dart';
+import 'package:hopin/l10n/time_left.dart';
 
 /// The ride board (docs/PLAN.md, The guide and Look): the stop's Sinhala name
 /// in amber as on the bus, the distance and time left, the board's lights as
@@ -18,6 +20,8 @@ class RideBoard extends StatelessWidget {
     required this.near,
     required this.onEnd,
     required this.onKeep,
+    this.sharing = false,
+    this.onShare,
   });
 
   final GuideRide ride;
@@ -31,6 +35,11 @@ class RideBoard extends StatelessWidget {
 
   /// Keep, while the guide asks "Still going to (stop)?".
   final VoidCallback onKeep;
+
+  /// The ride is shared live; Share opens the share sheet, or the sharing
+  /// choices once shared.
+  final bool sharing;
+  final VoidCallback? onShare;
 
   /// The progress lights.
   static const lights = 10;
@@ -196,6 +205,14 @@ class _Board extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                 ],
+                if (board.onShare case final onShare?) ...[
+                  ShareRideButton(
+                    sharing: board.sharing,
+                    onPressed: onShare,
+                    ink: ink.text,
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 OutlinedButton.icon(
                   onPressed: board.onEnd,
                   icon: const Icon(Icons.stop_rounded, size: 20),
@@ -237,7 +254,7 @@ class _Numbers extends StatelessWidget {
     final big = text.displayMedium?.copyWith(color: ink.text, height: 1);
     final unit = text.titleLarge?.copyWith(color: ink.muted);
     final left = status.left;
-    final minutes = left == null ? null : l.minutesLeft(wholeMinutes(left));
+    final minutes = left == null ? null : l.timeLeft(wholeMinutes(left));
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [

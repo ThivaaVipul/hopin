@@ -11,12 +11,14 @@ import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/places/place.dart';
 import 'package:hopin/core/search/nominatim.dart';
+import 'package:hopin/core/share/shares.dart';
 import 'package:hopin/features/home/cubit/home_cubit.dart';
 import 'package:hopin/features/home/widgets/home_parts.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
 import 'package:hopin/features/home/widgets/maker_steps.dart';
 import 'package:hopin/features/home/widgets/question_card.dart';
 import 'package:hopin/features/home/widgets/ride_board.dart';
+import 'package:hopin/features/home/widgets/share_parts.dart';
 import 'package:hopin/features/update/cubit/update_cubit.dart';
 import 'package:hopin/features/update/widgets/update_banner.dart';
 import 'package:hopin/l10n/app_localizations.dart';
@@ -37,6 +39,7 @@ class HomePage extends StatelessWidget {
           context.read<LocationService>(),
           context.read<Nominatim>(),
           context.read<GuideService>(),
+          shares: context.read<Shares>(),
         );
         unawaited(cubit.start());
         return cubit;
@@ -100,10 +103,11 @@ class _HomeViewState extends State<_HomeView> {
           '',
       kind: saved?.kind ?? PlaceKind.other,
       editing: saved != null,
+      shareRides: saved?.shareRides ?? false,
     );
     switch (edit) {
-      case SavePlaceEdit(:final name, :final kind):
-        await cubit.save(name: name, kind: kind);
+      case SavePlaceEdit(:final name, :final kind, :final shareRides):
+        await cubit.save(name: name, kind: kind, shareRides: shareRides);
       case DeletePlaceEdit():
         if (saved != null) await cubit.removePlace(saved);
       case null:
@@ -118,15 +122,35 @@ class _HomeViewState extends State<_HomeView> {
       name: place.name,
       kind: place.kind,
       editing: true,
+      shareRides: place.shareRides,
     );
     switch (edit) {
-      case SavePlaceEdit(:final name, :final kind):
-        await cubit.updatePlace(place.copyWith(name: name, kind: kind));
+      case SavePlaceEdit(:final name, :final kind, :final shareRides):
+        await cubit.updatePlace(
+          place.copyWith(name: name, kind: kind, shareRides: shareRides),
+        );
       case DeletePlaceEdit():
         await cubit.removePlace(place);
       case null:
         break;
     }
+  }
+
+  /// Share, on the ride board or bar: the share sheet with the ride's link;
+  /// once shared, Send link again or Stop sharing.
+  Future<void> _share(BuildContext context) async {
+    final l = AppLocalizations.of(context);
+    final cubit = context.read<HomeCubit>();
+    final sheet = context.read<ShareSheet>();
+    if (cubit.state.sharing != null) {
+      final choice = await showSharingSheet(context);
+      if (choice == SharingChoice.stop) {
+        await cubit.stopSharing();
+        return;
+      }
+      if (choice != SharingChoice.send) return;
+    }
+    await sheet(l.followMyRide(await cubit.share()));
   }
 
   void _start(BuildContext context, Destination destination) {
@@ -204,6 +228,15 @@ class _HomeViewState extends State<_HomeView> {
         ),
         BlocListener<HomeCubit, HomeState>(
           listenWhen: (before, now) =>
+              now.watching &&
+              (!before.watching || before.other?.at != now.other?.at),
+          listener: (context, state) {
+            final at = state.other?.at;
+            if (at != null) _camera.flyTo(at);
+          },
+        ),
+        BlocListener<HomeCubit, HomeState>(
+          listenWhen: (before, now) =>
               now.notice != null && before.notice != now.notice,
           listener: (context, state) => _notify(context, state.notice!),
         ),
@@ -234,6 +267,8 @@ class _HomeViewState extends State<_HomeView> {
               near: near?.names.inLanguage(language) ?? near?.area,
               onEnd: cubit.endGuide,
               onKeep: cubit.keepGoing,
+              sharing: state.sharing != null,
+              onShare: () => unawaited(_share(context)),
             ),
             HomeState(location: LocationStatus.explain) => ReasonCard(
               key: const ValueKey('location'),
@@ -246,11 +281,23 @@ class _HomeViewState extends State<_HomeView> {
               places: state.places,
               onAnswer: (button) => unawaited(cubit.answer(button)),
             ),
+            HomeState(:final noticedSince?) => RideBar(
+              key: const ValueKey('noticed'),
+              since: noticedSince,
+              sharing: state.sharing != null,
+              onShare: () => unawaited(_share(context)),
+              onEnd: () => unawaited(cubit.endRide()),
+            ),
             HomeState(explainNotifications: true) => ReasonCard(
               key: const ValueKey('notifications'),
               reason: l.notificationsWhy,
               onContinue: cubit.continueToNotifications,
               onNotNow: cubit.skipNotifications,
+            ),
+            HomeState(watching: true, :final other?) => WatchPanel(
+              key: ValueKey('watch ${other.id}'),
+              share: other,
+              onClose: cubit.closeWatch,
             ),
             HomeState(:final destination?) => DestinationPanel(
               key: ValueKey(destination.point),
@@ -260,6 +307,12 @@ class _HomeViewState extends State<_HomeView> {
               onSave: () => _savePlace(context),
               onStart: () => _start(context, destination),
               onClose: cubit.clear,
+            ),
+            HomeState(:final other?) => SharedRideCard(
+              key: ValueKey('shared ${other.id}'),
+              share: other,
+              onWatch: cubit.watch,
+              onNotNow: cubit.dismissShare,
             ),
             HomeState(offerDetection: true) => ReasonCard(
               key: const ValueKey('detection'),
@@ -285,6 +338,10 @@ class _HomeViewState extends State<_HomeView> {
                       camera: _camera,
                       onLongPress: cubit.dropPin,
                       dark: Theme.of(context).brightness == Brightness.dark,
+                      watched: state.watching ? state.other?.at : null,
+                      watchedGoal: state.watching
+                          ? state.other?.goal?.point
+                          : null,
                     ),
                   ),
                 ),

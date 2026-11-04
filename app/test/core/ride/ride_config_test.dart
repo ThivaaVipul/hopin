@@ -52,4 +52,15 @@ void main() {
     expect(ride.stages, config.stages);
     expect(ride.language, 'ta');
   });
+
+  test('a place shared by itself starts its guide shared', () {
+    final shared = fort.copyWith(shareRides: true);
+    final config = RideConfig(places: [shared]);
+    expect(config.guideTo(shared).share, isTrue);
+    expect(config.guideTo(fort).share, isFalse);
+    final back = RideConfig.fromJson(config.toJson());
+    expect(back.places.single.shareRides, isTrue);
+    final ride = config.guideTo(shared);
+    expect(GuideRide.fromJson(ride.toJson()), ride);
+  });
 }

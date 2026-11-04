@@ -410,4 +410,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String timeRange(String start, String end) {
     return '$start - $end';
   }
+
+  @override
+  String get share => 'Share';
+
+  @override
+  String get sharingRide => 'Sharing this ride';
+
+  @override
+  String get sendLink => 'Send link';
+
+  @override
+  String get stopSharing => 'Stop sharing';
+
+  @override
+  String followMyRide(String link) {
+    return 'Follow my bus ride live: $link';
+  }
+
+  @override
+  String get sharedRide => 'Shared ride';
+
+  @override
+  String sharedRideTo(String stop) {
+    return 'Shared ride to $stop';
+  }
+
+  @override
+  String get watch => 'Watch';
+
+  @override
+  String get updatedJustNow => 'Updated just now';
+
+  @override
+  String updatedSecondsAgo(int seconds) {
+    return 'Updated $seconds s ago';
+  }
+
+  @override
+  String updatedMinutesAgo(int minutes) {
+    return 'Updated $minutes min ago';
+  }
+
+  @override
+  String get lostContact => 'Lost contact';
+
+  @override
+  String get shareRidesHere => 'Share rides here';
 }

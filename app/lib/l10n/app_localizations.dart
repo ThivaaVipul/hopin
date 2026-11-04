@@ -829,6 +829,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{start} - {end}'**
   String timeRange(String start, String end);
+
+  /// The ride's Share button.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get share;
+
+  /// The ride is being shared live.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing this ride'**
+  String get sharingRide;
+
+  /// Sends the ride's link again.
+  ///
+  /// In en, this message translates to:
+  /// **'Send link'**
+  String get sendLink;
+
+  /// Ends the live share.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop sharing'**
+  String get stopSharing;
+
+  /// The message sent with the link.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow my bus ride live: {link}'**
+  String followMyRide(String link);
+
+  /// The other rider's share, with no destination.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared ride'**
+  String get sharedRide;
+
+  /// The other rider's share, going to a stop.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared ride to {stop}'**
+  String sharedRideTo(String stop);
+
+  /// Shows the other rider's share on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch'**
+  String get watch;
+
+  /// When the shared position last changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated just now'**
+  String get updatedJustNow;
+
+  /// When the shared position last changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {seconds} s ago'**
+  String updatedSecondsAgo(int seconds);
+
+  /// When the shared position last changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Updated {minutes} min ago'**
+  String updatedMinutesAgo(int minutes);
+
+  /// No update from the shared ride for 10 minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Lost contact'**
+  String get lostContact;
+
+  /// The place editor: a guide here shares the ride by itself.
+  ///
+  /// In en, this message translates to:
+  /// **'Share rides here'**
+  String get shareRidesHere;
 }
 
 class _AppLocalizationsDelegate

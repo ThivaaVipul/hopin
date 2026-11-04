@@ -15,8 +15,10 @@ import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/profile/profile_repository.dart';
 import 'package:hopin/core/search/nominatim.dart';
+import 'package:hopin/core/share/shares.dart';
 import 'package:hopin/core/update/updates.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
+import 'package:hopin/features/home/widgets/share_parts.dart';
 import 'package:hopin/features/rides/widgets/ride_map.dart';
 import 'package:hopin/features/update/cubit/update_cubit.dart';
 import 'package:hopin/l10n/app_localizations.dart';
@@ -39,6 +41,8 @@ class HopinApp extends StatefulWidget {
     required this.mapBuilder,
     required this.rideMapBuilder,
     required this.guide,
+    required this.shares,
+    required this.shareSheet,
     required this.updates,
     this.locale = const Locale('en'),
   });
@@ -52,6 +56,8 @@ class HopinApp extends StatefulWidget {
   final MapBuilder mapBuilder;
   final RideMapBuilder rideMapBuilder;
   final GuideService guide;
+  final Shares shares;
+  final ShareSheet shareSheet;
   final UpdateService updates;
   final Locale locale;
 
@@ -96,6 +102,8 @@ class _HopinAppState extends State<HopinApp> {
       RepositoryProvider<MapBuilder>.value(value: widget.mapBuilder),
       RepositoryProvider<RideMapBuilder>.value(value: widget.rideMapBuilder),
       RepositoryProvider<GuideService>.value(value: widget.guide),
+      RepositoryProvider<Shares>.value(value: widget.shares),
+      RepositoryProvider<ShareSheet>.value(value: widget.shareSheet),
     ],
     child: MultiBlocProvider(
       providers: [

@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart'
     hide NotificationVisibility;
@@ -15,7 +17,11 @@ import 'package:hopin/core/ride/guide_engine.dart';
 import 'package:hopin/core/ride/patterns.dart';
 import 'package:hopin/core/ride/ride_config.dart';
 import 'package:hopin/core/ride/ride_record.dart';
+import 'package:hopin/core/share/share.dart';
+import 'package:hopin/core/share/shares.dart';
+import 'package:hopin/firebase_options.dart';
 import 'package:hopin/l10n/app_localizations.dart';
+import 'package:hopin/l10n/time_left.dart';
 import 'package:vibration/vibration.dart';
 
 /// A button on one of the ride service's alerts (On a bus?, Keep): handed
@@ -56,6 +62,10 @@ String placeButton(int index) => 'place$index';
 
 /// From the app: a guide was saved under [rideKey]; guide to it.
 const guideNow = 'guide';
+
+/// From the app: share the ride under this id ({shareCommand: id}), or stop.
+const shareCommand = 'share';
+const stopShareCommand = 'stopShare';
 
 /// The ride service's entry point. flutter_foreground_task runs it in an
 /// isolate of its own, which lives on when the app is swiped away.
@@ -99,6 +109,12 @@ class RideTask extends TaskHandler {
   var _arrived = false;
   var _gaveUp = false;
 
+  /// The open share, if any (docs/PLAN.md, Sharing and stops).
+  String? _shareId;
+  ShareWriter? _shares;
+  final _pacer = SharePacer();
+  GeoPoint? _here;
+
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
     _startedAt = DateTime.now();
@@ -137,6 +153,7 @@ class RideTask extends TaskHandler {
     _verdict = RideVerdict.bus;
     _asking = false;
     if (kDebugMode) debugPrint('guide: started to ${ride.title}');
+    if (ride.share && _shareId == null) unawaited(_startShare(newShareId()));
   }
 
   void _follow() {
@@ -190,6 +207,7 @@ class RideTask extends TaskHandler {
       accuracy: position.accuracy,
     );
     _logic.add(fix);
+    _here = fix.point;
     final engine = _engine;
     if (engine == null) {
       if (kDebugMode) {
@@ -197,6 +215,7 @@ class RideTask extends TaskHandler {
           'ride: ${_logic.distance.round()} m, score ${_logic.score.toStringAsFixed(2)}',
         );
       }
+      _shareFix(fix.point);
       if (_verdict == null && !_asking && _logic.ask) await _askOnABus();
       return;
     }
@@ -214,6 +233,7 @@ class RideTask extends TaskHandler {
     if (ride == null || l == null || step == null) return;
     final status = _status = step.status;
     FlutterForegroundTask.sendDataToMain(statusMessage(status));
+    _shareFix(fix.point);
     switch (step.alert) {
       case StageDue(:final index):
         final last = index == ride.stages.length - 1;
@@ -316,6 +336,105 @@ class RideTask extends TaskHandler {
       notificationText: '',
       notificationButtons: [NotificationButton(id: endButton, text: l.end)],
     );
+    FlutterForegroundTask.sendDataToMain(_ridingMessage());
+  }
+
+  /// A bus ride with no guide: Home shows its slim bar.
+  Map<String, Object?> _ridingMessage() => {
+    'type': 'riding',
+    'since': (_logic.startedAt ?? _startedAt).microsecondsSinceEpoch,
+  };
+
+  /// Shares the ride under [id] (the app's Share, or a guide to a place
+  /// shared by itself); one share at a time.
+  Future<void> _startShare(String id) async {
+    if (_shareId != null) {
+      FlutterForegroundTask.sendDataToMain(_sharingMessage());
+      return;
+    }
+    final shares = await _writer();
+    final uid = shares == null ? null : FirebaseAuth.instance.currentUser?.uid;
+    if (shares == null || uid == null || _shareId != null) return;
+    _shareId = id;
+    final here = _here;
+    // Not awaited: offline, Firestore keeps the write until it can send it,
+    // and the ride never waits on the network.
+    unawaited(
+      shares
+          .open(
+            id,
+            uid: uid,
+            startedAt: _logic.startedAt ?? _startedAt,
+            at: here,
+            goal: _goal(),
+          )
+          .catchError(_shareFailed),
+    );
+    if (here != null) _pacer.sent(here, DateTime.now());
+    if (kDebugMode) debugPrint('share: started');
+    FlutterForegroundTask.sendDataToMain(_sharingMessage());
+  }
+
+  void _shareFix(GeoPoint here) {
+    final id = _shareId;
+    final shares = _shares;
+    final now = DateTime.now();
+    if (id == null || shares == null || !_pacer.due(here, now)) return;
+    _pacer.sent(here, now);
+    unawaited(
+      shares.move(id, at: here, goal: _goal()).catchError(_shareFailed),
+    );
+  }
+
+  /// Ends the share: it is deleted, and the link says the ride ended.
+  Future<void> _endShare() async {
+    final id = _shareId;
+    final shares = _shares;
+    if (id == null || shares == null) return;
+    _shareId = null;
+    if (kDebugMode) debugPrint('share: ended');
+    FlutterForegroundTask.sendDataToMain(_sharingMessage());
+    // Queued at once; waited for a moment only, as the service may be going.
+    await shares
+        .close(id)
+        .timeout(const Duration(seconds: 3))
+        .catchError(_shareFailed);
+  }
+
+  void _shareFailed(Object error) {
+    if (kDebugMode) debugPrint('share: $error');
+  }
+
+  Map<String, Object?> _sharingMessage() => {'type': 'sharing', 'id': _shareId};
+
+  /// Where a guided ride is going, for its share.
+  ShareGoal? _goal() {
+    final ride = _ride;
+    if (ride == null) return null;
+    final status = _status;
+    final left = status?.left;
+    return ShareGoal(
+      name: ride.title,
+      nameTa: ride.names.ta,
+      point: ride.to,
+      minutesLeft: left == null ? null : wholeMinutes(left),
+      metresLeft: status?.metres.round(),
+    );
+  }
+
+  /// Firebase in the service's own isolate, started the first time a ride
+  /// is shared.
+  Future<ShareWriter?> _writer() async {
+    if (_shares case final shares?) return shares;
+    try {
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(options: HopinFirebase.android);
+      }
+      return _shares = FirestoreShares();
+    } on Object catch (error) {
+      if (kDebugMode) debugPrint('share: no Firebase ($error)');
+      return null;
+    }
   }
 
   /// The app started a guide during a watched ride.
@@ -397,7 +516,7 @@ class RideTask extends TaskHandler {
       _ when status.asking => (l.stillGoing(_ride!.title), to),
       GuidePhase.riding => (
         to,
-        left == null ? '' : l.minutesLeft(wholeMinutes(left)),
+        left == null ? '' : l.timeLeft(wholeMinutes(left)),
       ),
       GuidePhase.getOff => (l.getOffNext, to),
       GuidePhase.passed => (l.passedStop, to),
@@ -435,6 +554,16 @@ class RideTask extends TaskHandler {
       if (_asking) {
         FlutterForegroundTask.sendDataToMain({'type': 'asking'});
       }
+      if (_engine == null && _verdict == RideVerdict.bus) {
+        FlutterForegroundTask.sendDataToMain(_ridingMessage());
+      }
+      if (_shareId != null) {
+        FlutterForegroundTask.sendDataToMain(_sharingMessage());
+      }
+    } else if (data case {shareCommand: final String id}) {
+      unawaited(_startShare(id));
+    } else if (data == stopShareCommand) {
+      unawaited(_endShare());
     } else if (data == keepButton) {
       unawaited(_keepGoing());
     } else if (data == guideNow) {
@@ -459,6 +588,7 @@ class RideTask extends TaskHandler {
   Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {
     if (kDebugMode) debugPrint('guide: ended, arrived: $_arrived');
     _lost();
+    await _endShare();
     // Ending stops a buzz still playing; arriving lets its tap finish.
     if (!_arrived) await Vibration.cancel();
     await _alerts.cancel(id: _alertId);

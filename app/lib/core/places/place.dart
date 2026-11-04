@@ -31,6 +31,7 @@ class SavedPlace extends Equatable {
     required this.kind,
     required this.point,
     this.names = const PlaceNames(),
+    this.shareRides = false,
   });
 
   final String id;
@@ -39,16 +40,21 @@ class SavedPlace extends Equatable {
   final GeoPoint point;
   final PlaceNames names;
 
-  SavedPlace copyWith({String? name, PlaceKind? kind}) => SavedPlace(
-    id: id,
-    name: name ?? this.name,
-    kind: kind ?? this.kind,
-    point: point,
-    names: names,
-  );
+  /// A guide here shares the ride by itself (docs/PLAN.md, Sharing and stops).
+  final bool shareRides;
+
+  SavedPlace copyWith({String? name, PlaceKind? kind, bool? shareRides}) =>
+      SavedPlace(
+        id: id,
+        name: name ?? this.name,
+        kind: kind ?? this.kind,
+        point: point,
+        names: names,
+        shareRides: shareRides ?? this.shareRides,
+      );
 
   @override
-  List<Object?> get props => [id, name, kind, point, names];
+  List<Object?> get props => [id, name, kind, point, names, shareRides];
 }
 
 /// Somewhere the rider might go: a search result, a dropped pin or a saved place.

@@ -48,7 +48,7 @@ service cloud.firestore {
         function validPlace() {
           let data = request.resource.data;
           let before = resource == null ? null : resource.data.get('deletedAt', null);
-          return data.keys().hasOnly(['name', 'kind', 'lat', 'lng', 'placeEn', 'placeTa', 'placeSi', 'updatedAt', 'deletedAt'])
+          return data.keys().hasOnly(['name', 'kind', 'lat', 'lng', 'placeEn', 'placeTa', 'placeSi', 'order', 'updatedAt', 'deletedAt'])
             && data.keys().hasAll(['name', 'kind', 'lat', 'lng', 'updatedAt'])
             && isString(data.name, 1, 40)
             && data.kind in ['home', 'work', 'uni', 'other']
@@ -57,12 +57,45 @@ service cloud.firestore {
             && optionalName(data, 'placeEn')
             && optionalName(data, 'placeTa')
             && optionalName(data, 'placeSi')
+            && (!('order' in data) || (data.order is int && data.order >= 0 && data.order <= 999))
             && data.updatedAt == request.time
             && (!('deletedAt' in data) || data.deletedAt == null || data.deletedAt == request.time || data.deletedAt == before);
         }
 
         allow read: if isSelf(uid);
         allow create, update: if isSelf(uid) && validPlace();
+        allow delete: if false;
+      }
+
+      // The rider's settings, one private document: the app's language and
+      // the alert stages (docs/PLAN.md, Settings and updates).
+      match /settings/{docId} {
+        function validStage(stage) {
+          return stage is map
+            && stage.keys().hasOnly(['metres', 'pattern'])
+            && stage.keys().hasAll(['metres', 'pattern'])
+            && stage.metres in [3000, 2000, 1500, 1000, 700, 500, 400, 300, 150]
+            && stage.pattern in ['gentleDoubleTap', 'strongLongBuzz', 'heartbeat', 'tripleKnock', 'rising', 'waves'];
+        }
+
+        function validSettings() {
+          let data = request.resource.data;
+          return data.keys().hasOnly(['language', 'stages', 'updatedAt'])
+            && data.keys().hasAll(['language', 'stages', 'updatedAt'])
+            && data.language in ['en', 'ta']
+            && data.stages is list
+            && data.stages.size() >= 1
+            && data.stages.size() <= 3
+            && validStage(data.stages[0])
+            && (data.stages.size() < 2 || validStage(data.stages[1]))
+            && (data.stages.size() < 3 || validStage(data.stages[2]))
+            && data.updatedAt == request.time;
+        }
+
+        // The app listens to the whole (one-document) collection, which a
+        // rule on the document's name would refuse; only `app` is writable.
+        allow read: if isSelf(uid);
+        allow create, update: if isSelf(uid) && docId == 'app' && validSettings();
         allow delete: if false;
       }
     }

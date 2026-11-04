@@ -23,14 +23,17 @@ class PlacesRepository {
   Stream<List<SavedPlace>> watch() {
     final query = _db.select(_db.places)..where((p) => p.deletedAt.isNull());
     return query.watch().map((rows) {
-      final places = rows.map(placeFromRow).toList()
+      final sorted = [...rows]
         ..sort((a, b) {
-          final byKind = a.kind.index.compareTo(b.kind.index);
+          final byOrder = a.position.compareTo(b.position);
+          if (byOrder != 0) return byOrder;
+          final byKind = (PlaceKind.values.asNameMap()[a.kind]?.index ?? 9)
+              .compareTo(PlaceKind.values.asNameMap()[b.kind]?.index ?? 9);
           return byKind != 0
               ? byKind
               : a.name.toLowerCase().compareTo(b.name.toLowerCase());
         });
-      return places;
+      return sorted.map(placeFromRow).toList();
     });
   }
 
@@ -53,6 +56,26 @@ class PlacesRepository {
 
   Future<void> update(SavedPlace place) => _write(place);
 
+  /// Puts the places in [order], as the rider dragged them.
+  Future<void> reorder(List<SavedPlace> order) async {
+    await _db.transaction(() async {
+      for (final (index, place) in order.indexed) {
+        final now = _stamp();
+        await (_db.update(_db.places)..where(
+              (p) => p.id.equals(place.id) & p.position.equals(index).not(),
+            ))
+            .write(
+              PlacesCompanion(
+                position: Value(index),
+                updatedAt: Value(now),
+                pendingSince: Value(now),
+              ),
+            );
+      }
+    });
+    onChange?.call();
+  }
+
   Future<void> remove(String id) async {
     final now = _stamp();
     await (_db.update(_db.places)..where((p) => p.id.equals(id))).write(
@@ -67,6 +90,14 @@ class PlacesRepository {
 
   Future<void> _write(SavedPlace place) async {
     final now = _stamp();
+    final existing = await (_db.select(
+      _db.places,
+    )..where((p) => p.id.equals(place.id))).getSingleOrNull();
+    final last = await (_db.selectOnly(
+      _db.places,
+    )..addColumns([_db.places.position.max()])).getSingle();
+    final position =
+        existing?.position ?? (last.read(_db.places.position.max()) ?? -1) + 1;
     await _db
         .into(_db.places)
         .insertOnConflictUpdate(
@@ -79,6 +110,7 @@ class PlacesRepository {
             placeEn: Value(place.names.en),
             placeTa: Value(place.names.ta),
             placeSi: Value(place.names.si),
+            position: Value(position),
             updatedAt: now,
             deletedAt: const Value(null),
             pendingSince: Value(now),

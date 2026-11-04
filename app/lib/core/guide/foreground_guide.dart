@@ -8,7 +8,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/guide/ride_task.dart';
 import 'package:hopin/core/ride/guide.dart';
+import 'package:hopin/core/ride/patterns.dart';
 import 'package:hopin/l10n/app_localizations.dart';
+import 'package:vibration/vibration.dart';
 
 /// The guide as a foreground service of type location (flutter_foreground_task),
 /// started while the app is open, so "while using the app" location covers it
@@ -34,7 +36,12 @@ class ForegroundGuideService implements GuideService {
           _events.add(GuideUpdate(status));
         }
       case 'ended':
-        _events.add(GuideEnded(arrived: message['arrived'] == true));
+        _events.add(
+          GuideEnded(
+            arrived: message['arrived'] == true,
+            gaveUp: message['gaveUp'] == true,
+          ),
+        );
     }
   }
 
@@ -98,6 +105,28 @@ class ForegroundGuideService implements GuideService {
   Future<void> end() async {
     await FlutterForegroundTask.stopService();
     await FlutterForegroundTask.removeData(key: rideKey);
+  }
+
+  @override
+  Future<void> keepGoing() async =>
+      FlutterForegroundTask.sendDataToTask(keepButton);
+
+  @override
+  Future<bool> runsInBackground() =>
+      FlutterForegroundTask.isIgnoringBatteryOptimizations;
+
+  @override
+  Future<void> openAppSettings() async {
+    await Geolocator.openAppSettings();
+  }
+
+  @override
+  Future<void> play(Buzz buzz) async {
+    if (!await Vibration.hasVibrator()) return;
+    await Vibration.vibrate(
+      pattern: buzz.timings,
+      intensities: buzz.amplitudes,
+    );
   }
 
   @override

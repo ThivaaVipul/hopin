@@ -21,7 +21,7 @@ enum LocationStatus {
 }
 
 /// A one-off message for the screen.
-enum HomeNotice { arrived, guideFailed, needsLocation }
+enum HomeNotice { arrived, gaveUp, guideFailed, needsLocation }
 
 class HomeState extends Equatable {
   const HomeState({
@@ -274,8 +274,10 @@ class HomeCubit extends Cubit<HomeState> {
       title: title,
       names: destination.names,
       area: destination.area,
+      stages: await _workspace.appSettings.stages(),
       language: language,
     );
+    if (isClosed) return;
     if (state.location != LocationStatus.granted) {
       await askForLocation();
       if (isClosed) return;
@@ -344,6 +346,9 @@ class HomeCubit extends Cubit<HomeState> {
   }
 
   /// End, on the ride board: back to the destination panel.
+  /// Keep, on the ride board while the guide asks "Still going?".
+  Future<void> keepGoing() => _guide.keepGoing();
+
   Future<void> endGuide() async {
     await _guide.end();
     if (!isClosed) emit(state.copyWith(ride: null, status: null, near: null));
@@ -355,14 +360,18 @@ class HomeCubit extends Cubit<HomeState> {
       case GuideUpdate(:final status):
         emit(state.copyWith(status: status));
         if (status.at case final at?) unawaited(_lookNear(at));
-      case GuideEnded(:final arrived):
+      case GuideEnded(:final arrived, :final gaveUp):
         emit(
           state.copyWith(
             ride: null,
             status: null,
             near: null,
             destination: arrived ? null : state.destination,
-            notice: arrived ? HomeNotice.arrived : null,
+            notice: arrived
+                ? HomeNotice.arrived
+                : gaveUp
+                ? HomeNotice.gaveUp
+                : null,
           ),
         );
     }

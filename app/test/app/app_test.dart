@@ -8,6 +8,7 @@ import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/ride/guide.dart';
+import 'package:hopin/core/update/updates.dart';
 import 'package:hopin/features/home/widgets/ride_board.dart';
 import 'package:http/http.dart' as http;
 
@@ -19,12 +20,14 @@ void main() {
   late FakeProfiles profiles;
   late FakeRemote remote;
   late FakeGuide guide;
+  late FakeUpdates updates;
 
   setUp(() {
     auth = FakeAuth();
     profiles = FakeProfiles();
     remote = FakeRemote();
     guide = FakeGuide();
+    updates = FakeUpdates();
   });
 
   Future<void> start(
@@ -45,6 +48,7 @@ void main() {
         ),
         mapBuilder: fakeMap,
         guide: guide,
+        updates: updates,
         locale: locale,
       ),
     );
@@ -99,8 +103,18 @@ void main() {
               as BoxDecoration)
           .color!;
 
+  /// Scrolls the Settings page until [finder] shows.
+  Future<void> showInSettings(WidgetTester tester, Finder finder) async {
+    await tester.scrollUntilVisible(
+      finder,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+  }
+
   Future<void> openAccount(WidgetTester tester) async {
-    await tester.tap(find.byTooltip('Account'));
+    await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
   }
 
@@ -216,8 +230,10 @@ void main() {
     await tester.pumpAndSettle();
     await openAccount(tester);
 
+    await showInSettings(tester, find.text('Sign out'));
     await tester.tap(find.text('Sign out'));
     await tester.pumpAndSettle();
+    expect(guide.ends, 1, reason: 'signing out ends a running guide');
     expect(auth.signOuts, 1);
     expect(find.text('Continue with Google'), findsOneWidget);
     await finish(tester);
@@ -370,5 +386,147 @@ void main() {
     expect(find.text('அடுத்து இறங்குங்கள்'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await finish(tester);
+  });
+
+  group('settings', () {
+    Future<void> openSettings(
+      WidgetTester tester, {
+      Locale locale = const Locale('en'),
+    }) async {
+      await start(
+        tester,
+        locale: locale,
+        location: FakeLocation(access: LocationAccess.granted),
+      );
+      auth.emit(rider);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byTooltip(locale.languageCode == 'ta' ? 'அமைப்புகள்' : 'Settings'),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('switches the whole app to Tamil and keeps the choice', (
+      tester,
+    ) async {
+      await openSettings(tester);
+      expect(find.text('Rider access is on'), findsOneWidget);
+
+      await showInSettings(tester, find.text('தமிழ்'));
+      await tester.tap(find.text('தமிழ்'));
+      await tester.pumpAndSettle();
+      expect(find.text('அமைப்புகள்'), findsOneWidget);
+      expect(
+        remote.puts.where((put) => put.$1 == 'people/r1/settings/app'),
+        isNotEmpty,
+      );
+      expect(
+        remote.puts.last.$2['language'],
+        'ta',
+        reason: 'the choice follows the account',
+      );
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+      expect(find.text('எங்கே போக வேண்டும்?'), findsOneWidget);
+      expect(profiles.saved.last, ('r1', 'ta'));
+      await finish(tester);
+    });
+
+    testWidgets('edits a stage, trying a pattern first', (tester) async {
+      await openSettings(tester);
+      await showInSettings(tester, find.text('Get off next'));
+      expect(find.text('400 m'), findsOneWidget);
+
+      await tester.tap(find.text('Get off next'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('700 m'));
+      await tester.pump();
+      await tester.tap(find.text('Try').at(2));
+      expect(guide.played.single.length, greaterThan(Duration.zero));
+      await tester.tap(find.text('Heartbeat'));
+      await tester.pump();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('700 m'), findsOneWidget);
+      expect(find.text('Heartbeat'), findsOneWidget);
+      expect(find.text('400 m'), findsNothing);
+      await finish(tester);
+    });
+
+    testWidgets('adds a third stage, and no more', (tester) async {
+      await openSettings(tester);
+      await showInSettings(tester, find.text('Add a stage'));
+      await tester.tap(find.text('Add a stage'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+      expect(find.text('3 km'), findsOneWidget);
+      expect(find.text('Get ready'), findsNWidgets(2));
+      expect(find.text('Add a stage'), findsNothing);
+      await finish(tester);
+    });
+
+    testWidgets('fits a small phone in Tamil with large text', (tester) async {
+      tester.view
+        ..physicalSize = const Size(1080, 2160)
+        ..devicePixelRatio = 3;
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      guide.notifications = false;
+      await openSettings(tester, locale: const Locale('ta'));
+      await showInSettings(tester, find.text('வெளியேறு'));
+      expect(tester.takeException(), isNull);
+      await finish(tester);
+    });
+  });
+
+  group('updates', () {
+    testWidgets('offers a newer version and opens the installer', (
+      tester,
+    ) async {
+      updates
+        ..installed = 3000
+        ..release = Release(
+          build: 4000,
+          apk: Uri.parse('https://example.com/hopin-0.4.0.apk'),
+          size: 35000000,
+        );
+      await start(
+        tester,
+        location: FakeLocation(access: LocationAccess.granted),
+      );
+      auth.emit(rider);
+      await tester.pumpAndSettle();
+      expect(find.text('Hopin 0.4.0 is ready'), findsOneWidget);
+
+      await tester.tap(find.text('Update'));
+      await tester.pumpAndSettle();
+      expect(updates.downloads, 1);
+      expect(updates.installs.single, endsWith('hopin-0.4.0.apk'));
+      await finish(tester);
+    });
+
+    testWidgets('a test build shows no banner and no Check', (tester) async {
+      updates.release = Release(
+        build: 4000,
+        apk: Uri.parse('https://example.com/hopin-0.4.0.apk'),
+        size: 1,
+      );
+      await start(
+        tester,
+        location: FakeLocation(access: LocationAccess.granted),
+      );
+      auth.emit(rider);
+      await tester.pumpAndSettle();
+      expect(updates.checks, 0);
+      expect(find.text('Hopin 0.4.0 is ready'), findsNothing);
+      await openAccount(tester);
+      await showInSettings(tester, find.text('Test build'));
+      expect(find.text('Check'), findsNothing);
+      await finish(tester);
+    });
   });
 }

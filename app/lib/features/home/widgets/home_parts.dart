@@ -76,7 +76,7 @@ class SearchBarButton extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: l.account,
+                tooltip: l.settings,
                 onPressed: onAccount,
                 icon: Icon(Icons.person_outline, color: colors.onBoardMuted),
               ),

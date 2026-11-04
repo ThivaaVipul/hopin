@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:hopin/app/router.dart';
 import 'package:hopin/app/session/session_cubit.dart';
 import 'package:hopin/app/theme.dart';
-import 'package:hopin/app/widgets/led_dots.dart';
 import 'package:hopin/app/workspace.dart';
 import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/location/location_service.dart';
@@ -17,6 +16,8 @@ import 'package:hopin/features/home/widgets/home_parts.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
 import 'package:hopin/features/home/widgets/maker_steps.dart';
 import 'package:hopin/features/home/widgets/ride_board.dart';
+import 'package:hopin/features/update/cubit/update_cubit.dart';
+import 'package:hopin/features/update/widgets/update_banner.dart';
 import 'package:hopin/l10n/app_localizations.dart';
 
 /// Home: the map, where to, and saved places (docs/PLAN.md, Home and places).
@@ -61,7 +62,10 @@ class _HomeViewState extends State<_HomeView> {
     // Rider access is switched on outside the app; coming back to it is the
     // natural moment to look again.
     _lifecycle = AppLifecycleListener(
-      onResume: () => context.read<SessionCubit>().refresh(),
+      onResume: () {
+        unawaited(context.read<SessionCubit>().refresh());
+        unawaited(context.read<UpdateCubit>().check());
+      },
     );
   }
 
@@ -172,6 +176,7 @@ class _HomeViewState extends State<_HomeView> {
             HomeNotice.arrived => l.arrived,
             HomeNotice.guideFailed => l.guideFailed,
             HomeNotice.needsLocation => l.guideNeedsLocation,
+            HomeNotice.gaveUp => l.guideGaveUp,
           }),
         ),
       );
@@ -227,6 +232,7 @@ class _HomeViewState extends State<_HomeView> {
               status: state.status,
               near: near?.names.inLanguage(language) ?? near?.area,
               onEnd: cubit.endGuide,
+              onKeep: cubit.keepGoing,
             ),
             HomeState(location: LocationStatus.explain) => ReasonCard(
               key: const ValueKey('location'),
@@ -287,7 +293,8 @@ class _HomeViewState extends State<_HomeView> {
                             children: [
                               SearchBarButton(
                                 onTap: () => _search(context),
-                                onAccount: () => showAccountSheet(context),
+                                onAccount: () =>
+                                    context.push<void>(Routes.settings),
                               ),
                               const SizedBox(height: 10),
                               PlaceChips(
@@ -298,6 +305,7 @@ class _HomeViewState extends State<_HomeView> {
                                     _editPlace(context, place),
                                 onAdd: () => _search(context),
                               ),
+                              const UpdateBanner(),
                             ],
                           ),
                         ),
@@ -375,83 +383,4 @@ class _HomeViewState extends State<_HomeView> {
       ),
     );
   }
-}
-
-/// Who is signed in, rider access, and signing out (until Settings, M1a4).
-Future<void> showAccountSheet(BuildContext context) {
-  final session = context.read<SessionCubit>();
-  return showModalBottomSheet<void>(
-    context: context,
-    backgroundColor: context.colors.board,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-    ),
-    builder: (context) => BlocProvider.value(
-      value: session,
-      child: BlocBuilder<SessionCubit, SessionState>(
-        builder: (context, state) {
-          final account = state.account;
-          if (account == null) return const SizedBox.shrink();
-          final l = AppLocalizations.of(context);
-          final colors = context.colors;
-          return SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 22, 24, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    l.hello(account.firstName),
-                    style: context.text.headlineSmall?.copyWith(
-                      color: colors.onBoard,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      LedDots(count: 5, lit: account.isRider ? 5 : 1),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Text(
-                          account.isRider ? l.riderOn : l.riderWaiting,
-                          style: context.text.titleMedium?.copyWith(
-                            color: colors.onBoard,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      if (!account.isRider)
-                        TextButton(
-                          onPressed: session.refresh,
-                          style: TextButton.styleFrom(
-                            foregroundColor: colors.amber,
-                          ),
-                          child: Text(l.checkAgain),
-                        ),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          unawaited(session.signOut());
-                        },
-                        style: TextButton.styleFrom(
-                          foregroundColor: colors.onBoardMuted,
-                        ),
-                        child: Text(l.signOut),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    ),
-  );
 }

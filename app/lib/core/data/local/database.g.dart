@@ -86,6 +86,18 @@ class $PlacesTable extends Places with TableInfo<$PlacesTable, PlaceRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -129,6 +141,7 @@ class $PlacesTable extends Places with TableInfo<$PlacesTable, PlaceRow> {
     placeEn,
     placeTa,
     placeSi,
+    position,
     updatedAt,
     deletedAt,
     pendingSince,
@@ -200,6 +213,12 @@ class $PlacesTable extends Places with TableInfo<$PlacesTable, PlaceRow> {
         placeSi.isAcceptableOrUnknown(data['place_si']!, _placeSiMeta),
       );
     }
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -264,6 +283,10 @@ class $PlacesTable extends Places with TableInfo<$PlacesTable, PlaceRow> {
         DriftSqlType.string,
         data['${effectivePrefix}place_si'],
       ),
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}updated_at'],
@@ -295,6 +318,9 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
   final String? placeTa;
   final String? placeSi;
 
+  /// The rider's own order (Settings, Places); 0 until they reorder.
+  final int position;
+
   /// Microseconds since the epoch; the server's time once synced.
   final int updatedAt;
   final int? deletedAt;
@@ -308,6 +334,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
     this.placeEn,
     this.placeTa,
     this.placeSi,
+    required this.position,
     required this.updatedAt,
     this.deletedAt,
     this.pendingSince,
@@ -329,6 +356,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
     if (!nullToAbsent || placeSi != null) {
       map['place_si'] = Variable<String>(placeSi);
     }
+    map['position'] = Variable<int>(position);
     map['updated_at'] = Variable<int>(updatedAt);
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<int>(deletedAt);
@@ -355,6 +383,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
       placeSi: placeSi == null && nullToAbsent
           ? const Value.absent()
           : Value(placeSi),
+      position: Value(position),
       updatedAt: Value(updatedAt),
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
@@ -379,6 +408,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
       placeEn: serializer.fromJson<String?>(json['placeEn']),
       placeTa: serializer.fromJson<String?>(json['placeTa']),
       placeSi: serializer.fromJson<String?>(json['placeSi']),
+      position: serializer.fromJson<int>(json['position']),
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
       deletedAt: serializer.fromJson<int?>(json['deletedAt']),
       pendingSince: serializer.fromJson<int?>(json['pendingSince']),
@@ -396,6 +426,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
       'placeEn': serializer.toJson<String?>(placeEn),
       'placeTa': serializer.toJson<String?>(placeTa),
       'placeSi': serializer.toJson<String?>(placeSi),
+      'position': serializer.toJson<int>(position),
       'updatedAt': serializer.toJson<int>(updatedAt),
       'deletedAt': serializer.toJson<int?>(deletedAt),
       'pendingSince': serializer.toJson<int?>(pendingSince),
@@ -411,6 +442,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
     Value<String?> placeEn = const Value.absent(),
     Value<String?> placeTa = const Value.absent(),
     Value<String?> placeSi = const Value.absent(),
+    int? position,
     int? updatedAt,
     Value<int?> deletedAt = const Value.absent(),
     Value<int?> pendingSince = const Value.absent(),
@@ -423,6 +455,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
     placeEn: placeEn.present ? placeEn.value : this.placeEn,
     placeTa: placeTa.present ? placeTa.value : this.placeTa,
     placeSi: placeSi.present ? placeSi.value : this.placeSi,
+    position: position ?? this.position,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     pendingSince: pendingSince.present ? pendingSince.value : this.pendingSince,
@@ -437,6 +470,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
       placeEn: data.placeEn.present ? data.placeEn.value : this.placeEn,
       placeTa: data.placeTa.present ? data.placeTa.value : this.placeTa,
       placeSi: data.placeSi.present ? data.placeSi.value : this.placeSi,
+      position: data.position.present ? data.position.value : this.position,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       pendingSince: data.pendingSince.present
@@ -456,6 +490,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
           ..write('placeEn: $placeEn, ')
           ..write('placeTa: $placeTa, ')
           ..write('placeSi: $placeSi, ')
+          ..write('position: $position, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('pendingSince: $pendingSince')
@@ -473,6 +508,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
     placeEn,
     placeTa,
     placeSi,
+    position,
     updatedAt,
     deletedAt,
     pendingSince,
@@ -489,6 +525,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
           other.placeEn == this.placeEn &&
           other.placeTa == this.placeTa &&
           other.placeSi == this.placeSi &&
+          other.position == this.position &&
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt &&
           other.pendingSince == this.pendingSince);
@@ -503,6 +540,7 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
   final Value<String?> placeEn;
   final Value<String?> placeTa;
   final Value<String?> placeSi;
+  final Value<int> position;
   final Value<int> updatedAt;
   final Value<int?> deletedAt;
   final Value<int?> pendingSince;
@@ -516,6 +554,7 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
     this.placeEn = const Value.absent(),
     this.placeTa = const Value.absent(),
     this.placeSi = const Value.absent(),
+    this.position = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.pendingSince = const Value.absent(),
@@ -530,6 +569,7 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
     this.placeEn = const Value.absent(),
     this.placeTa = const Value.absent(),
     this.placeSi = const Value.absent(),
+    this.position = const Value.absent(),
     required int updatedAt,
     this.deletedAt = const Value.absent(),
     this.pendingSince = const Value.absent(),
@@ -549,6 +589,7 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
     Expression<String>? placeEn,
     Expression<String>? placeTa,
     Expression<String>? placeSi,
+    Expression<int>? position,
     Expression<int>? updatedAt,
     Expression<int>? deletedAt,
     Expression<int>? pendingSince,
@@ -563,6 +604,7 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
       if (placeEn != null) 'place_en': placeEn,
       if (placeTa != null) 'place_ta': placeTa,
       if (placeSi != null) 'place_si': placeSi,
+      if (position != null) 'position': position,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (pendingSince != null) 'pending_since': pendingSince,
@@ -579,6 +621,7 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
     Value<String?>? placeEn,
     Value<String?>? placeTa,
     Value<String?>? placeSi,
+    Value<int>? position,
     Value<int>? updatedAt,
     Value<int?>? deletedAt,
     Value<int?>? pendingSince,
@@ -593,6 +636,7 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
       placeEn: placeEn ?? this.placeEn,
       placeTa: placeTa ?? this.placeTa,
       placeSi: placeSi ?? this.placeSi,
+      position: position ?? this.position,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       pendingSince: pendingSince ?? this.pendingSince,
@@ -627,6 +671,9 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
     if (placeSi.present) {
       map['place_si'] = Variable<String>(placeSi.value);
     }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<int>(updatedAt.value);
     }
@@ -653,6 +700,7 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
           ..write('placeEn: $placeEn, ')
           ..write('placeTa: $placeTa, ')
           ..write('placeSi: $placeSi, ')
+          ..write('position: $position, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('pendingSince: $pendingSince, ')

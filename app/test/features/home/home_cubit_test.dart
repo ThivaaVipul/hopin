@@ -7,6 +7,7 @@ import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/places/place.dart';
 import 'package:hopin/core/ride/guide.dart';
+import 'package:hopin/core/ride/patterns.dart';
 import 'package:hopin/features/home/cubit/home_cubit.dart';
 import 'package:http/http.dart' as http;
 
@@ -340,6 +341,39 @@ void main() {
       await home.dropPin(const GeoPoint(6.91, 79.87));
       expect(home.state.destination?.point, uni.point);
       expect(home.state.ride, isNotNull);
+      await home.close();
+    });
+
+    test('a guide that gives up says so, and keeps the place', () async {
+      guide.notifications = true;
+      final home = await atUni();
+      await home.startGuide(title: 'Colombo Fort', language: 'en');
+      guide.emit(const GuideEnded(arrived: false, gaveUp: true));
+      expect(home.state.ride, isNull);
+      expect(home.state.destination?.point, uni.point);
+      expect(home.state.notice, HomeNotice.gaveUp);
+      await home.close();
+    });
+
+    test('Keep on the board reaches the guide', () async {
+      guide.notifications = true;
+      final home = await atUni();
+      await home.startGuide(title: 'Colombo Fort', language: 'en');
+      await home.keepGoing();
+      expect(guide.keeps, 1);
+      await home.close();
+    });
+
+    test('the guide takes your own stages', () async {
+      guide.notifications = true;
+      await workspace.appSettings.setStages(const [
+        GuideStage(700, AlertPattern.heartbeat),
+      ]);
+      final home = await atUni();
+      await home.startGuide(title: 'Colombo Fort', language: 'en');
+      expect(guide.started.single.stages, const [
+        GuideStage(700, AlertPattern.heartbeat),
+      ]);
       await home.close();
     });
   });

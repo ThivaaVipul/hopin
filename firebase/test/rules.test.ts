@@ -7,14 +7,18 @@ import {
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing';
 import {
+  collection,
   deleteDoc,
   doc,
   type Firestore,
   getDoc,
+  getDocs,
+  query,
   serverTimestamp,
   setDoc,
   Timestamp,
   updateDoc,
+  where,
 } from 'firebase/firestore';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 
@@ -98,13 +102,13 @@ describe('who gets in', () => {
 
 function place(changes: Fields = {}): Fields {
   return {
-    name: 'Uni',
-    kind: 'uni',
-    lat: 6.9733,
-    lng: 79.9157,
-    placeEn: 'University',
+    name: 'Fort',
+    kind: 'other',
+    lat: 6.9344,
+    lng: 79.8501,
+    placeEn: 'Colombo Fort',
     placeTa: null,
-    placeSi: 'විශ්වවිද්‍යාලය',
+    placeSi: 'කොළඹ කොටුව',
     updatedAt: serverTimestamp(),
     deletedAt: null,
     ...changes,
@@ -136,6 +140,15 @@ describe('places', () => {
       updateDoc(doc(db, 'people/r1/places/p1'), { deletedAt: serverTimestamp(), updatedAt: serverTimestamp() }),
     );
     await assertFails(deleteDoc(doc(db, 'people/r1/places/p1')));
+  });
+
+  it('keeps your own order', async () => {
+    const db = rider('r1');
+    await assertSucceeds(setDoc(doc(db, 'people/r1/places/p1'), place({ order: 0 })));
+    await assertSucceeds(setDoc(doc(db, 'people/r1/places/p2'), place({ order: 41 })));
+    for (const order of [-1, 1000, 1.5, '2']) {
+      await assertFails(setDoc(doc(db, 'people/r1/places/p3'), place({ order })));
+    }
   });
 
   it('checks every field', async () => {
@@ -204,5 +217,78 @@ describe('people', () => {
     await assertSucceeds(
       setDoc(doc(rider('r1'), 'people/r1'), profile({ photoUrl: 'https://example.com/p.png' })),
     );
+  });
+});
+
+function settings(changes: Fields = {}): Fields {
+  return {
+    language: 'ta',
+    stages: [
+      { metres: 1500, pattern: 'gentleDoubleTap' },
+      { metres: 400, pattern: 'strongLongBuzz' },
+    ],
+    updatedAt: serverTimestamp(),
+    ...changes,
+  };
+}
+
+describe('settings', () => {
+  it('lets a rider keep their own settings', async () => {
+    const db = rider('r1');
+    await assertSucceeds(setDoc(doc(db, 'people/r1/settings/app'), settings()));
+    await assertSucceeds(getDoc(doc(db, 'people/r1/settings/app')));
+  });
+
+  it('lets the app listen to your settings, and only yours', async () => {
+    await seed('people/r1/settings/app', settings({ updatedAt: Timestamp.now() }));
+    const since = where('updatedAt', '>', Timestamp.fromMillis(0));
+    await assertSucceeds(getDocs(query(collection(rider('r1'), 'people/r1/settings'), since)));
+    await assertFails(getDocs(query(collection(rider('r2'), 'people/r1/settings'), since)));
+  });
+
+  it('keeps settings private, even from the other rider', async () => {
+    await seed('people/r1/settings/app', settings({ updatedAt: Timestamp.now() }));
+    await assertFails(getDoc(doc(rider('r2'), 'people/r1/settings/app')));
+    await assertFails(setDoc(doc(rider('r2'), 'people/r1/settings/app'), settings()));
+    await assertFails(setDoc(doc(stranger('r1'), 'people/r1/settings/app'), settings()));
+  });
+
+  it('has one document, never deleted', async () => {
+    const db = rider('r1');
+    await assertFails(setDoc(doc(db, 'people/r1/settings/other'), settings()));
+    await assertSucceeds(setDoc(doc(db, 'people/r1/settings/app'), settings()));
+    await assertFails(deleteDoc(doc(db, 'people/r1/settings/app')));
+  });
+
+  it('takes one to three known stages', async () => {
+    const db = rider('r1');
+    const stage = (metres: unknown, pattern: unknown = 'waves') => ({ metres, pattern });
+    await assertSucceeds(setDoc(doc(db, 'people/r1/settings/app'), settings({ stages: [stage(150)] })));
+    await assertSucceeds(
+      setDoc(doc(db, 'people/r1/settings/app'), settings({ stages: [stage(3000), stage(700, 'heartbeat'), stage(150)] })),
+    );
+    const bad: unknown[] = [
+      [],
+      [stage(3000), stage(2000), stage(1000), stage(150)],
+      [stage(450)],
+      [stage(1500), stage(450)],
+      [stage(3000), stage(1500), stage(450)],
+      [stage(400, 'siren')],
+      [stage('400')],
+      [{ metres: 400, pattern: 'waves', colour: 'amber' }],
+      'gentle',
+    ];
+    for (const stages of bad) {
+      await assertFails(setDoc(doc(db, 'people/r1/settings/app'), settings({ stages })));
+    }
+  });
+
+  it('checks the language, the time and the fields', async () => {
+    const db = rider('r1');
+    await assertFails(setDoc(doc(db, 'people/r1/settings/app'), settings({ language: 'si' })));
+    await assertFails(setDoc(doc(db, 'people/r1/settings/app'), settings({ updatedAt: Timestamp.now() })));
+    await assertFails(setDoc(doc(db, 'people/r1/settings/app'), settings({ theme: 'dark' })));
+    const { stages: _stages, ...noStages } = settings();
+    await assertFails(setDoc(doc(db, 'people/r1/settings/app'), noStages));
   });
 });

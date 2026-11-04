@@ -12,16 +12,15 @@ class RemoteDoc {
 /// Firestore, as the sync engine needs it. Tests use an in-memory fake.
 abstract interface class Remote {
   /// Documents in [collection] that the server changed after [after]: first
-  /// all of them, then each change. Only the server's word, never the cache's.
+  /// each time the server answers, all of them. Only the server's word, never
+  /// the cache's.
   Stream<List<RemoteDoc>> changes(String collection, int after);
 
-  /// Writes [data] to [path] with `updatedAt` (and `deletedAt` when [deleted])
-  /// set to the server's time. Completes once the server has it.
-  Future<void> put(
-    String path,
-    Map<String, Object?> data, {
-    bool deleted = false,
-  });
+  /// Writes [data] to [path] with `updatedAt` set to the server's time.
+  /// Documents that can be removed pass [deleted], which writes `deletedAt`
+  /// (the server's time, or null); others leave it out. Completes once the
+  /// server has it.
+  Future<void> put(String path, Map<String, Object?> data, {bool? deleted});
 }
 
 class FirestoreRemote implements Remote {
@@ -37,11 +36,16 @@ class FirestoreRemote implements Remote {
         'updatedAt',
         isGreaterThan: Timestamp.fromMicrosecondsSinceEpoch(after),
       )
-      .snapshots()
+      // With metadata changes, the server's answer comes even when it only
+      // confirms what the cache already had.
+      .snapshots(includeMetadataChanges: true)
       .where((snapshot) => !snapshot.metadata.isFromCache)
       .map(
         (snapshot) => [
-          for (final change in snapshot.docChanges) ?_doc(change.doc),
+          // All of them, not the changes: those count from the cache's answer,
+          // which is skipped, so a document the cache already had would never
+          // come through (a rebuilt local database stayed empty).
+          for (final doc in snapshot.docs) ?_doc(doc),
         ],
       );
 
@@ -60,13 +64,11 @@ class FirestoreRemote implements Remote {
   }
 
   @override
-  Future<void> put(
-    String path,
-    Map<String, Object?> data, {
-    bool deleted = false,
-  }) => _db.doc(path).set({
-    ...data,
-    'updatedAt': FieldValue.serverTimestamp(),
-    'deletedAt': deleted ? FieldValue.serverTimestamp() : null,
-  });
+  Future<void> put(String path, Map<String, Object?> data, {bool? deleted}) =>
+      _db.doc(path).set({
+        ...data,
+        'updatedAt': FieldValue.serverTimestamp(),
+        if (deleted != null)
+          'deletedAt': deleted ? FieldValue.serverTimestamp() : null,
+      });
 }

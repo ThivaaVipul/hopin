@@ -16,6 +16,9 @@ class Places extends Table {
   TextColumn get placeTa => text().nullable()();
   TextColumn get placeSi => text().nullable()();
 
+  /// The rider's own order (Settings, Places); 0 until they reorder.
+  IntColumn get position => integer().withDefault(const Constant(0))();
+
   /// Microseconds since the epoch; the server's time once synced.
   IntColumn get updatedAt => integer()();
   IntColumn get deletedAt => integer().nullable()();
@@ -61,18 +64,22 @@ class HopinDatabase extends _$HopinDatabase {
       HopinDatabase(driftDatabase(name: 'hopin_$uid'));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   // Places are a copy of Firestore, so a new schema rebuilds the tables and the
-  // sync fills them again; unsynced writes are read back from Firestore's own
-  // queue. No migrations by hand (CLAUDE.md).
+  // sync fills them again from the start; unsynced writes are read back from
+  // Firestore's own queue. The settings table (a plain key and value) stays,
+  // so this phone's choices survive, but its sync cursors go. No migrations by
+  // hand (CLAUDE.md).
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (migrator, from, to) async {
       for (final table in allTables) {
+        if (table == settings) continue;
         await migrator.deleteTable(table.actualTableName);
         await migrator.createTable(table);
       }
+      await (delete(settings)..where((s) => s.key.like('cursor.%'))).go();
     },
   );
 }

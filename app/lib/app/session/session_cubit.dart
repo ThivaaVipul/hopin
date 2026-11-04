@@ -26,14 +26,17 @@ class SessionState extends Equatable {
 /// profile is written (once per session); the app works before that, and
 /// syncing simply waits (docs/PLAN.md, Get-off guide).
 class SessionCubit extends Cubit<SessionState> {
-  SessionCubit(this._auth, this._profiles, {this.language = 'en'})
-    : super(const SessionState.unknown()) {
+  SessionCubit(this._auth, this._profiles, {String Function()? language})
+    : _language = language ?? _english,
+      super(const SessionState.unknown()) {
     _subscription = _auth.accountChanges.listen(_onAccount, onError: addError);
   }
 
   final AuthRepository _auth;
   final ProfileRepository _profiles;
-  final String language;
+  final String Function() _language;
+
+  static String _english() => 'en';
   late final StreamSubscription<Account?> _subscription;
   String? _profileSavedFor;
 
@@ -47,7 +50,7 @@ class SessionCubit extends Cubit<SessionState> {
     if (account.isRider && _profileSavedFor != account.uid) {
       _profileSavedFor = account.uid;
       unawaited(
-        _profiles.save(account, language: language).catchError((
+        _profiles.save(account, language: _language()).catchError((
           Object error,
           StackTrace stack,
         ) {
@@ -56,6 +59,14 @@ class SessionCubit extends Cubit<SessionState> {
         }),
       );
     }
+  }
+
+  /// The app's language changed: the profile says so too.
+  void languageChanged() {
+    final account = state.account;
+    if (account == null || !account.isRider) return;
+    _profileSavedFor = null;
+    _onAccount(account);
   }
 
   /// Looks again for the rider claim (the app calls this when it comes back

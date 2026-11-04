@@ -457,6 +457,234 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Turn on location to start a guide.'**
   String get guideNeedsLocation;
+
+  /// The Settings page and the button that opens it.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settings;
+
+  /// Settings section: saved places.
+  ///
+  /// In en, this message translates to:
+  /// **'Places'**
+  String get places;
+
+  /// Settings, Places, when there are none.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved places yet'**
+  String get noPlaces;
+
+  /// Tooltip of a saved place's drag handle.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder'**
+  String get reorder;
+
+  /// Settings section: the alert stages before your stop.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts'**
+  String get alerts;
+
+  /// Adds an alert stage (up to three).
+  ///
+  /// In en, this message translates to:
+  /// **'Add a stage'**
+  String get addStage;
+
+  /// Removes an alert stage.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removeStage;
+
+  /// Plays a vibration pattern as the alert would.
+  ///
+  /// In en, this message translates to:
+  /// **'Try'**
+  String get tryIt;
+
+  /// Vibration pattern name.
+  ///
+  /// In en, this message translates to:
+  /// **'Gentle double tap'**
+  String get patternGentleDoubleTap;
+
+  /// Vibration pattern name.
+  ///
+  /// In en, this message translates to:
+  /// **'Strong long buzz'**
+  String get patternStrongLongBuzz;
+
+  /// Vibration pattern name.
+  ///
+  /// In en, this message translates to:
+  /// **'Heartbeat'**
+  String get patternHeartbeat;
+
+  /// Vibration pattern name.
+  ///
+  /// In en, this message translates to:
+  /// **'Triple knock'**
+  String get patternTripleKnock;
+
+  /// Vibration pattern name.
+  ///
+  /// In en, this message translates to:
+  /// **'Rising'**
+  String get patternRising;
+
+  /// Vibration pattern name.
+  ///
+  /// In en, this message translates to:
+  /// **'Waves'**
+  String get patternWaves;
+
+  /// Settings section: the app's language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// The English language, written in English in every language.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get english;
+
+  /// The Tamil language, written in Tamil in every language.
+  ///
+  /// In en, this message translates to:
+  /// **'தமிழ்'**
+  String get tamil;
+
+  /// Settings section: notifications and the battery guide.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone'**
+  String get thisPhone;
+
+  /// Settings: notifications are allowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are on'**
+  String get notificationsOn;
+
+  /// Settings: notifications are not allowed.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are off'**
+  String get notificationsOff;
+
+  /// Turns notifications on.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on'**
+  String get turnOn;
+
+  /// Opens Android's background popup and the maker's steps.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery guide'**
+  String get batteryGuide;
+
+  /// Settings: Android lets Hopin run in the background.
+  ///
+  /// In en, this message translates to:
+  /// **'Hopin can run in the background'**
+  String get runsInBackground;
+
+  /// Settings: Android may stop Hopin in the background.
+  ///
+  /// In en, this message translates to:
+  /// **'Your phone may stop Hopin'**
+  String get mayBeStopped;
+
+  /// Settings section: the version and updates.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates'**
+  String get updates;
+
+  /// The installed version.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version}'**
+  String versionLabel(String version);
+
+  /// Shown instead of a version on builds made outside the release workflow.
+  ///
+  /// In en, this message translates to:
+  /// **'Test build'**
+  String get devBuild;
+
+  /// Looks for a newer version now.
+  ///
+  /// In en, this message translates to:
+  /// **'Check'**
+  String get checkUpdates;
+
+  /// No newer version.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to date'**
+  String get upToDate;
+
+  /// A newer version is out.
+  ///
+  /// In en, this message translates to:
+  /// **'Hopin {version} is ready'**
+  String updateReady(String version);
+
+  /// Downloads and installs the newer version.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get update;
+
+  /// Update download progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading {percent}%'**
+  String downloading(int percent);
+
+  /// Shown when the download fails.
+  ///
+  /// In en, this message translates to:
+  /// **'The update didn\'t download. Try again.'**
+  String get updateFailed;
+
+  /// Shown after Android's install permission page opens.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow Hopin to install apps, then tap Update again.'**
+  String get allowInstalls;
+
+  /// Asked when a guide gets no closer for 20 minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Still going to {place}?'**
+  String stillGoing(String place);
+
+  /// Keeps the guide going.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep'**
+  String get keep;
+
+  /// Shown when a guide ends itself after 2 hours without getting closer.
+  ///
+  /// In en, this message translates to:
+  /// **'The guide stopped: no closer in 2 hours.'**
+  String get guideGaveUp;
+
+  /// Shown when looking for a newer version fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t check. Check your internet and try again.'**
+  String get checkFailed;
 }
 
 class _AppLocalizationsDelegate

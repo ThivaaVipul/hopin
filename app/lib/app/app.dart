@@ -17,6 +17,7 @@ import 'package:hopin/core/profile/profile_repository.dart';
 import 'package:hopin/core/search/nominatim.dart';
 import 'package:hopin/core/update/updates.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
+import 'package:hopin/features/rides/widgets/ride_map.dart';
 import 'package:hopin/features/update/cubit/update_cubit.dart';
 import 'package:hopin/l10n/app_localizations.dart';
 
@@ -36,6 +37,7 @@ class HopinApp extends StatefulWidget {
     required this.location,
     required this.nominatim,
     required this.mapBuilder,
+    required this.rideMapBuilder,
     required this.guide,
     required this.updates,
     this.locale = const Locale('en'),
@@ -48,6 +50,7 @@ class HopinApp extends StatefulWidget {
   final LocationService location;
   final Nominatim nominatim;
   final MapBuilder mapBuilder;
+  final RideMapBuilder rideMapBuilder;
   final GuideService guide;
   final UpdateService updates;
   final Locale locale;
@@ -91,6 +94,7 @@ class _HopinAppState extends State<HopinApp> {
       RepositoryProvider<LocationService>.value(value: widget.location),
       RepositoryProvider<Nominatim>.value(value: widget.nominatim),
       RepositoryProvider<MapBuilder>.value(value: widget.mapBuilder),
+      RepositoryProvider<RideMapBuilder>.value(value: widget.rideMapBuilder),
       RepositoryProvider<GuideService>.value(value: widget.guide),
     ],
     child: MultiBlocProvider(

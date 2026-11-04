@@ -107,5 +107,19 @@
   "noticeWhy": "Hopin உங்கள் பஸ் பயணங்களைக் கவனித்து, எங்கே இறங்குகிறீர்கள் என்று கேட்கும்.",
   "needsAllTheTime": "இருப்பிடம் \"Allow all the time\" ஆக இருக்க வேண்டும்",
   "needsActivity": "Physical activity அனுமதி தேவை",
-  "pretendRide": "பயணம் தொடங்கியதாகக் கொள்"
+  "pretendRide": "பயணம் தொடங்கியதாகக் கொள்",
+  "rides": "பயணங்கள்",
+  "allRides": "எல்லாப் பயணங்களும்",
+  "noRides": "இன்னும் பயணங்கள் இல்லை",
+  "today": "இன்று",
+  "yesterday": "நேற்று",
+  "bus": "பஸ்",
+  "unsure": "தெரியாது",
+  "deleteRideQuestion": "இந்தப் பயணத்தை நீக்கவா?",
+  "cancel": "ரத்து",
+  "removePath": "நீக்கு",
+  "notBusQuestion": "பஸ் அல்லாத பயணத்துக்கு வழி சேமிக்கப்படாது. நீக்கவா?",
+  "durationMinutes": "{minutes} நிமி",
+  "durationHours": "{hours} மணி {minutes} நிமி",
+  "timeRange": "{start} - {end}"
 }

@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hopin/app/router.dart';
 import 'package:hopin/app/session/session_cubit.dart';
 import 'package:hopin/app/theme.dart';
+import 'package:hopin/app/widgets/board_choice.dart';
 import 'package:hopin/app/widgets/led_dots.dart';
 import 'package:hopin/app/workspace.dart';
 import 'package:hopin/core/data/app_settings.dart';
@@ -163,6 +166,17 @@ class _SettingsViewState extends State<_SettingsView> {
                           ),
                       ],
                     ),
+            ),
+            _Section(
+              title: l.rides,
+              child: _Line(
+                text: l.allRides,
+                onTap: () => unawaited(context.push<void>(Routes.rides)),
+                action: Icon(
+                  Icons.chevron_right,
+                  color: context.colors.onBoardMuted,
+                ),
+              ),
             ),
             _Section(
               title: l.alerts,
@@ -366,14 +380,34 @@ class _Board extends StatelessWidget {
 }
 
 class _Line extends StatelessWidget {
-  const _Line({required this.text, this.muted = false, this.action});
+  const _Line({
+    required this.text,
+    this.muted = false,
+    this.action,
+    this.onTap,
+  });
 
   final String text;
   final bool muted;
   final Widget? action;
 
+  /// The whole line opens something.
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
+    final onTap = this.onTap;
+    final line = _content(context);
+    return onTap == null
+        ? line
+        : InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: line,
+          );
+  }
+
+  Widget _content(BuildContext context) {
     final colors = context.colors;
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 56),
@@ -608,7 +642,6 @@ class _LanguagePicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final colors = context.colors;
     final current = Localizations.localeOf(context).languageCode;
     return Row(
       children: [
@@ -616,66 +649,16 @@ class _LanguagePicker extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(4),
-              child: _Choice(
+              child: BoardChoice(
                 label: code == 'ta' ? l.tamil : l.english,
                 selected: code == current,
                 onTap: () => unawaited(onPick(code)),
-                colors: colors,
               ),
             ),
           ),
       ],
     );
   }
-}
-
-class _Choice extends StatelessWidget {
-  const _Choice({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    required this.colors,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-  final HopinColors colors;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    selected: selected,
-    button: true,
-    inMutuallyExclusiveGroup: true,
-    child: Material(
-      color: selected ? colors.amber : colors.board,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(
-          color: selected
-              ? colors.amber
-              : colors.onBoardMuted.withValues(alpha: 0.6),
-          width: 1.5,
-        ),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
-          child: Center(
-            child: Text(
-              label,
-              style: context.text.titleMedium?.copyWith(
-                color: selected ? colors.onAmber : colors.onBoard,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
 }
 
 class _Updates extends StatelessWidget {

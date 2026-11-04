@@ -21,7 +21,7 @@ enum RideVerdict {
 }
 
 /// One logged vehicle ride (docs/PLAN.md, Ride detection). A ride that was
-/// not a bus keeps no path or halts.
+/// not a bus keeps no path, halts or names.
 class RideRecord extends Equatable {
   const RideRecord({
     required this.id,
@@ -33,6 +33,8 @@ class RideRecord extends Equatable {
     this.halts = const [],
     this.features = const {},
     this.guideTo,
+    this.fromName,
+    this.toName,
   });
 
   /// Kept from [logic]'s ride; [verdict] decides whether the path goes too.
@@ -85,16 +87,44 @@ class RideRecord extends Equatable {
   /// The stop a guide took the rider to, when one ran.
   final String? guideTo;
 
-  RideRecord withVerdict(RideVerdict verdict) => RideRecord(
+  /// Where the ride started and ended (a saved place or the area), once
+  /// looked up (RideNamer).
+  final String? fromName;
+  final String? toName;
+
+  /// Still to be named: it has a path, and a name is missing.
+  bool get unnamed => path.isNotEmpty && (fromName == null || toName == null);
+
+  /// Relabelled; marked Not a bus, it loses its path, halts and names.
+  RideRecord withVerdict(RideVerdict verdict) {
+    final notBus = verdict == RideVerdict.notBus;
+    return RideRecord(
+      id: id,
+      startedAt: startedAt,
+      endedAt: endedAt,
+      verdict: verdict,
+      distanceM: distanceM,
+      path: notBus ? const [] : path,
+      halts: notBus ? const [] : halts,
+      features: features,
+      guideTo: guideTo,
+      fromName: notBus ? null : fromName,
+      toName: notBus ? null : toName,
+    );
+  }
+
+  RideRecord withNames({String? from, String? to}) => RideRecord(
     id: id,
     startedAt: startedAt,
     endedAt: endedAt,
     verdict: verdict,
     distanceM: distanceM,
-    path: verdict == RideVerdict.notBus ? const [] : path,
-    halts: verdict == RideVerdict.notBus ? const [] : halts,
+    path: path,
+    halts: halts,
     features: features,
     guideTo: guideTo,
+    fromName: from ?? fromName,
+    toName: to ?? toName,
   );
 
   Map<String, Object?> toJson() => {
@@ -107,6 +137,8 @@ class RideRecord extends Equatable {
     'halts': halts.isEmpty ? null : encodeHalts(halts),
     'features': features,
     'guideTo': guideTo,
+    'fromName': fromName,
+    'toName': toName,
   };
 
   static RideRecord? fromJson(Object? json) {
@@ -132,9 +164,13 @@ class RideRecord extends Equatable {
           for (final MapEntry(:key, :value) in features.entries)
             if (key is String && value is num) key: value,
       },
-      guideTo: json['guideTo'] is String ? json['guideTo'] as String : null,
+      guideTo: _text(json['guideTo']),
+      fromName: _text(json['fromName']),
+      toName: _text(json['toName']),
     );
   }
+
+  static String? _text(Object? value) => value is String ? value : null;
 
   static List<T> _decode<T>(Object? text, List<T> Function(String) decode) {
     if (text is! String || text.isEmpty) return const [];
@@ -156,6 +192,8 @@ class RideRecord extends Equatable {
     halts.map((h) => '${h.point.lat},${h.point.lng},${h.seconds}').toList(),
     features,
     guideTo,
+    fromName,
+    toName,
   ];
 }
 

@@ -362,4 +362,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pretendRide => 'Pretend a ride started';
+
+  @override
+  String get rides => 'Rides';
+
+  @override
+  String get allRides => 'All rides';
+
+  @override
+  String get noRides => 'No rides yet';
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get yesterday => 'Yesterday';
+
+  @override
+  String get bus => 'Bus';
+
+  @override
+  String get unsure => 'Unsure';
+
+  @override
+  String get deleteRideQuestion => 'Delete this ride?';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get removePath => 'Remove';
+
+  @override
+  String get notBusQuestion => 'Not a bus keeps no path. Remove it?';
+
+  @override
+  String durationMinutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String durationHours(int hours, int minutes) {
+    return '$hours h $minutes min';
+  }
+
+  @override
+  String timeRange(String start, String end) {
+    return '$start - $end';
+  }
 }

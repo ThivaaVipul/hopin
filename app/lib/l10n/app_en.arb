@@ -507,5 +507,87 @@
   "pretendRide": "Pretend a ride started",
   "@pretendRide": {
     "description": "Test builds only: starts ride detection without a real vehicle."
+  },
+  "rides": "Rides",
+  "@rides": {
+    "description": "Settings: the section for logged rides, and the Rides page's title."
+  },
+  "allRides": "All rides",
+  "@allRides": {
+    "description": "Settings: opens the list of logged rides."
+  },
+  "noRides": "No rides yet",
+  "@noRides": {
+    "description": "The Rides page with nothing logged."
+  },
+  "today": "Today",
+  "@today": {
+    "description": "A day heading in the rides list."
+  },
+  "yesterday": "Yesterday",
+  "@yesterday": {
+    "description": "A day heading in the rides list."
+  },
+  "bus": "Bus",
+  "@bus": {
+    "description": "A ride's label: it was a bus."
+  },
+  "unsure": "Unsure",
+  "@unsure": {
+    "description": "A ride's label: not answered or not known."
+  },
+  "deleteRideQuestion": "Delete this ride?",
+  "@deleteRideQuestion": {
+    "description": "Asked before a ride is deleted."
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Leaves a question without doing anything."
+  },
+  "removePath": "Remove",
+  "@removePath": {
+    "description": "Confirms marking a ride Not a bus, which removes its path."
+  },
+  "notBusQuestion": "Not a bus keeps no path. Remove it?",
+  "@notBusQuestion": {
+    "description": "Asked before a ride with a path is marked Not a bus."
+  },
+  "durationMinutes": "{minutes} min",
+  "@durationMinutes": {
+    "description": "A ride's duration under an hour.",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "24"
+      }
+    }
+  },
+  "durationHours": "{hours} h {minutes} min",
+  "@durationHours": {
+    "description": "A ride's duration of an hour or more.",
+    "placeholders": {
+      "hours": {
+        "type": "int",
+        "example": "1"
+      },
+      "minutes": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "timeRange": "{start} - {end}",
+  "@timeRange": {
+    "description": "A ride's start and end times.",
+    "placeholders": {
+      "start": {
+        "type": "String",
+        "example": "8:10"
+      },
+      "end": {
+        "type": "String",
+        "example": "8:34"
+      }
+    }
   }
 }

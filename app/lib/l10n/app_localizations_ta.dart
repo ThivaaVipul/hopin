@@ -365,4 +365,53 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get pretendRide => 'பயணம் தொடங்கியதாகக் கொள்';
+
+  @override
+  String get rides => 'பயணங்கள்';
+
+  @override
+  String get allRides => 'எல்லாப் பயணங்களும்';
+
+  @override
+  String get noRides => 'இன்னும் பயணங்கள் இல்லை';
+
+  @override
+  String get today => 'இன்று';
+
+  @override
+  String get yesterday => 'நேற்று';
+
+  @override
+  String get bus => 'பஸ்';
+
+  @override
+  String get unsure => 'தெரியாது';
+
+  @override
+  String get deleteRideQuestion => 'இந்தப் பயணத்தை நீக்கவா?';
+
+  @override
+  String get cancel => 'ரத்து';
+
+  @override
+  String get removePath => 'நீக்கு';
+
+  @override
+  String get notBusQuestion =>
+      'பஸ் அல்லாத பயணத்துக்கு வழி சேமிக்கப்படாது. நீக்கவா?';
+
+  @override
+  String durationMinutes(int minutes) {
+    return '$minutes நிமி';
+  }
+
+  @override
+  String durationHours(int hours, int minutes) {
+    return '$hours மணி $minutes நிமி';
+  }
+
+  @override
+  String timeRange(String start, String end) {
+    return '$start - $end';
+  }
 }

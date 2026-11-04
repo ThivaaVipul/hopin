@@ -59,14 +59,66 @@ void main() {
 
   test('a ride that was not a bus goes up without its path', () async {
     await sync.start();
-    await rides.save(bus);
+    await rides.save(bus.withNames(from: 'Slave Island', to: 'Fort'));
     await rides.setVerdict('ride1', RideVerdict.notBus);
     await sync.push();
     final last = remote.puts.last.$2;
     expect(last['verdict'], 'not_bus');
     expect(last['path'], isNull);
     expect(last['halts'], isNull);
-    expect((await rides.watch().first).single.path, isEmpty);
+    expect(last['fromName'], isNull);
+    expect(last['toName'], isNull);
+    final kept = (await rides.watch().first).single;
+    expect(kept.path, isEmpty);
+    expect(kept.features, bus.features);
+  });
+
+  test('relabels without losing the path, unless Not a bus', () async {
+    await rides.save(bus);
+    await rides.setVerdict('ride1', RideVerdict.unknown);
+    final unsure = (await rides.watch().first).single;
+    expect(unsure.verdict, RideVerdict.unknown);
+    expect(unsure.path, bus.path);
+    expect(unsure.halts, hasLength(1));
+  });
+
+  test('names a ride once, and sends the names up', () async {
+    await sync.start();
+    await rides.save(bus);
+    expect((await rides.unnamed()).single.id, 'ride1');
+
+    await rides.setNames('ride1', from: 'Slave Island');
+    expect((await rides.unnamed()).single.fromName, 'Slave Island');
+    await rides.setNames('ride1', to: 'Fort');
+    await sync.push();
+    expect(await rides.unnamed(), isEmpty);
+    final named = (await rides.watch().first).single;
+    expect((named.fromName, named.toName), ('Slave Island', 'Fort'));
+    expect(remote.puts.last.$2['fromName'], 'Slave Island');
+    expect(remote.puts.last.$2['toName'], 'Fort');
+
+    // The same names again change nothing.
+    final sent = remote.puts.length;
+    await rides.setNames('ride1', from: 'Slave Island', to: 'Fort');
+    await sync.push();
+    expect(remote.puts, hasLength(sent));
+  });
+
+  test('watches one ride until it is removed', () async {
+    await rides.save(bus);
+    final seen = <RideRecord?>[];
+    final watching = rides.watchRide('ride1').listen(seen.add);
+    await pumpEventQueue();
+    await rides.setVerdict('ride1', RideVerdict.unknown);
+    await pumpEventQueue();
+    await rides.remove('ride1');
+    await pumpEventQueue();
+    await watching.cancel();
+    expect(seen.map((r) => r?.verdict), [
+      RideVerdict.bus,
+      RideVerdict.unknown,
+      null,
+    ]);
   });
 
   test('removes by marking, newest first otherwise', () async {

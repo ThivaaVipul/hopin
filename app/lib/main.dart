@@ -10,6 +10,7 @@ import 'package:hopin/core/profile/profile_repository.dart';
 import 'package:hopin/core/search/nominatim.dart';
 import 'package:hopin/core/update/updates.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
+import 'package:hopin/features/rides/widgets/ride_map.dart';
 import 'package:hopin/firebase_options.dart';
 
 Future<void> main() async {
@@ -32,6 +33,7 @@ Future<void> main() async {
       location: GeolocatorLocation(),
       nominatim: Nominatim(),
       mapBuilder: boardMap,
+      rideMapBuilder: boardRideMap,
       guide: ForegroundGuideService(),
       updates: GitHubUpdates(),
     ),

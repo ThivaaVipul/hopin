@@ -8,6 +8,7 @@ import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/places/place.dart';
 import 'package:hopin/core/ride/guide.dart';
 import 'package:hopin/core/ride/patterns.dart';
+import 'package:hopin/core/ride/ride_record.dart';
 import 'package:hopin/features/home/cubit/home_cubit.dart';
 import 'package:http/http.dart' as http;
 
@@ -373,6 +374,110 @@ void main() {
       await home.startGuide(title: 'Colombo Fort', language: 'en');
       expect(guide.started.single.stages, const [
         GuideStage(700, AlertPattern.heartbeat),
+      ]);
+      await home.close();
+    });
+  });
+
+  group('ride detection', () {
+    final ride = RideRecord(
+      id: 'ride1',
+      startedAt: DateTime.utc(2026, 1, 1, 8),
+      endedAt: DateTime.utc(2026, 1, 1, 8, 30),
+      verdict: RideVerdict.bus,
+      distanceM: 6000,
+      features: const {'minutes': 30},
+    );
+
+    test('offers detection once, when location is there', () async {
+      location.access = LocationAccess.granted;
+      final home = cubit();
+      await home.start();
+      expect(home.state.offerDetection, isTrue);
+      await home.detectionNotNow();
+      expect(home.state.offerDetection, isFalse);
+      await home.close();
+
+      final again = cubit();
+      await again.start();
+      expect(again.state.offerDetection, isFalse);
+      await again.close();
+    });
+
+    test('turning it on from the card', () async {
+      location.access = LocationAccess.granted;
+      final home = cubit();
+      await home.start();
+      await home.turnOnDetection('en');
+      expect((await guide.detection()).on, isTrue);
+      expect(home.state.offerDetection, isFalse);
+      await home.close();
+    });
+
+    test('no card while detection is already on', () async {
+      location.access = LocationAccess.granted;
+      guide.detected = const Detection(
+        on: true,
+        activity: true,
+        allTheTime: true,
+      );
+      final home = cubit();
+      await home.start();
+      expect(home.state.offerDetection, isFalse);
+      await home.close();
+    });
+
+    test('shows the question, and sends the answer', () async {
+      final home = cubit();
+      await home.start();
+      guide.emit(const RideQuestion());
+      expect(home.state.question, isTrue);
+      await home.answer('notbus');
+      expect(guide.answers, ['notbus']);
+      expect(home.state.question, isFalse);
+
+      guide.emit(const RideQuestion());
+      guide.emit(const RideAnswered());
+      expect(home.state.question, isFalse);
+      await home.close();
+    });
+
+    test('a place button starts ride mode', () async {
+      final home = cubit();
+      await home.start();
+      guide.emit(const RideQuestion());
+      const ride = GuideRide(
+        to: GeoPoint(6.9344, 79.8501),
+        title: 'Fort',
+        names: PlaceNames(si: 'කොළඹ කොටුව'),
+      );
+      guide.emit(const GuideStarted(ride));
+      expect(home.state.ride, ride);
+      expect(home.state.question, isFalse);
+      expect(home.state.destination?.point, ride.to);
+      await home.close();
+    });
+
+    test('keeps rides, also those finished while Hopin was closed', () async {
+      guide.pending.add(ride);
+      final home = cubit();
+      await home.start();
+      await pumpEventQueue();
+      expect((await workspace.rides.watch().first).single.id, 'ride1');
+      expect(guide.forgotten, ['ride1']);
+
+      final later = RideRecord(
+        id: 'ride2',
+        startedAt: DateTime.utc(2026, 1, 2, 8),
+        endedAt: DateTime.utc(2026, 1, 2, 9),
+        verdict: RideVerdict.notBus,
+        distanceM: 900,
+      );
+      guide.emit(RideLogged(later));
+      await pumpEventQueue();
+      expect((await workspace.rides.watch().first).map((r) => r.id), [
+        'ride2',
+        'ride1',
       ]);
       await home.close();
     });

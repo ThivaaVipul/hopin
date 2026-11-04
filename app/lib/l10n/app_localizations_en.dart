@@ -331,4 +331,35 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get checkFailed =>
       'Couldn\'t check. Check your internet and try again.';
+
+  @override
+  String get checkingRide => 'Checking your ride';
+
+  @override
+  String get onABus => 'On a bus?';
+
+  @override
+  String get yes => 'Yes';
+
+  @override
+  String get notABus => 'Not a bus';
+
+  @override
+  String get busRide => 'On a bus';
+
+  @override
+  String get noticeRides => 'Notice bus rides';
+
+  @override
+  String get noticeWhy =>
+      'Hopin can notice your bus rides and ask where you are getting off.';
+
+  @override
+  String get needsAllTheTime => 'Needs location set to Allow all the time';
+
+  @override
+  String get needsActivity => 'Needs Physical activity';
+
+  @override
+  String get pretendRide => 'Pretend a ride started';
 }

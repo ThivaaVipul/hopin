@@ -45,6 +45,37 @@ class Recents extends Table {
   Set<Column<Object>> get primaryKey => {key};
 }
 
+/// Logged vehicle rides: a copy of `people/{uid}/rides`, plus this phone's
+/// writes that the server hasn't confirmed yet ([pendingSince]).
+@DataClassName('RideRow')
+class Rides extends Table {
+  TextColumn get id => text()();
+
+  /// Microseconds since the epoch.
+  IntColumn get startedAt => integer()();
+  IntColumn get endedAt => integer()();
+
+  /// `bus`, `not_bus` or `unknown`.
+  TextColumn get verdict => text()();
+  IntColumn get distanceM => integer()();
+
+  /// Encoded polylines; none for a ride that was not a bus.
+  TextColumn get path => text().nullable()();
+  TextColumn get halts => text().nullable()();
+
+  /// The bus logic's numbers, as JSON.
+  TextColumn get features => text()();
+  TextColumn get guideTo => text().nullable()();
+  TextColumn get fromName => text().nullable()();
+  TextColumn get toName => text().nullable()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+  IntColumn get pendingSince => integer().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 /// This phone's own choices and bookkeeping (sync cursors, one-time cards).
 @DataClassName('SettingRow')
 class Settings extends Table {
@@ -56,7 +87,7 @@ class Settings extends Table {
 }
 
 /// One database per account on a phone (`hopin_<uid>`).
-@DriftDatabase(tables: [Places, Recents, Settings])
+@DriftDatabase(tables: [Places, Recents, Rides, Settings])
 class HopinDatabase extends _$HopinDatabase {
   HopinDatabase(super.executor);
 
@@ -64,7 +95,7 @@ class HopinDatabase extends _$HopinDatabase {
       HopinDatabase(driftDatabase(name: 'hopin_$uid'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   // Places are a copy of Firestore, so a new schema rebuilds the tables and the
   // sync fills them again from the start; unsynced writes are read back from

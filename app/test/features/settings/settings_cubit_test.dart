@@ -96,4 +96,16 @@ void main() {
     expect(guide.appSettingsOpened, 1);
     await settings.close();
   });
+
+  test('turns ride detection on and off', () async {
+    final settings = await started();
+    expect(settings.state.detection?.on, isFalse);
+    await settings.setDetection(on: true, language: 'en');
+    expect(settings.state.detection?.on, isTrue);
+    await settings.setDetection(on: false, language: 'en');
+    expect(settings.state.detection?.on, isFalse);
+    await settings.detectNow();
+    expect(guide.detectNows, 1);
+    await settings.close();
+  });
 }

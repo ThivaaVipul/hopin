@@ -9,6 +9,7 @@ import 'package:hopin/core/data/places_repository.dart';
 import 'package:hopin/core/data/places_sync.dart';
 import 'package:hopin/core/data/recents_repository.dart';
 import 'package:hopin/core/data/remote/remote.dart';
+import 'package:hopin/core/data/rides_repository.dart';
 import 'package:hopin/core/data/settings_sync.dart';
 
 typedef DatabaseOpener = HopinDatabase Function(String uid);
@@ -21,11 +22,14 @@ class Workspace {
       places = PlacesRepository(db),
       recents = RecentsRepository(db),
       settings = SettingsStore(db),
-      _sync = PlacesSync(db, remote, uid) {
+      rides = RidesRepository(db),
+      _sync = PlacesSync(db, remote, uid),
+      _ridesSync = RidesSync(db, remote, uid) {
     appSettings = AppSettings(settings);
     _settingsSync = SettingsSync(appSettings, settings, remote, uid);
     places.onChange = () => unawaited(_sync.push());
     appSettings.onChange = () => unawaited(_settingsSync.push());
+    rides.onChange = () => unawaited(_ridesSync.push());
   }
 
   final String uid;
@@ -34,21 +38,33 @@ class Workspace {
   final RecentsRepository recents;
   final SettingsStore settings;
 
+  /// The logged vehicle rides.
+  final RidesRepository rides;
+
   /// The language and alert stages, which follow the account.
   late final AppSettings appSettings;
   final PlacesSync _sync;
   late final SettingsSync _settingsSync;
+  final RidesSync _ridesSync;
 
   Future<void> setRider({required bool isRider}) async {
     if (isRider) {
-      await Future.wait([_sync.start(), _settingsSync.start()]);
+      await Future.wait([
+        _sync.start(),
+        _settingsSync.start(),
+        _ridesSync.start(),
+      ]);
     } else {
-      await Future.wait([_sync.stop(), _settingsSync.stop()]);
+      await Future.wait([
+        _sync.stop(),
+        _settingsSync.stop(),
+        _ridesSync.stop(),
+      ]);
     }
   }
 
   Future<void> close() async {
-    await Future.wait([_sync.stop(), _settingsSync.stop()]);
+    await Future.wait([_sync.stop(), _settingsSync.stop(), _ridesSync.stop()]);
     await _db.close();
   }
 }

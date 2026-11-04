@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hopin/app/session/session_cubit.dart';
@@ -202,6 +203,24 @@ class _SettingsViewState extends State<_SettingsView> {
               title: l.thisPhone,
               child: Column(
                 children: [
+                  _Detection(
+                    detection: state.detection,
+                    onChanged: (on) => unawaited(
+                      cubit.setDetection(
+                        on: on,
+                        language: Localizations.localeOf(context).languageCode,
+                      ),
+                    ),
+                  ),
+                  if (kDebugMode)
+                    _Line(
+                      text: l.pretendRide,
+                      muted: true,
+                      action: _BoardButton(
+                        label: l.start,
+                        onPressed: () => unawaited(cubit.detectNow()),
+                      ),
+                    ),
                   _Line(
                     text: state.notificationsOn == false
                         ? l.notificationsOff
@@ -382,6 +401,55 @@ class _Line extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Notice bus rides: the switch, and what's missing when it can't be on.
+class _Detection extends StatelessWidget {
+  const _Detection({required this.detection, required this.onChanged});
+
+  final Detection? detection;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final colors = context.colors;
+    final detection = this.detection;
+    final missing = detection == null || detection.on
+        ? null
+        : !detection.activity
+        ? l.needsActivity
+        : !detection.allTheTime
+        ? l.needsAllTheTime
+        : null;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Line(
+          text: l.noticeRides,
+          action: Switch(
+            value: detection?.on ?? false,
+            onChanged: detection == null ? null : onChanged,
+            activeThumbColor: colors.onAmber,
+            activeTrackColor: colors.amber,
+            inactiveThumbColor: colors.onBoardMuted,
+            inactiveTrackColor: colors.board,
+          ),
+        ),
+        if (missing != null &&
+            (detection?.activity == true || detection?.allTheTime == true))
+          Padding(
+            padding: const EdgeInsetsDirectional.only(start: 12, bottom: 12),
+            child: Text(
+              missing,
+              style: context.text.bodyMedium?.copyWith(
+                color: colors.onBoardUrgent,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

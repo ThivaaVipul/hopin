@@ -15,6 +15,7 @@ class SettingsState extends Equatable {
     this.notificationsOn,
     this.runsInBackground,
     this.maker = PhoneMaker.other,
+    this.detection,
   });
 
   final List<SavedPlace> places;
@@ -27,18 +28,23 @@ class SettingsState extends Equatable {
   final bool? runsInBackground;
   final PhoneMaker maker;
 
+  /// Null until the phone has answered.
+  final Detection? detection;
+
   SettingsState copyWith({
     List<SavedPlace>? places,
     List<GuideStage>? stages,
     bool? notificationsOn,
     bool? runsInBackground,
     PhoneMaker? maker,
+    Detection? detection,
   }) => SettingsState(
     places: places ?? this.places,
     stages: stages ?? this.stages,
     notificationsOn: notificationsOn ?? this.notificationsOn,
     runsInBackground: runsInBackground ?? this.runsInBackground,
     maker: maker ?? this.maker,
+    detection: detection ?? this.detection,
   );
 
   @override
@@ -48,6 +54,7 @@ class SettingsState extends Equatable {
     notificationsOn,
     runsInBackground,
     maker,
+    detection,
   ];
 }
 
@@ -75,10 +82,11 @@ class SettingsCubit extends Cubit<SettingsState> {
   /// Notifications and the background state, which change in Android's
   /// settings (so again when Hopin comes back to the front).
   Future<void> checkPhone() async {
-    final (notifications, background, maker) = await (
+    final (notifications, background, maker, detection) = await (
       _guide.notificationsAllowed(),
       _guide.runsInBackground(),
       _guide.maker(),
+      _guide.detection(),
     ).wait;
     if (isClosed) return;
     emit(
@@ -86,6 +94,7 @@ class SettingsCubit extends Cubit<SettingsState> {
         notificationsOn: notifications,
         runsInBackground: background,
         maker: maker,
+        detection: detection,
       ),
     );
   }
@@ -155,6 +164,22 @@ class SettingsCubit extends Cubit<SettingsState> {
   }
 
   Future<void> openMakerSettings() => _guide.openMakerSettings();
+
+  /// The Notice bus rides switch.
+  Future<void> setDetection({
+    required bool on,
+    required String language,
+  }) async {
+    if (on) {
+      await _guide.turnOnDetection(language);
+    } else {
+      await _guide.turnOffDetection();
+    }
+    await checkPhone();
+  }
+
+  /// Test builds: watch a ride now, without a vehicle.
+  Future<void> detectNow() => _guide.detectNow();
 
   @override
   Future<void> close() async {

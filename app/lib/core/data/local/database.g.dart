@@ -1211,6 +1211,817 @@ class RecentsCompanion extends UpdateCompanion<RecentRow> {
   }
 }
 
+class $RidesTable extends Rides with TableInfo<$RidesTable, RideRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RidesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<int> startedAt = GeneratedColumn<int>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endedAtMeta = const VerificationMeta(
+    'endedAt',
+  );
+  @override
+  late final GeneratedColumn<int> endedAt = GeneratedColumn<int>(
+    'ended_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _verdictMeta = const VerificationMeta(
+    'verdict',
+  );
+  @override
+  late final GeneratedColumn<String> verdict = GeneratedColumn<String>(
+    'verdict',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _distanceMMeta = const VerificationMeta(
+    'distanceM',
+  );
+  @override
+  late final GeneratedColumn<int> distanceM = GeneratedColumn<int>(
+    'distance_m',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pathMeta = const VerificationMeta('path');
+  @override
+  late final GeneratedColumn<String> path = GeneratedColumn<String>(
+    'path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _haltsMeta = const VerificationMeta('halts');
+  @override
+  late final GeneratedColumn<String> halts = GeneratedColumn<String>(
+    'halts',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _featuresMeta = const VerificationMeta(
+    'features',
+  );
+  @override
+  late final GeneratedColumn<String> features = GeneratedColumn<String>(
+    'features',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _guideToMeta = const VerificationMeta(
+    'guideTo',
+  );
+  @override
+  late final GeneratedColumn<String> guideTo = GeneratedColumn<String>(
+    'guide_to',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fromNameMeta = const VerificationMeta(
+    'fromName',
+  );
+  @override
+  late final GeneratedColumn<String> fromName = GeneratedColumn<String>(
+    'from_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _toNameMeta = const VerificationMeta('toName');
+  @override
+  late final GeneratedColumn<String> toName = GeneratedColumn<String>(
+    'to_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _pendingSinceMeta = const VerificationMeta(
+    'pendingSince',
+  );
+  @override
+  late final GeneratedColumn<int> pendingSince = GeneratedColumn<int>(
+    'pending_since',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    startedAt,
+    endedAt,
+    verdict,
+    distanceM,
+    path,
+    halts,
+    features,
+    guideTo,
+    fromName,
+    toName,
+    updatedAt,
+    deletedAt,
+    pendingSince,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'rides';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RideRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('ended_at')) {
+      context.handle(
+        _endedAtMeta,
+        endedAt.isAcceptableOrUnknown(data['ended_at']!, _endedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_endedAtMeta);
+    }
+    if (data.containsKey('verdict')) {
+      context.handle(
+        _verdictMeta,
+        verdict.isAcceptableOrUnknown(data['verdict']!, _verdictMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_verdictMeta);
+    }
+    if (data.containsKey('distance_m')) {
+      context.handle(
+        _distanceMMeta,
+        distanceM.isAcceptableOrUnknown(data['distance_m']!, _distanceMMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_distanceMMeta);
+    }
+    if (data.containsKey('path')) {
+      context.handle(
+        _pathMeta,
+        path.isAcceptableOrUnknown(data['path']!, _pathMeta),
+      );
+    }
+    if (data.containsKey('halts')) {
+      context.handle(
+        _haltsMeta,
+        halts.isAcceptableOrUnknown(data['halts']!, _haltsMeta),
+      );
+    }
+    if (data.containsKey('features')) {
+      context.handle(
+        _featuresMeta,
+        features.isAcceptableOrUnknown(data['features']!, _featuresMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_featuresMeta);
+    }
+    if (data.containsKey('guide_to')) {
+      context.handle(
+        _guideToMeta,
+        guideTo.isAcceptableOrUnknown(data['guide_to']!, _guideToMeta),
+      );
+    }
+    if (data.containsKey('from_name')) {
+      context.handle(
+        _fromNameMeta,
+        fromName.isAcceptableOrUnknown(data['from_name']!, _fromNameMeta),
+      );
+    }
+    if (data.containsKey('to_name')) {
+      context.handle(
+        _toNameMeta,
+        toName.isAcceptableOrUnknown(data['to_name']!, _toNameMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('pending_since')) {
+      context.handle(
+        _pendingSinceMeta,
+        pendingSince.isAcceptableOrUnknown(
+          data['pending_since']!,
+          _pendingSinceMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RideRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RideRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}started_at'],
+      )!,
+      endedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}ended_at'],
+      )!,
+      verdict: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}verdict'],
+      )!,
+      distanceM: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}distance_m'],
+      )!,
+      path: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}path'],
+      ),
+      halts: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}halts'],
+      ),
+      features: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}features'],
+      )!,
+      guideTo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}guide_to'],
+      ),
+      fromName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}from_name'],
+      ),
+      toName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}to_name'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      pendingSince: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pending_since'],
+      ),
+    );
+  }
+
+  @override
+  $RidesTable createAlias(String alias) {
+    return $RidesTable(attachedDatabase, alias);
+  }
+}
+
+class RideRow extends DataClass implements Insertable<RideRow> {
+  final String id;
+
+  /// Microseconds since the epoch.
+  final int startedAt;
+  final int endedAt;
+
+  /// `bus`, `not_bus` or `unknown`.
+  final String verdict;
+  final int distanceM;
+
+  /// Encoded polylines; none for a ride that was not a bus.
+  final String? path;
+  final String? halts;
+
+  /// The bus logic's numbers, as JSON.
+  final String features;
+  final String? guideTo;
+  final String? fromName;
+  final String? toName;
+  final int updatedAt;
+  final int? deletedAt;
+  final int? pendingSince;
+  const RideRow({
+    required this.id,
+    required this.startedAt,
+    required this.endedAt,
+    required this.verdict,
+    required this.distanceM,
+    this.path,
+    this.halts,
+    required this.features,
+    this.guideTo,
+    this.fromName,
+    this.toName,
+    required this.updatedAt,
+    this.deletedAt,
+    this.pendingSince,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['started_at'] = Variable<int>(startedAt);
+    map['ended_at'] = Variable<int>(endedAt);
+    map['verdict'] = Variable<String>(verdict);
+    map['distance_m'] = Variable<int>(distanceM);
+    if (!nullToAbsent || path != null) {
+      map['path'] = Variable<String>(path);
+    }
+    if (!nullToAbsent || halts != null) {
+      map['halts'] = Variable<String>(halts);
+    }
+    map['features'] = Variable<String>(features);
+    if (!nullToAbsent || guideTo != null) {
+      map['guide_to'] = Variable<String>(guideTo);
+    }
+    if (!nullToAbsent || fromName != null) {
+      map['from_name'] = Variable<String>(fromName);
+    }
+    if (!nullToAbsent || toName != null) {
+      map['to_name'] = Variable<String>(toName);
+    }
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    if (!nullToAbsent || pendingSince != null) {
+      map['pending_since'] = Variable<int>(pendingSince);
+    }
+    return map;
+  }
+
+  RidesCompanion toCompanion(bool nullToAbsent) {
+    return RidesCompanion(
+      id: Value(id),
+      startedAt: Value(startedAt),
+      endedAt: Value(endedAt),
+      verdict: Value(verdict),
+      distanceM: Value(distanceM),
+      path: path == null && nullToAbsent ? const Value.absent() : Value(path),
+      halts: halts == null && nullToAbsent
+          ? const Value.absent()
+          : Value(halts),
+      features: Value(features),
+      guideTo: guideTo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(guideTo),
+      fromName: fromName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fromName),
+      toName: toName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(toName),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      pendingSince: pendingSince == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pendingSince),
+    );
+  }
+
+  factory RideRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RideRow(
+      id: serializer.fromJson<String>(json['id']),
+      startedAt: serializer.fromJson<int>(json['startedAt']),
+      endedAt: serializer.fromJson<int>(json['endedAt']),
+      verdict: serializer.fromJson<String>(json['verdict']),
+      distanceM: serializer.fromJson<int>(json['distanceM']),
+      path: serializer.fromJson<String?>(json['path']),
+      halts: serializer.fromJson<String?>(json['halts']),
+      features: serializer.fromJson<String>(json['features']),
+      guideTo: serializer.fromJson<String?>(json['guideTo']),
+      fromName: serializer.fromJson<String?>(json['fromName']),
+      toName: serializer.fromJson<String?>(json['toName']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      pendingSince: serializer.fromJson<int?>(json['pendingSince']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'startedAt': serializer.toJson<int>(startedAt),
+      'endedAt': serializer.toJson<int>(endedAt),
+      'verdict': serializer.toJson<String>(verdict),
+      'distanceM': serializer.toJson<int>(distanceM),
+      'path': serializer.toJson<String?>(path),
+      'halts': serializer.toJson<String?>(halts),
+      'features': serializer.toJson<String>(features),
+      'guideTo': serializer.toJson<String?>(guideTo),
+      'fromName': serializer.toJson<String?>(fromName),
+      'toName': serializer.toJson<String?>(toName),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'pendingSince': serializer.toJson<int?>(pendingSince),
+    };
+  }
+
+  RideRow copyWith({
+    String? id,
+    int? startedAt,
+    int? endedAt,
+    String? verdict,
+    int? distanceM,
+    Value<String?> path = const Value.absent(),
+    Value<String?> halts = const Value.absent(),
+    String? features,
+    Value<String?> guideTo = const Value.absent(),
+    Value<String?> fromName = const Value.absent(),
+    Value<String?> toName = const Value.absent(),
+    int? updatedAt,
+    Value<int?> deletedAt = const Value.absent(),
+    Value<int?> pendingSince = const Value.absent(),
+  }) => RideRow(
+    id: id ?? this.id,
+    startedAt: startedAt ?? this.startedAt,
+    endedAt: endedAt ?? this.endedAt,
+    verdict: verdict ?? this.verdict,
+    distanceM: distanceM ?? this.distanceM,
+    path: path.present ? path.value : this.path,
+    halts: halts.present ? halts.value : this.halts,
+    features: features ?? this.features,
+    guideTo: guideTo.present ? guideTo.value : this.guideTo,
+    fromName: fromName.present ? fromName.value : this.fromName,
+    toName: toName.present ? toName.value : this.toName,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    pendingSince: pendingSince.present ? pendingSince.value : this.pendingSince,
+  );
+  RideRow copyWithCompanion(RidesCompanion data) {
+    return RideRow(
+      id: data.id.present ? data.id.value : this.id,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      endedAt: data.endedAt.present ? data.endedAt.value : this.endedAt,
+      verdict: data.verdict.present ? data.verdict.value : this.verdict,
+      distanceM: data.distanceM.present ? data.distanceM.value : this.distanceM,
+      path: data.path.present ? data.path.value : this.path,
+      halts: data.halts.present ? data.halts.value : this.halts,
+      features: data.features.present ? data.features.value : this.features,
+      guideTo: data.guideTo.present ? data.guideTo.value : this.guideTo,
+      fromName: data.fromName.present ? data.fromName.value : this.fromName,
+      toName: data.toName.present ? data.toName.value : this.toName,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      pendingSince: data.pendingSince.present
+          ? data.pendingSince.value
+          : this.pendingSince,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RideRow(')
+          ..write('id: $id, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('verdict: $verdict, ')
+          ..write('distanceM: $distanceM, ')
+          ..write('path: $path, ')
+          ..write('halts: $halts, ')
+          ..write('features: $features, ')
+          ..write('guideTo: $guideTo, ')
+          ..write('fromName: $fromName, ')
+          ..write('toName: $toName, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('pendingSince: $pendingSince')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    startedAt,
+    endedAt,
+    verdict,
+    distanceM,
+    path,
+    halts,
+    features,
+    guideTo,
+    fromName,
+    toName,
+    updatedAt,
+    deletedAt,
+    pendingSince,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RideRow &&
+          other.id == this.id &&
+          other.startedAt == this.startedAt &&
+          other.endedAt == this.endedAt &&
+          other.verdict == this.verdict &&
+          other.distanceM == this.distanceM &&
+          other.path == this.path &&
+          other.halts == this.halts &&
+          other.features == this.features &&
+          other.guideTo == this.guideTo &&
+          other.fromName == this.fromName &&
+          other.toName == this.toName &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.pendingSince == this.pendingSince);
+}
+
+class RidesCompanion extends UpdateCompanion<RideRow> {
+  final Value<String> id;
+  final Value<int> startedAt;
+  final Value<int> endedAt;
+  final Value<String> verdict;
+  final Value<int> distanceM;
+  final Value<String?> path;
+  final Value<String?> halts;
+  final Value<String> features;
+  final Value<String?> guideTo;
+  final Value<String?> fromName;
+  final Value<String?> toName;
+  final Value<int> updatedAt;
+  final Value<int?> deletedAt;
+  final Value<int?> pendingSince;
+  final Value<int> rowid;
+  const RidesCompanion({
+    this.id = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.endedAt = const Value.absent(),
+    this.verdict = const Value.absent(),
+    this.distanceM = const Value.absent(),
+    this.path = const Value.absent(),
+    this.halts = const Value.absent(),
+    this.features = const Value.absent(),
+    this.guideTo = const Value.absent(),
+    this.fromName = const Value.absent(),
+    this.toName = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.pendingSince = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RidesCompanion.insert({
+    required String id,
+    required int startedAt,
+    required int endedAt,
+    required String verdict,
+    required int distanceM,
+    this.path = const Value.absent(),
+    this.halts = const Value.absent(),
+    required String features,
+    this.guideTo = const Value.absent(),
+    this.fromName = const Value.absent(),
+    this.toName = const Value.absent(),
+    required int updatedAt,
+    this.deletedAt = const Value.absent(),
+    this.pendingSince = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       startedAt = Value(startedAt),
+       endedAt = Value(endedAt),
+       verdict = Value(verdict),
+       distanceM = Value(distanceM),
+       features = Value(features),
+       updatedAt = Value(updatedAt);
+  static Insertable<RideRow> custom({
+    Expression<String>? id,
+    Expression<int>? startedAt,
+    Expression<int>? endedAt,
+    Expression<String>? verdict,
+    Expression<int>? distanceM,
+    Expression<String>? path,
+    Expression<String>? halts,
+    Expression<String>? features,
+    Expression<String>? guideTo,
+    Expression<String>? fromName,
+    Expression<String>? toName,
+    Expression<int>? updatedAt,
+    Expression<int>? deletedAt,
+    Expression<int>? pendingSince,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (startedAt != null) 'started_at': startedAt,
+      if (endedAt != null) 'ended_at': endedAt,
+      if (verdict != null) 'verdict': verdict,
+      if (distanceM != null) 'distance_m': distanceM,
+      if (path != null) 'path': path,
+      if (halts != null) 'halts': halts,
+      if (features != null) 'features': features,
+      if (guideTo != null) 'guide_to': guideTo,
+      if (fromName != null) 'from_name': fromName,
+      if (toName != null) 'to_name': toName,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (pendingSince != null) 'pending_since': pendingSince,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RidesCompanion copyWith({
+    Value<String>? id,
+    Value<int>? startedAt,
+    Value<int>? endedAt,
+    Value<String>? verdict,
+    Value<int>? distanceM,
+    Value<String?>? path,
+    Value<String?>? halts,
+    Value<String>? features,
+    Value<String?>? guideTo,
+    Value<String?>? fromName,
+    Value<String?>? toName,
+    Value<int>? updatedAt,
+    Value<int?>? deletedAt,
+    Value<int?>? pendingSince,
+    Value<int>? rowid,
+  }) {
+    return RidesCompanion(
+      id: id ?? this.id,
+      startedAt: startedAt ?? this.startedAt,
+      endedAt: endedAt ?? this.endedAt,
+      verdict: verdict ?? this.verdict,
+      distanceM: distanceM ?? this.distanceM,
+      path: path ?? this.path,
+      halts: halts ?? this.halts,
+      features: features ?? this.features,
+      guideTo: guideTo ?? this.guideTo,
+      fromName: fromName ?? this.fromName,
+      toName: toName ?? this.toName,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      pendingSince: pendingSince ?? this.pendingSince,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<int>(startedAt.value);
+    }
+    if (endedAt.present) {
+      map['ended_at'] = Variable<int>(endedAt.value);
+    }
+    if (verdict.present) {
+      map['verdict'] = Variable<String>(verdict.value);
+    }
+    if (distanceM.present) {
+      map['distance_m'] = Variable<int>(distanceM.value);
+    }
+    if (path.present) {
+      map['path'] = Variable<String>(path.value);
+    }
+    if (halts.present) {
+      map['halts'] = Variable<String>(halts.value);
+    }
+    if (features.present) {
+      map['features'] = Variable<String>(features.value);
+    }
+    if (guideTo.present) {
+      map['guide_to'] = Variable<String>(guideTo.value);
+    }
+    if (fromName.present) {
+      map['from_name'] = Variable<String>(fromName.value);
+    }
+    if (toName.present) {
+      map['to_name'] = Variable<String>(toName.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (pendingSince.present) {
+      map['pending_since'] = Variable<int>(pendingSince.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RidesCompanion(')
+          ..write('id: $id, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('endedAt: $endedAt, ')
+          ..write('verdict: $verdict, ')
+          ..write('distanceM: $distanceM, ')
+          ..write('path: $path, ')
+          ..write('halts: $halts, ')
+          ..write('features: $features, ')
+          ..write('guideTo: $guideTo, ')
+          ..write('fromName: $fromName, ')
+          ..write('toName: $toName, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('pendingSince: $pendingSince, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SettingsTable extends Settings
     with TableInfo<$SettingsTable, SettingRow> {
   @override
@@ -1423,6 +2234,7 @@ abstract class _$HopinDatabase extends GeneratedDatabase {
   _$HopinDatabase(QueryExecutor e) : super(e);
   late final $PlacesTable places = $PlacesTable(this);
   late final $RecentsTable recents = $RecentsTable(this);
+  late final $RidesTable rides = $RidesTable(this);
   late final $SettingsTable settings = $SettingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -1431,6 +2243,7 @@ abstract class _$HopinDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     places,
     recents,
+    rides,
     settings,
   ];
 }

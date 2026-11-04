@@ -90,4 +90,7 @@ class SettingsStore {
 
   /// Android's background popup and the maker's steps, at the first Start.
   static const batteryExplained = 'card.battery';
+
+  /// The one-time card offering ride detection (M1b).
+  static const detectionOffered = 'card.detection';
 }

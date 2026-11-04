@@ -97,8 +97,15 @@ class _BoardMapState extends State<BoardMap> {
   List<Circle> _places = const [];
   List<SavedPlace>? _drawnPlaces;
 
-  /// Stop dots by stop id.
-  Map<String, Circle> _stops = {};
+  /// The stops' source and layer: every stop at once, drawn by the map
+  /// itself from street level in (one call per change, however many).
+  static const _stopSource = 'hopin-stops';
+  static const _stopLayer = 'hopin-stops-dots';
+
+  /// Stop dots show from this zoom in (street level).
+  static const stopsFrom = 15.0;
+  bool _stopsAdded = false;
+  List<Stop>? _drawnStops;
 
   @override
   void initState() {
@@ -118,7 +125,8 @@ class _BoardMapState extends State<BoardMap> {
       }
       _places = const [];
       _drawnPlaces = null;
-      _stops = {};
+      _stopsAdded = false;
+      _drawnStops = null;
     } else {
       _redraw();
     }
@@ -193,39 +201,68 @@ class _BoardMapState extends State<BoardMap> {
     await _me.show(controller, props.me);
   }
 
-  /// Adds the stops that came into view and removes those that left.
+  /// All the stops as one GeoJSON source and one circle layer, under the
+  /// markers; a change of stops is one update, not a call per dot.
   Future<void> _drawStops(
     MapLibreMapController controller,
     List<Stop> stops,
   ) async {
-    final wanted = {for (final stop in stops) stop.id: stop};
-    final gone = [
-      for (final MapEntry(:key, :value) in _stops.entries)
-        if (!wanted.containsKey(key)) value,
-    ];
-    if (gone.isNotEmpty) await controller.removeCircles(gone);
-    _stops = {
-      for (final MapEntry(:key, :value) in _stops.entries)
-        if (wanted.containsKey(key)) key: value,
-    };
-    for (final stop in stops) {
-      if (_stops.containsKey(stop.id)) continue;
-      _stops[stop.id] = await controller.addCircle(
-        CircleOptions(
-          geometry: _latLng(stop.point),
-          circleRadius: 5,
-          circleColor: '#F4F1E8',
-          circleStrokeColor: stop.learned ? _amber : _board,
-          circleStrokeWidth: 2,
-        ),
-        {'stop': stop.id},
-      );
+    if (identical(stops, _drawnStops)) return;
+    _drawnStops = stops;
+    final data = _stopFeatures(stops);
+    if (_stopsAdded) {
+      await controller.setGeoJsonSource(_stopSource, data);
+      return;
     }
+    _stopsAdded = true;
+    await controller.addGeoJsonSource(_stopSource, data, promoteId: 'sid');
+    await controller.addCircleLayer(
+      _stopSource,
+      _stopLayer,
+      const CircleLayerProperties(
+        circleRadius: 5,
+        circleColor: '#F4F1E8',
+        circleStrokeWidth: 2,
+        // Learned stops ringed in amber, OSM's in the board's green-black.
+        circleStrokeColor: [
+          'case',
+          [
+            '==',
+            ['get', 'learned'],
+            true,
+          ],
+          _amber,
+          _board,
+        ],
+      ),
+      belowLayerId: controller.circleManager?.layerIds.firstOrNull,
+      minzoom: stopsFrom,
+    );
   }
 
-  void _tapped(Circle circle) {
-    final id = circle.data?['stop'];
-    if (id is String) widget.props.onStopTap?.call(id);
+  static Map<String, dynamic> _stopFeatures(List<Stop> stops) => {
+    'type': 'FeatureCollection',
+    'features': [
+      for (final stop in stops)
+        {
+          'type': 'Feature',
+          'properties': {'sid': stop.id, 'learned': stop.learned},
+          'geometry': {
+            'type': 'Point',
+            'coordinates': [stop.point.lng, stop.point.lat],
+          },
+        },
+    ],
+  };
+
+  void _featureTapped(
+    Point<double> point,
+    LatLng at,
+    String id,
+    String layerId,
+    Annotation? annotation,
+  ) {
+    if (layerId == _stopLayer) widget.props.onStopTap?.call(id);
   }
 
   Future<void> _idle() async {
@@ -258,7 +295,7 @@ class _BoardMapState extends State<BoardMap> {
       ),
       onMapCreated: (controller) {
         _controller = controller;
-        controller.onCircleTapped.add(_tapped);
+        controller.onFeatureTapped.add(_featureTapped);
       },
       onStyleLoadedCallback: () {
         _styled = true;

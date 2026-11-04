@@ -207,4 +207,128 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guideNeedsLocation => 'Turn on location to start a guide.';
+
+  @override
+  String get settings => 'Settings';
+
+  @override
+  String get places => 'Places';
+
+  @override
+  String get noPlaces => 'No saved places yet';
+
+  @override
+  String get reorder => 'Drag to reorder';
+
+  @override
+  String get alerts => 'Alerts';
+
+  @override
+  String get addStage => 'Add a stage';
+
+  @override
+  String get removeStage => 'Remove';
+
+  @override
+  String get tryIt => 'Try';
+
+  @override
+  String get patternGentleDoubleTap => 'Gentle double tap';
+
+  @override
+  String get patternStrongLongBuzz => 'Strong long buzz';
+
+  @override
+  String get patternHeartbeat => 'Heartbeat';
+
+  @override
+  String get patternTripleKnock => 'Triple knock';
+
+  @override
+  String get patternRising => 'Rising';
+
+  @override
+  String get patternWaves => 'Waves';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get english => 'English';
+
+  @override
+  String get tamil => 'தமிழ்';
+
+  @override
+  String get thisPhone => 'This phone';
+
+  @override
+  String get notificationsOn => 'Notifications are on';
+
+  @override
+  String get notificationsOff => 'Notifications are off';
+
+  @override
+  String get turnOn => 'Turn on';
+
+  @override
+  String get batteryGuide => 'Battery guide';
+
+  @override
+  String get runsInBackground => 'Hopin can run in the background';
+
+  @override
+  String get mayBeStopped => 'Your phone may stop Hopin';
+
+  @override
+  String get updates => 'Updates';
+
+  @override
+  String versionLabel(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get devBuild => 'Test build';
+
+  @override
+  String get checkUpdates => 'Check';
+
+  @override
+  String get upToDate => 'Up to date';
+
+  @override
+  String updateReady(String version) {
+    return 'Hopin $version is ready';
+  }
+
+  @override
+  String get update => 'Update';
+
+  @override
+  String downloading(int percent) {
+    return 'Downloading $percent%';
+  }
+
+  @override
+  String get updateFailed => 'The update didn\'t download. Try again.';
+
+  @override
+  String get allowInstalls =>
+      'Allow Hopin to install apps, then tap Update again.';
+
+  @override
+  String stillGoing(String place) {
+    return 'Still going to $place?';
+  }
+
+  @override
+  String get keep => 'Keep';
+
+  @override
+  String get guideGaveUp => 'The guide stopped: no closer in 2 hours.';
+
+  @override
+  String get checkFailed =>
+      'Couldn\'t check. Check your internet and try again.';
 }

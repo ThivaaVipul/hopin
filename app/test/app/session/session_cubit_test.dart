@@ -37,7 +37,7 @@ void main() {
 
   blocTest<SessionCubit, SessionState>(
     'saves the profile only once the account is a rider, once per session',
-    build: () => SessionCubit(auth, profiles, language: 'ta'),
+    build: () => SessionCubit(auth, profiles, language: () => 'ta'),
     act: (cubit) {
       auth
         ..emit(newcomer)

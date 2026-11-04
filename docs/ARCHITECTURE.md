@@ -12,7 +12,8 @@ How Hopin is built. Decisions and progress are in [PLAN.md](PLAN.md); this file 
 - **No server code.** Firebase Spark only (Firestore and Google sign-in); access is enforced by Firestore rules that admit only the two riders' accounts.
 - **Map:** MapLibre (`maplibre_gl`, native and GPU-drawn) with OpenFreeMap's vector tiles: free, no key, no usage limits, commercial use allowed. The app ships its own style JSON per theme, derived from OpenFreeMap's Positron and Dark and recoloured to the Board palette, showing only streets, water, parks, buildings and town names (the app draws its own markers). Attribution "OpenFreeMap © OpenMapTiles Data from OpenStreetMap" stays on the map. Tiles the map has shown are cached by MapLibre. The map renders into a `TextureView` (`MapLibreMap.useHybridComposition`, set before the first map): the default `GLSurfaceView` can only be embedded through a virtual display, which stuttered and flickered under closing sheets on the phone. Markers are the map's own circles, redrawn one at a time and only when they move. The styles come from `scripts/map_style/build_styles.py`.
 - **Search:** Nominatim, typed then searched (its policy forbids search as you type), at most one request a second, with an identifying user agent and results cached on the phone. Results ask for `namedetails`, so each carries `name:en`, `name:ta` and `name:si`; "Now near" uses Nominatim's reverse lookup about once a minute.
-- **Notifications and alerts are local:** `flutter_local_notifications` for "On a bus?" (with action buttons) and the get-off alert; the phone's vibrator for the buzz; `flutter_tts` for the optional spoken line, only if M1a shows it's easy.
+- **Notifications and alerts are local:** `flutter_local_notifications` for "On a bus?" (with action buttons) and the get-off alert; the phone's vibrator for the buzz. The spoken line is left out until after the field test (M4).
+- **Updates come from GitHub Releases:** release builds know their own build number (`HOPIN_BUILD`, set by the release workflow; versions number builds as major * 1,000,000 + minor * 1,000 + patch). When Hopin opens, at most every 6 hours, it asks GitHub's API for the latest release; a newer one shows a calm banner on Home. Update downloads the APK into the app's cache with progress and hands it to Android's installer through a file provider (`REQUEST_INSTALL_PACKAGES`; the first time, Android's page to allow it opens instead). Other builds never look. No background check and no notification: the riders open Hopin before every ride, and Xiaomi's battery saver often blocks background jobs.
 
 ## System overview
 
@@ -61,7 +62,8 @@ Every synced document carries `updatedAt` (a server timestamp) and is soft-delet
 | Path | Who | Fields |
 | --- | --- | --- |
 | `people/{uid}` | both read, owner writes | `name`, `photoUrl`, `language` (`en` or `ta`), `updatedAt` |
-| `people/{uid}/places/{placeId}` | owner only | `name`, `lat`, `lng`, `kind` (`home`, `work`, `uni`, `other`), `updatedAt`, `deletedAt` |
+| `people/{uid}/places/{placeId}` | owner only | `name`, `lat`, `lng`, `kind` (`home`, `work`, `uni`, `other`), `placeEn`, `placeTa`, `placeSi`, `order` (the rider's own order, 0 to 999), `updatedAt`, `deletedAt` |
+| `people/{uid}/settings/app` | owner only | `language` (`en` or `ta`), `stages` (1 to 3 of `metres` and `pattern`, from the fixed lists), `updatedAt`; one document, never deleted |
 | `people/{uid}/rides/{rideId}` | owner only | `startedAt`, `endedAt`, `start` and `end` (lat, lng, place name), `path` (encoded polyline, thinned), `distanceM`, `stopsSeen` (stop IDs), `verdict` (`bus`, `not_bus`, `unknown`), `features` (the numbers the bus logic used), `destinationId`, `routeId` (M2), `updatedAt`, `deletedAt` |
 | `stops/{stopId}` | both | `lat`, `lng`, `nameEn`, `nameTa`, `nameSi`, `source` (`osm`, `learned`, `added`), `seen` (how many rides halted there), `lastSeenAt`, `addedBy`, `updatedAt`, `deletedAt` |
 | `routes/{routeId}` (M2) | both | `number`, `from` and `to` (names in en, ta, si), `via`, `stopIds`, `boardSi` (the board text), `source`, `addedBy`, `updatedAt`, `deletedAt` |
@@ -89,6 +91,8 @@ Every synced document carries `updatedAt` (a server timestamp) and is soft-delet
 - **An alert:** the stage's pattern twice (Android's alarm vibration, which plays with the screen off), plus a silent alert on the lock screen ("Stop alerts"). The ongoing notification ("Ride guide") shows the distance and time left, with End.
 - **The app and the service** talk through the plugin's ports: the service sends its status after every fix and a last message when it ends; the ride itself is kept in the plugin's storage, so a reopened app finds the running guide and asks for its status.
 - **"Now near"** is the suburb or village around you (Nominatim at zoom 14), looked up by the app at most once a minute while it is open; nothing on the ride waits on it.
+- **A guide that never arrives:** after 20 minutes without getting 100 m closer than its best, the guide asks "Still going to (stop)?": a gentle buzz, an alert, and Keep beside End on its notification and on the ride board. Keep starts the 20 minutes again; no answer keeps guiding. After 2 hours without getting closer it ends itself with a gentle tap. A long trip that keeps getting closer is never asked.
+- **The stages** are the rider's own (Settings, Alerts), saved with the language in `people/{uid}/settings/app` and synced like places; a guide takes them at Start.
 
 ## Phones that kill background apps
 

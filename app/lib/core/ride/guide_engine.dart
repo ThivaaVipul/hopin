@@ -42,6 +42,16 @@ class Arrived extends GuideAlert {
   const Arrived();
 }
 
+/// No closer for [GuideEngine.askAfter]: "Still going to (stop)?".
+class StillGoing extends GuideAlert {
+  const StillGoing();
+}
+
+/// No closer for [GuideEngine.giveUpAfter]: the guide ends itself.
+class GaveUp extends GuideAlert {
+  const GaveUp();
+}
+
 class GuideStep {
   const GuideStep(this.status, [this.alert]);
 
@@ -55,8 +65,10 @@ class GuideStep {
 /// about [leadTime] away; when several come due at once only the innermost
 /// fires. Being within [arriveWithin] and walking or still for [arriveAfter]
 /// ends the guide. Having been within [closeBy], [passedBy] further on is a
-/// missed stop: it fires once, and the guide goes on. Speeds come from how
-/// far you moved, not the path, so GPS jitter while still reads as still.
+/// missed stop: it fires once, and the guide goes on. No [closer] for
+/// [askAfter] asks whether you are still going (once, until you get closer or
+/// keep going); no closer for [giveUpAfter] ends the guide. Speeds come from
+/// how far you moved, not the path, so GPS jitter while still reads as still.
 class GuideEngine {
   GuideEngine(this.ride);
 
@@ -84,6 +96,11 @@ class GuideEngine {
   /// The guide ends or warns only on fixes at least this good.
   static const sureFix = 50.0;
 
+  /// Getting closer: this much nearer than your best so far.
+  static const closer = 100.0;
+  static const askAfter = Duration(minutes: 20);
+  static const giveUpAfter = Duration(hours: 2);
+
   static const _average = Duration(minutes: 2);
   static const _now = Duration(seconds: 30);
 
@@ -95,6 +112,15 @@ class GuideEngine {
   DateTime? _hereSince;
   DateTime? _slowSince;
   var _over = false;
+  double? _best;
+  DateTime? _bestAt;
+  var _asked = false;
+
+  /// The rider answered Keep: the [askAfter] wait starts again at [at].
+  void keepGoing(DateTime at) {
+    _bestAt = at;
+    _asked = false;
+  }
 
   /// Takes a fix; null when it is ignored or the guide is over.
   GuideStep? update(RideFix fix) {
@@ -147,6 +173,12 @@ class GuideEngine {
         alert = const StopPassed();
       }
     }
+    final best = _best;
+    if (best == null || metres < best - closer) {
+      _best = metres;
+      _bestAt = fix.at;
+      _asked = false;
+    }
     if (alert == null) {
       final lead = math.min(now?.speed ?? 0, fastest) * leadTime.inSeconds;
       var due = _due;
@@ -157,6 +189,14 @@ class GuideEngine {
         _due = due;
         alert = StageDue(due);
       }
+    }
+    final stuck = fix.at.difference(_bestAt!);
+    if (alert == null && stuck >= giveUpAfter) {
+      _over = true;
+      alert = const GaveUp();
+    } else if (alert == null && !_asked && stuck >= askAfter) {
+      _asked = true;
+      alert = const StillGoing();
     }
 
     final GuidePhase phase;
@@ -176,6 +216,7 @@ class GuideEngine {
             : null,
         phase: phase,
         at: fix.point,
+        asking: _asked,
       ),
       alert,
     );

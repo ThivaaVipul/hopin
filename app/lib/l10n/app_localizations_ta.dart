@@ -209,4 +209,128 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get guideNeedsLocation =>
       'வழிகாட்டியைத் தொடங்க இருப்பிடத்தை இயக்குங்கள்.';
+
+  @override
+  String get settings => 'அமைப்புகள்';
+
+  @override
+  String get places => 'இடங்கள்';
+
+  @override
+  String get noPlaces => 'சேமித்த இடங்கள் இல்லை';
+
+  @override
+  String get reorder => 'இழுத்து வரிசை மாற்று';
+
+  @override
+  String get alerts => 'எச்சரிக்கைகள்';
+
+  @override
+  String get addStage => 'நிலையைச் சேர்';
+
+  @override
+  String get removeStage => 'நீக்கு';
+
+  @override
+  String get tryIt => 'சோதி';
+
+  @override
+  String get patternGentleDoubleTap => 'மெல்லிய இரட்டைத் தட்டு';
+
+  @override
+  String get patternStrongLongBuzz => 'வலுவான நீண்ட அதிர்வு';
+
+  @override
+  String get patternHeartbeat => 'இதயத் துடிப்பு';
+
+  @override
+  String get patternTripleKnock => 'மூன்று தட்டு';
+
+  @override
+  String get patternRising => 'ஏறுமுகம்';
+
+  @override
+  String get patternWaves => 'அலைகள்';
+
+  @override
+  String get language => 'மொழி';
+
+  @override
+  String get english => 'English';
+
+  @override
+  String get tamil => 'தமிழ்';
+
+  @override
+  String get thisPhone => 'இந்தத் தொலைபேசி';
+
+  @override
+  String get notificationsOn => 'அறிவிப்புகள் இயக்கத்தில் உள்ளன';
+
+  @override
+  String get notificationsOff => 'அறிவிப்புகள் அணைந்துள்ளன';
+
+  @override
+  String get turnOn => 'இயக்கு';
+
+  @override
+  String get batteryGuide => 'பேட்டரி வழிகாட்டி';
+
+  @override
+  String get runsInBackground => 'Hopin பின்னணியில் இயங்கலாம்';
+
+  @override
+  String get mayBeStopped => 'உங்கள் தொலைபேசி Hopin ஐ நிறுத்தலாம்';
+
+  @override
+  String get updates => 'புதுப்பிப்புகள்';
+
+  @override
+  String versionLabel(String version) {
+    return 'பதிப்பு $version';
+  }
+
+  @override
+  String get devBuild => 'சோதனைப் பதிப்பு';
+
+  @override
+  String get checkUpdates => 'சரிபார்';
+
+  @override
+  String get upToDate => 'புதியதுதான்';
+
+  @override
+  String updateReady(String version) {
+    return 'Hopin $version தயார்';
+  }
+
+  @override
+  String get update => 'புதுப்பி';
+
+  @override
+  String downloading(int percent) {
+    return 'பதிவிறக்குகிறது $percent%';
+  }
+
+  @override
+  String get updateFailed => 'புதுப்பிப்பு பதிவிறங்கவில்லை. மீண்டும் முயலவும்.';
+
+  @override
+  String get allowInstalls =>
+      'Hopin க்கு செயலிகளை நிறுவ அனுமதி தந்து, மீண்டும் புதுப்பி ஐத் தட்டவும்.';
+
+  @override
+  String stillGoing(String place) {
+    return 'இன்னும் $place க்குப் போகிறீர்களா?';
+  }
+
+  @override
+  String get keep => 'தொடர்';
+
+  @override
+  String get guideGaveUp => '2 மணி நேரமாக நெருங்காததால் வழிகாட்டி நின்றது.';
+
+  @override
+  String get checkFailed =>
+      'சரிபார்க்க முடியவில்லை. இணையத்தைச் சரிபார்த்து மீண்டும் முயலவும்.';
 }

@@ -23,6 +23,10 @@ const askStatus = 'status';
 /// The End button on the guide's notification.
 const endButton = 'end';
 
+/// The Keep button, while the guide asks "Still going to (stop)?"; also what
+/// the app sends when Keep is tapped on the ride board.
+const keepButton = 'keep';
+
 /// The ride service's entry point. flutter_foreground_task runs it in an
 /// isolate of its own, which lives on when the app is swiped away.
 @pragma('vm:entry-point')
@@ -43,6 +47,7 @@ class RideTask extends TaskHandler {
   GuideStatus? _status;
   String? _shown;
   var _arrived = false;
+  var _gaveUp = false;
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
@@ -120,10 +125,39 @@ class RideTask extends TaskHandler {
         await _buzz(arrivedBuzz);
         await FlutterForegroundTask.stopService();
         return;
+      case StillGoing():
+        await _alert(
+          l.stillGoing(ride.title),
+          AlertPattern.gentleDoubleTap.buzz.repeated(2),
+          status,
+        );
+      case GaveUp():
+        _gaveUp = true;
+        await _buzz(arrivedBuzz);
+        await FlutterForegroundTask.stopService();
+        return;
       case null:
         break;
     }
     await _show(status);
+  }
+
+  /// Keep, in the notification or on the ride board.
+  Future<void> _keepGoing() async {
+    final status = _status;
+    if (status == null || !status.asking) return;
+    _engine?.keepGoing(DateTime.now());
+    final kept = GuideStatus(
+      metres: status.metres,
+      progress: status.progress,
+      left: status.left,
+      phase: status.phase,
+      at: status.at,
+    );
+    _status = kept;
+    await _alerts.cancel(id: _alertId);
+    FlutterForegroundTask.sendDataToMain(statusMessage(kept));
+    await _show(kept);
   }
 
   Future<void> _buzz(Buzz buzz) async {
@@ -165,6 +199,7 @@ class RideTask extends TaskHandler {
     final to = _to(status);
     final left = status.left;
     final (title, text) = switch (status.phase) {
+      _ when status.asking => (l.stillGoing(_ride!.title), to),
       GuidePhase.riding => (
         to,
         left == null ? '' : l.minutesLeft(wholeMinutes(left)),
@@ -172,11 +207,16 @@ class RideTask extends TaskHandler {
       GuidePhase.getOff => (l.getOffNext, to),
       GuidePhase.passed => (l.passedStop, to),
     };
-    if ('$title\n$text' == _shown) return;
-    _shown = '$title\n$text';
+    final shown = '$title\n$text\n${status.asking}';
+    if (shown == _shown) return;
+    _shown = shown;
     await FlutterForegroundTask.updateService(
       notificationTitle: title,
       notificationText: text,
+      notificationButtons: [
+        if (status.asking) NotificationButton(id: keepButton, text: l.keep),
+        NotificationButton(id: endButton, text: l.end),
+      ],
     );
   }
 
@@ -195,12 +235,15 @@ class RideTask extends TaskHandler {
     final status = _status;
     if (data == askStatus && status != null) {
       FlutterForegroundTask.sendDataToMain(statusMessage(status));
+    } else if (data == keepButton) {
+      unawaited(_keepGoing());
     }
   }
 
   @override
   void onNotificationButtonPressed(String id) {
     if (id == endButton) unawaited(FlutterForegroundTask.stopService());
+    if (id == keepButton) unawaited(_keepGoing());
   }
 
   @override
@@ -211,7 +254,9 @@ class RideTask extends TaskHandler {
     if (!_arrived) await Vibration.cancel();
     await _alerts.cancel(id: _alertId);
     await FlutterForegroundTask.removeData(key: rideKey);
-    FlutterForegroundTask.sendDataToMain(endedMessage(arrived: _arrived));
+    FlutterForegroundTask.sendDataToMain(
+      endedMessage(arrived: _arrived, gaveUp: _gaveUp),
+    );
   }
 }
 
@@ -221,7 +266,7 @@ Map<String, Object?> statusMessage(GuideStatus status) => {
   'status': status.toJson(),
 };
 
-Map<String, Object?> endedMessage({required bool arrived}) => {
-  'type': 'ended',
-  'arrived': arrived,
-};
+Map<String, Object?> endedMessage({
+  required bool arrived,
+  bool gaveUp = false,
+}) => {'type': 'ended', 'arrived': arrived, 'gaveUp': gaveUp};

@@ -10,6 +10,9 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- Updates (M1a4): Hopin downloads a new version and hands it to
+         Android's installer. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <application
         android:label="Hopin"
         android:name="${applicationName}"
@@ -46,6 +49,16 @@
         <meta-data
             android:name="app.hopin.NOTIFICATION_ICON"
             android:resource="@drawable/ic_notification" />
+        <!-- Lets the installer read a downloaded update. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="app.hopin.updates"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/update_paths" />
+        </provider>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

@@ -291,5 +291,181 @@
   "guideNeedsLocation": "Turn on location to start a guide.",
   "@guideNeedsLocation": {
     "description": "Shown when Start is pressed without location access."
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "The Settings page and the button that opens it."
+  },
+  "places": "Places",
+  "@places": {
+    "description": "Settings section: saved places."
+  },
+  "noPlaces": "No saved places yet",
+  "@noPlaces": {
+    "description": "Settings, Places, when there are none."
+  },
+  "reorder": "Drag to reorder",
+  "@reorder": {
+    "description": "Tooltip of a saved place's drag handle."
+  },
+  "alerts": "Alerts",
+  "@alerts": {
+    "description": "Settings section: the alert stages before your stop."
+  },
+  "addStage": "Add a stage",
+  "@addStage": {
+    "description": "Adds an alert stage (up to three)."
+  },
+  "removeStage": "Remove",
+  "@removeStage": {
+    "description": "Removes an alert stage."
+  },
+  "tryIt": "Try",
+  "@tryIt": {
+    "description": "Plays a vibration pattern as the alert would."
+  },
+  "patternGentleDoubleTap": "Gentle double tap",
+  "@patternGentleDoubleTap": {
+    "description": "Vibration pattern name."
+  },
+  "patternStrongLongBuzz": "Strong long buzz",
+  "@patternStrongLongBuzz": {
+    "description": "Vibration pattern name."
+  },
+  "patternHeartbeat": "Heartbeat",
+  "@patternHeartbeat": {
+    "description": "Vibration pattern name."
+  },
+  "patternTripleKnock": "Triple knock",
+  "@patternTripleKnock": {
+    "description": "Vibration pattern name."
+  },
+  "patternRising": "Rising",
+  "@patternRising": {
+    "description": "Vibration pattern name."
+  },
+  "patternWaves": "Waves",
+  "@patternWaves": {
+    "description": "Vibration pattern name."
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Settings section: the app's language."
+  },
+  "english": "English",
+  "@english": {
+    "description": "The English language, written in English in every language."
+  },
+  "tamil": "தமிழ்",
+  "@tamil": {
+    "description": "The Tamil language, written in Tamil in every language."
+  },
+  "thisPhone": "This phone",
+  "@thisPhone": {
+    "description": "Settings section: notifications and the battery guide."
+  },
+  "notificationsOn": "Notifications are on",
+  "@notificationsOn": {
+    "description": "Settings: notifications are allowed."
+  },
+  "notificationsOff": "Notifications are off",
+  "@notificationsOff": {
+    "description": "Settings: notifications are not allowed."
+  },
+  "turnOn": "Turn on",
+  "@turnOn": {
+    "description": "Turns notifications on."
+  },
+  "batteryGuide": "Battery guide",
+  "@batteryGuide": {
+    "description": "Opens Android's background popup and the maker's steps."
+  },
+  "runsInBackground": "Hopin can run in the background",
+  "@runsInBackground": {
+    "description": "Settings: Android lets Hopin run in the background."
+  },
+  "mayBeStopped": "Your phone may stop Hopin",
+  "@mayBeStopped": {
+    "description": "Settings: Android may stop Hopin in the background."
+  },
+  "updates": "Updates",
+  "@updates": {
+    "description": "Settings section: the version and updates."
+  },
+  "versionLabel": "Version {version}",
+  "@versionLabel": {
+    "description": "The installed version.",
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "0.4.0"
+      }
+    }
+  },
+  "devBuild": "Test build",
+  "@devBuild": {
+    "description": "Shown instead of a version on builds made outside the release workflow."
+  },
+  "checkUpdates": "Check",
+  "@checkUpdates": {
+    "description": "Looks for a newer version now."
+  },
+  "upToDate": "Up to date",
+  "@upToDate": {
+    "description": "No newer version."
+  },
+  "updateReady": "Hopin {version} is ready",
+  "@updateReady": {
+    "description": "A newer version is out.",
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "0.5.0"
+      }
+    }
+  },
+  "update": "Update",
+  "@update": {
+    "description": "Downloads and installs the newer version."
+  },
+  "downloading": "Downloading {percent}%",
+  "@downloading": {
+    "description": "Update download progress.",
+    "placeholders": {
+      "percent": {
+        "type": "int",
+        "example": "42"
+      }
+    }
+  },
+  "updateFailed": "The update didn't download. Try again.",
+  "@updateFailed": {
+    "description": "Shown when the download fails."
+  },
+  "allowInstalls": "Allow Hopin to install apps, then tap Update again.",
+  "@allowInstalls": {
+    "description": "Shown after Android's install permission page opens."
+  },
+  "stillGoing": "Still going to {place}?",
+  "@stillGoing": {
+    "description": "Asked when a guide gets no closer for 20 minutes.",
+    "placeholders": {
+      "place": {
+        "type": "String",
+        "example": "Colombo Fort"
+      }
+    }
+  },
+  "keep": "Keep",
+  "@keep": {
+    "description": "Keeps the guide going."
+  },
+  "guideGaveUp": "The guide stopped: no closer in 2 hours.",
+  "@guideGaveUp": {
+    "description": "Shown when a guide ends itself after 2 hours without getting closer."
+  },
+  "checkFailed": "Couldn't check. Check your internet and try again.",
+  "@checkFailed": {
+    "description": "Shown when looking for a newer version fails."
   }
 }

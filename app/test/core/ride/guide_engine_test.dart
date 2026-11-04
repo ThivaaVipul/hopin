@@ -108,6 +108,60 @@ void main() {
     expect(fired.single.$2, inInclusiveRange(1460, 1500));
   });
 
+  test('asks once after 20 minutes without getting closer', () {
+    final steps = run(
+      Trace.from(5000).rideTo(3000).wait(minute * 21).wait(minute * 10),
+    );
+    final fired = alerts(steps).map((a) => a.$1).toList();
+    expect(fired.where((a) => a == const StillGoing()), hasLength(1));
+    expect(steps.last.status.asking, isTrue);
+  });
+
+  test('getting closer again stops asking', () {
+    final steps = run(
+      Trace.from(5000).rideTo(3000).wait(minute * 21).rideTo(2500),
+    );
+    expect(steps.last.status.asking, isFalse);
+  });
+
+  test('keep starts the 20 minutes again', () {
+    final engine = GuideEngine(ride);
+    final trace = Trace.from(5000).rideTo(3000).wait(minute * 21);
+    for (final fix in trace.fixes) {
+      engine.update(fix);
+    }
+    engine.keepGoing(trace.fixes.last.at);
+    final more = Trace.from(3000).wait(minute * 15);
+    final later = [
+      for (final fix in more.fixes)
+        ?engine.update(
+          RideFix(
+            fix.point,
+            trace.fixes.last.at.add(fix.at.difference(more.fixes.first.at)),
+            accuracy: fix.accuracy,
+          ),
+        ),
+    ];
+    expect(later.where((s) => s.alert == const StillGoing()), isEmpty);
+    expect(later.last.status.asking, isFalse);
+  });
+
+  test('two hours without getting closer ends the guide', () {
+    final steps = run(
+      Trace.from(5000).rideTo(3000).wait(const Duration(hours: 2, minutes: 1)),
+    );
+    final fired = alerts(steps).map((a) => a.$1).toList();
+    expect(fired.last, const GaveUp());
+    expect(fired, contains(const StillGoing()));
+  });
+
+  test('a long trip that keeps getting closer is never asked', () {
+    final fired = alerts(
+      run(Trace.from(120000).ride(14, const Duration(hours: 2))),
+    );
+    expect(fired.map((a) => a.$1), isNot(contains(const StillGoing())));
+  });
+
   test('time left comes from your recent speed and hides while still', () {
     final moving = run(Trace.from(8000).ride(10, const Duration(minutes: 3)));
     final last = moving.last.status;

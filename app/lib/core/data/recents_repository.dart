@@ -70,6 +70,15 @@ class SettingsStore {
     _db.settings,
   )..where((s) => s.key.equals(key))).getSingleOrNull())?.value;
 
+  Stream<String?> watch(String key) =>
+      (_db.select(_db.settings)..where((s) => s.key.equals(key)))
+          .watchSingleOrNull()
+          .map((row) => row?.value)
+          .distinct();
+
+  Future<void> remove(String key) =>
+      (_db.delete(_db.settings)..where((s) => s.key.equals(key))).go();
+
   Future<void> write(String key, String value) => _db
       .into(_db.settings)
       .insertOnConflictUpdate(SettingsCompanion.insert(key: key, value: value));

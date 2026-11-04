@@ -17,6 +17,7 @@ class RideBoard extends StatelessWidget {
     required this.status,
     required this.near,
     required this.onEnd,
+    required this.onKeep,
   });
 
   final GuideRide ride;
@@ -27,6 +28,9 @@ class RideBoard extends StatelessWidget {
   /// The area you are passing, in the app's language.
   final String? near;
   final VoidCallback onEnd;
+
+  /// Keep, while the guide asks "Still going to (stop)?".
+  final VoidCallback onKeep;
 
   /// The progress lights.
   static const lights = 10;
@@ -80,7 +84,9 @@ class _Board extends StatelessWidget {
     final status = board.status;
     final near = board.near;
     final si = ride.names.si;
+    final asking = status?.asking ?? false;
     final headline = switch (status?.phase) {
+      _ when asking => l.stillGoing(ride.title),
       GuidePhase.getOff => l.getOffNext,
       GuidePhase.passed => l.passedStop,
       _ => null,
@@ -175,6 +181,21 @@ class _Board extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
+                if (asking) ...[
+                  FilledButton(
+                    onPressed: board.onKeep,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colors.amber,
+                      foregroundColor: colors.onAmber,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      minimumSize: const Size(0, 48),
+                    ),
+                    child: Text(l.keep),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 OutlinedButton.icon(
                   onPressed: board.onEnd,
                   icon: const Icon(Icons.stop_rounded, size: 20),

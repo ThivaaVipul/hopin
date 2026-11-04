@@ -39,7 +39,7 @@ void main() {
   Future<List<PlaceRow>> rows() => db.select(db.places).get();
 
   test(
-    'keeps places in kind order, then by name, without the removed',
+    'keeps places in the order they were saved, without the removed',
     () async {
       await places.add(uni, name: 'Uni', kind: PlaceKind.uni);
       final home = await places.add(
@@ -53,8 +53,8 @@ void main() {
         kind: PlaceKind.other,
       );
       expect((await places.watch().first).map((p) => p.name), [
-        'Home',
         'Uni',
+        'Home',
         'Aunt',
       ]);
 
@@ -78,6 +78,44 @@ void main() {
     expect(remote.puts.single.$2, containsPair('placeSi', 'කොළඹ කොටුව'));
     expect(remote.puts.single.$3, isFalse);
     expect((await rows()).single.pendingSince, isNull);
+  });
+
+  test('keeps your own order, which syncs', () async {
+    await sync.start();
+    final a = await places.add(uni, name: 'Aunt', kind: PlaceKind.other);
+    final b = await places.add(uni, name: 'Uni', kind: PlaceKind.uni);
+    final c = await places.add(uni, name: 'Home', kind: PlaceKind.home);
+    expect((await places.watch().first).map((p) => p.name), [
+      'Aunt',
+      'Uni',
+      'Home',
+    ], reason: 'new places go last');
+
+    await places.reorder([c, a, b]);
+    await places.update(a.copyWith(name: 'Auntie'));
+    await sync.push();
+    expect((await places.watch().first).map((p) => p.name), [
+      'Home',
+      'Auntie',
+      'Uni',
+    ]);
+    final sent = {
+      for (final (path, data, _) in remote.puts)
+        path.split('/').last: data['order'],
+    };
+    expect(sent, {c.id: 0, a.id: 1, b.id: 2});
+
+    remote.push(collection, [
+      RemoteDoc(b.id, {
+        'name': 'Uni',
+        'kind': 'uni',
+        'lat': 6.9344,
+        'lng': 79.8501,
+        'order': -1,
+      }, DateTime.now().microsecondsSinceEpoch + 1000000),
+    ]);
+    await pumpEventQueue();
+    expect((await places.watch().first).first.name, 'Uni');
   });
 
   test('sends a removal as a marked deletion', () async {

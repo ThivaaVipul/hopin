@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -11,7 +12,9 @@ import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/profile/profile_repository.dart';
 import 'package:hopin/core/ride/guide.dart';
+import 'package:hopin/core/ride/patterns.dart';
 import 'package:hopin/core/search/nominatim.dart';
+import 'package:hopin/core/update/updates.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -94,7 +97,7 @@ class FakeRemote implements Remote {
   Future<void> put(
     String path,
     Map<String, Object?> data, {
-    bool deleted = false,
+    bool? deleted,
   }) async {
     if (offline) throw StateError('offline');
     final hold = this.hold;
@@ -102,7 +105,7 @@ class FakeRemote implements Remote {
       waiting++;
       await hold.future;
     }
-    puts.add((path, data, deleted));
+    puts.add((path, data, deleted ?? false));
   }
 }
 
@@ -180,6 +183,10 @@ class FakeGuide implements GuideService {
   int notificationAsks = 0;
   int backgroundAsks = 0;
   int settingsOpened = 0;
+  int keeps = 0;
+  int appSettingsOpened = 0;
+  bool background = false;
+  final played = <Buzz>[];
   final _events = StreamController<GuideEvent>.broadcast(sync: true);
 
   void emit(GuideEvent event) => _events.add(event);
@@ -221,4 +228,56 @@ class FakeGuide implements GuideService {
 
   @override
   Future<void> openMakerSettings() async => settingsOpened++;
+
+  @override
+  Future<void> keepGoing() async => keeps++;
+
+  @override
+  Future<bool> runsInBackground() async => background;
+
+  @override
+  Future<void> openAppSettings() async => appSettingsOpened++;
+
+  @override
+  Future<void> play(Buzz buzz) async => played.add(buzz);
+}
+
+/// GitHub Releases without the network: [release] is what's out.
+class FakeUpdates implements UpdateService {
+  FakeUpdates({this.installed = 0, this.release});
+
+  @override
+  int installed;
+  Release? release;
+  bool offline = false;
+  bool downloadFails = false;
+  bool mayInstall = true;
+  int checks = 0;
+  int downloads = 0;
+  final installs = <String>[];
+
+  @override
+  Future<Release?> latest() async {
+    checks++;
+    if (offline) throw const SocketException('offline');
+    return release;
+  }
+
+  @override
+  Future<String> download(
+    Release release,
+    void Function(double) progress,
+  ) async {
+    downloads++;
+    if (downloadFails) throw const SocketException('dropped');
+    progress(0.5);
+    progress(1);
+    return 'updates/hopin-${release.version}.apk';
+  }
+
+  @override
+  Future<bool> install(String file) async {
+    installs.add(file);
+    return mayInstall;
+  }
 }

@@ -34,7 +34,16 @@ class PlacesSync {
     final cursor = await _cursor();
     _subscription = _remote
         .changes(_collection, cursor == 0 ? 0 : cursor - _margin)
-        .listen((docs) => unawaited(_apply(docs)));
+        .listen(
+          (docs) => unawaited(_apply(docs)),
+          // Refused (rules) or dropped: told, not thrown; the next start
+          // listens again.
+          onError: (Object error, StackTrace stack) {
+            onError?.call(error, stack);
+            unawaited(_subscription?.cancel());
+            _subscription = null;
+          },
+        );
     await push();
   }
 
@@ -71,6 +80,7 @@ class PlacesSync {
             'placeEn': row.placeEn,
             'placeTa': row.placeTa,
             'placeSi': row.placeSi,
+            'order': row.position,
           }, deleted: row.deletedAt != null);
         } on Object catch (error, stack) {
           // Refused or unreachable: the row stays pending and goes up with
@@ -111,6 +121,7 @@ class PlacesSync {
                 placeEn: Value(d['placeEn'] as String?),
                 placeTa: Value(d['placeTa'] as String?),
                 placeSi: Value(d['placeSi'] as String?),
+                position: Value(d['order'] as int? ?? 0),
                 updatedAt: doc.updatedAt,
                 deletedAt: Value(d['deletedAt'] as int?),
                 pendingSince: const Value(null),

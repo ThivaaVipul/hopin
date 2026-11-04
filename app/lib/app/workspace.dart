@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hopin/app/session/session_cubit.dart';
+import 'package:hopin/core/data/app_settings.dart';
 import 'package:hopin/core/data/local/database.dart';
 import 'package:hopin/core/data/places_repository.dart';
 import 'package:hopin/core/data/places_sync.dart';
 import 'package:hopin/core/data/recents_repository.dart';
 import 'package:hopin/core/data/remote/remote.dart';
+import 'package:hopin/core/data/settings_sync.dart';
 
 typedef DatabaseOpener = HopinDatabase Function(String uid);
 
@@ -20,7 +22,10 @@ class Workspace {
       recents = RecentsRepository(db),
       settings = SettingsStore(db),
       _sync = PlacesSync(db, remote, uid) {
+    appSettings = AppSettings(settings);
+    _settingsSync = SettingsSync(appSettings, settings, remote, uid);
     places.onChange = () => unawaited(_sync.push());
+    appSettings.onChange = () => unawaited(_settingsSync.push());
   }
 
   final String uid;
@@ -28,13 +33,22 @@ class Workspace {
   final PlacesRepository places;
   final RecentsRepository recents;
   final SettingsStore settings;
-  final PlacesSync _sync;
 
-  Future<void> setRider({required bool isRider}) =>
-      isRider ? _sync.start() : _sync.stop();
+  /// The language and alert stages, which follow the account.
+  late final AppSettings appSettings;
+  final PlacesSync _sync;
+  late final SettingsSync _settingsSync;
+
+  Future<void> setRider({required bool isRider}) async {
+    if (isRider) {
+      await Future.wait([_sync.start(), _settingsSync.start()]);
+    } else {
+      await Future.wait([_sync.stop(), _settingsSync.stop()]);
+    }
+  }
 
   Future<void> close() async {
-    await _sync.stop();
+    await Future.wait([_sync.stop(), _settingsSync.stop()]);
     await _db.close();
   }
 }

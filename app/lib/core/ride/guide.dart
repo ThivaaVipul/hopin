@@ -29,11 +29,37 @@ class GuideStage extends Equatable {
 }
 
 /// "Get ready" at 1.5 km and "Get off next" at 400 m (docs/PLAN.md, The
-/// guide). Settings edits them in M1a4.
+/// guide), until the rider changes them in Settings.
 const defaultStages = [
   GuideStage(1500, AlertPattern.gentleDoubleTap),
   GuideStage(400, AlertPattern.strongLongBuzz),
 ];
+
+/// The distances a stage can use (docs/PLAN.md, Settings and updates).
+const stageDistances = [3000, 2000, 1500, 1000, 700, 500, 400, 300, 150];
+
+/// Most stages a guide has.
+const maxStages = 3;
+
+/// [stages] outermost first, one per distance, at most [maxStages].
+List<GuideStage> tidyStages(Iterable<GuideStage> stages) {
+  final byDistance = <int, GuideStage>{
+    for (final stage in stages)
+      if (stageDistances.contains(stage.metres)) stage.metres: stage,
+  };
+  final sorted = byDistance.values.toList()
+    ..sort((a, b) => b.metres.compareTo(a.metres));
+  return sorted.take(maxStages).toList();
+}
+
+/// Stages as saved (a JSON list); [defaultStages] when there are none.
+List<GuideStage> stagesFromJson(Object? json) {
+  final stages = tidyStages([
+    if (json is List)
+      for (final stage in json) ?GuideStage.fromJson(stage),
+  ]);
+  return stages.isEmpty ? defaultStages : stages;
+}
 
 /// A guide to one stop, as the ride service gets it.
 class GuideRide extends Equatable {
@@ -123,6 +149,7 @@ class GuideStatus extends Equatable {
     this.left,
     this.phase = GuidePhase.riding,
     this.at,
+    this.asking = false,
   });
 
   /// Straight-line distance to the stop.
@@ -136,6 +163,9 @@ class GuideStatus extends Equatable {
   final GuidePhase phase;
   final GeoPoint? at;
 
+  /// Waiting for an answer to "Still going to (stop)?".
+  final bool asking;
+
   Map<String, Object?> toJson() => {
     'metres': metres,
     'progress': progress,
@@ -143,6 +173,7 @@ class GuideStatus extends Equatable {
     'phase': phase.name,
     'lat': at?.lat,
     'lng': at?.lng,
+    'asking': asking,
   };
 
   static GuideStatus? fromJson(Object? json) {
@@ -163,9 +194,10 @@ class GuideStatus extends Equatable {
       at: lat is num && lng is num
           ? GeoPoint(lat.toDouble(), lng.toDouble())
           : null,
+      asking: json['asking'] == true,
     );
   }
 
   @override
-  List<Object?> get props => [metres, progress, left, phase, at];
+  List<Object?> get props => [metres, progress, left, phase, at, asking];
 }

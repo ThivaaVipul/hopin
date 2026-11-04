@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:hopin/core/ride/guide.dart';
 import 'package:hopin/core/ride/patterns.dart';
+import 'package:hopin/core/ride/ride_config.dart';
+import 'package:hopin/core/ride/ride_record.dart';
 
 /// News from the running guide while the app is open.
 sealed class GuideEvent extends Equatable {
@@ -26,6 +28,60 @@ class GuideEnded extends GuideEvent {
 
   @override
   List<Object?> get props => [arrived, gaveUp];
+}
+
+/// The ride service asks "On a bus?" (its card shows on Home).
+class RideQuestion extends GuideEvent {
+  const RideQuestion();
+
+  @override
+  List<Object?> get props => [];
+}
+
+/// "On a bus?" was answered, here or in the notification.
+class RideAnswered extends GuideEvent {
+  const RideAnswered();
+
+  @override
+  List<Object?> get props => [];
+}
+
+/// A place button in "On a bus?" started a guide to [ride].
+class GuideStarted extends GuideEvent {
+  const GuideStarted(this.ride);
+
+  final GuideRide ride;
+
+  @override
+  List<Object?> get props => [ride];
+}
+
+/// A ride ended and was handed over to be kept.
+class RideLogged extends GuideEvent {
+  const RideLogged(this.ride);
+
+  final RideRecord ride;
+
+  @override
+  List<Object?> get props => [ride];
+}
+
+/// Whether Hopin notices bus rides (docs/PLAN.md, Ride detection), and the
+/// two permissions it needs.
+class Detection extends Equatable {
+  const Detection({
+    this.on = false,
+    this.activity = false,
+    this.allTheTime = false,
+  });
+
+  /// Turned on and both permissions there.
+  final bool on;
+  final bool activity;
+  final bool allTheTime;
+
+  @override
+  List<Object?> get props => [on, activity, allTheTime];
 }
 
 /// Makers whose phones stop background apps unless told not to
@@ -70,4 +126,26 @@ abstract interface class GuideService {
 
   /// Plays [buzz] now, for "try it".
   Future<void> play(Buzz buzz);
+
+  /// Answers "On a bus?" with one of ride_task.dart's button IDs.
+  Future<void> answer(String button);
+
+  /// What the service needs when it wakes with Hopin closed.
+  Future<void> saveRideConfig(RideConfig config);
+
+  /// Rides the service finished while the app wasn't there to take them.
+  Future<List<RideRecord>> pendingRides();
+
+  /// The app keeps [id] now.
+  Future<void> forgetPendingRide(String id);
+
+  Future<Detection> detection();
+
+  /// Physical activity, then location all the time, then on.
+  Future<Detection> turnOnDetection(String language);
+
+  Future<void> turnOffDetection();
+
+  /// Test builds: starts watching a ride now, without a vehicle.
+  Future<void> detectNow();
 }

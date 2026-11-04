@@ -13,6 +13,12 @@
     <!-- Updates (M1a4): Hopin downloads a new version and hands it to
          Android's installer. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Ride detection (M1b): Android's vehicle transitions, location all the
+         time (the ride service starts with Hopin closed), and the transitions
+         asked for again after a reboot or an update. -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
         android:label="Hopin"
         android:name="${applicationName}"
@@ -49,6 +55,21 @@
         <meta-data
             android:name="app.hopin.NOTIFICATION_ICON"
             android:resource="@drawable/ic_notification" />
+        <receiver
+            android:name=".ActivityTransitionReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".DetectionBootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+        <!-- Buttons on the ride service's alerts (flutter_local_notifications). -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver"
+            android:exported="false" />
         <!-- Lets the installer read a downloaded update. -->
         <provider
             android:name="androidx.core.content.FileProvider"

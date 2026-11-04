@@ -28,6 +28,7 @@ dependencies:
   intl: any # the version flutter_localizations pins
   maplibre_gl: ^0.27.1
   path_provider: ^2.1.6
+  permission_handler: ^12.0.3
   vibration: ^3.2.1
 
 dev_dependencies:

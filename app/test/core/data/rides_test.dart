@@ -1,0 +1,109 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:hopin/core/data/local/database.dart';
+import 'package:hopin/core/data/remote/remote.dart';
+import 'package:hopin/core/data/rides_repository.dart';
+import 'package:hopin/core/geo/geo.dart';
+import 'package:hopin/core/ride/bus_logic.dart';
+import 'package:hopin/core/ride/ride_record.dart';
+
+import '../../helpers/fakes.dart';
+
+final bus = RideRecord(
+  id: 'ride1',
+  startedAt: DateTime.utc(2026, 1, 1, 8),
+  endedAt: DateTime.utc(2026, 1, 1, 8, 30),
+  verdict: RideVerdict.bus,
+  distanceM: 6200,
+  path: const [GeoPoint(6.9, 79.85), GeoPoint(6.93, 79.85)],
+  halts: const [Halt(GeoPoint(6.91, 79.85), 30)],
+  features: const {'minutes': 30, 'busHaltsPerKm': 1.6},
+  guideTo: 'Colombo Fort',
+);
+
+void main() {
+  late HopinDatabase db;
+  late RidesRepository rides;
+  late FakeRemote remote;
+  late RidesSync sync;
+  const collection = 'people/r1/rides';
+
+  setUp(() {
+    db = memoryDatabase();
+    rides = RidesRepository(db);
+    remote = FakeRemote();
+    sync = RidesSync(db, remote, 'r1');
+    rides.onChange = sync.push;
+  });
+
+  tearDown(() async {
+    await sync.stop();
+    await db.close();
+  });
+
+  test('keeps a ride and sends it up', () async {
+    await sync.start();
+    await rides.save(bus);
+    await sync.push();
+    expect((await rides.watch().first).single, bus);
+    final (path, data, deleted) = remote.puts.single;
+    expect(path, '$collection/ride1');
+    expect(data['startedAt'], DateTime.utc(2026, 1, 1, 8).toLocal());
+    expect(data['verdict'], 'bus');
+    expect(data['path'], isA<String>());
+    expect(data['features'], {'minutes': 30, 'busHaltsPerKm': 1.6});
+    expect(data['guideTo'], 'Colombo Fort');
+    expect(deleted, isFalse);
+    final row = await db.select(db.rides).getSingle();
+    expect(row.pendingSince, isNull);
+  });
+
+  test('a ride that was not a bus goes up without its path', () async {
+    await sync.start();
+    await rides.save(bus);
+    await rides.setVerdict('ride1', RideVerdict.notBus);
+    await sync.push();
+    final last = remote.puts.last.$2;
+    expect(last['verdict'], 'not_bus');
+    expect(last['path'], isNull);
+    expect(last['halts'], isNull);
+    expect((await rides.watch().first).single.path, isEmpty);
+  });
+
+  test('removes by marking, newest first otherwise', () async {
+    await sync.start();
+    await rides.save(bus);
+    final later = RideRecord(
+      id: 'ride2',
+      startedAt: DateTime.utc(2026, 1, 2, 8),
+      endedAt: DateTime.utc(2026, 1, 2, 9),
+      verdict: RideVerdict.unknown,
+      distanceM: 1000,
+    );
+    await rides.save(later);
+    expect((await rides.watch().first).map((r) => r.id), ['ride2', 'ride1']);
+
+    await rides.remove('ride1');
+    await sync.push();
+    expect((await rides.watch().first).map((r) => r.id), ['ride2']);
+    expect(remote.puts.last.$3, isTrue);
+  });
+
+  test("takes the server's rides", () async {
+    await sync.start();
+    remote.push(collection, [
+      RemoteDoc('ride9', {
+        'startedAt': DateTime.utc(2026, 1, 3, 7).microsecondsSinceEpoch,
+        'endedAt': DateTime.utc(2026, 1, 3, 8).microsecondsSinceEpoch,
+        'verdict': 'bus',
+        'distanceM': 9000,
+        'features': {'minutes': 60},
+        'fromName': 'Fort',
+      }, 5),
+    ]);
+    await pumpEventQueue();
+    final ride = (await rides.watch().first).single;
+    expect(ride.id, 'ride9');
+    expect(ride.distanceM, 9000);
+    expect(ride.features, {'minutes': 60});
+  });
+}

@@ -24,6 +24,18 @@ class MainActivity : FlutterActivity() {
                     "maker" -> result.success(Build.MANUFACTURER.lowercase())
                     "openAutostart" -> result.success(openAutostart())
                     "installApk" -> result.success(installApk(call.argument<String>("path")))
+                    "enableDetection" -> result.success(
+                        RideDetection.enable(this, call.arguments as? Map<*, *> ?: emptyMap<String, Any>()),
+                    )
+                    "disableDetection" -> {
+                        RideDetection.disable(this)
+                        result.success(null)
+                    }
+                    "detectionEnabled" -> result.success(RideDetection.isEnabled(this))
+                    "detectNow" -> {
+                        RideDetection.startRideService(this)
+                        result.success(null)
+                    }
                     else -> result.notImplemented()
                 }
             }

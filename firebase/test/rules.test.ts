@@ -292,3 +292,83 @@ describe('settings', () => {
     await assertFails(setDoc(doc(db, 'people/r1/settings/app'), noStages));
   });
 });
+
+function ride(changes: Fields = {}): Fields {
+  return {
+    startedAt: Timestamp.fromMillis(1_700_000_000_000),
+    endedAt: Timestamp.fromMillis(1_700_001_800_000),
+    verdict: 'bus',
+    distanceM: 12400,
+    path: '_p~iF~ps|U_ulLnnqC_mqNvxq`@',
+    halts: '_p~iF~ps|U',
+    features: { minutes: 30, haltsPerKm: 1.2, topSpeed: 14.5 },
+    fromName: 'Fort',
+    toName: 'Pettah',
+    guideTo: null,
+    updatedAt: serverTimestamp(),
+    deletedAt: null,
+    ...changes,
+  };
+}
+
+describe('rides', () => {
+  it('lets a rider keep their own rides', async () => {
+    const db = rider('r1');
+    await assertSucceeds(setDoc(doc(db, 'people/r1/rides/a1'), ride()));
+    await assertSucceeds(getDoc(doc(db, 'people/r1/rides/a1')));
+    const since = where('updatedAt', '>', Timestamp.fromMillis(0));
+    await assertSucceeds(getDocs(query(collection(db, 'people/r1/rides'), since)));
+  });
+
+  it('keeps rides private, even from the other rider', async () => {
+    await seed('people/r1/rides/a1', ride({ updatedAt: Timestamp.now() }));
+    await assertFails(getDoc(doc(rider('r2'), 'people/r1/rides/a1')));
+    await assertFails(setDoc(doc(rider('r2'), 'people/r1/rides/a2'), ride()));
+    await assertFails(setDoc(doc(stranger('r1'), 'people/r1/rides/a3'), ride()));
+  });
+
+  it('takes a ride that was not a bus without its path', async () => {
+    const db = rider('r1');
+    const { path: _path, halts: _halts, fromName: _f, toName: _t, ...bare } = ride({ verdict: 'not_bus' });
+    await assertSucceeds(setDoc(doc(db, 'people/r1/rides/a1'), bare));
+    await assertSucceeds(setDoc(doc(db, 'people/r1/rides/a2'), ride({ verdict: 'unknown' })));
+  });
+
+  it('removes by marking, never by deleting', async () => {
+    const db = rider('r1');
+    await assertSucceeds(setDoc(doc(db, 'people/r1/rides/a1'), ride()));
+    await assertSucceeds(
+      updateDoc(doc(db, 'people/r1/rides/a1'), { deletedAt: serverTimestamp(), updatedAt: serverTimestamp() }),
+    );
+    await assertFails(deleteDoc(doc(db, 'people/r1/rides/a1')));
+  });
+
+  it('checks every field', async () => {
+    const db = rider('r1');
+    const bad: Fields[] = [
+      { verdict: 'car' },
+      { distanceM: -1 },
+      { distanceM: 2_000_001 },
+      { distanceM: '12' },
+      { endedAt: Timestamp.fromMillis(1_600_000_000_000) },
+      { startedAt: 'today' },
+      { path: 'x'.repeat(20_001) },
+      { halts: 'x'.repeat(10_001) },
+      { features: 'fast' },
+      { fromName: 'x'.repeat(201) },
+      { guideTo: 'x'.repeat(201) },
+      { colour: 'amber' },
+      { updatedAt: Timestamp.now() },
+      { deletedAt: Timestamp.now() },
+    ];
+    for (const changes of bad) {
+      await assertFails(setDoc(doc(db, 'people/r1/rides/a1'), ride(changes)));
+    }
+    const tooMany: Record<string, number> = {};
+    for (let i = 0; i < 25; i++) tooMany[`f${i}`] = i;
+    await assertFails(setDoc(doc(db, 'people/r1/rides/a1'), ride({ features: tooMany })));
+    const { verdict: _v, ...noVerdict } = ride();
+    await assertFails(setDoc(doc(db, 'people/r1/rides/a1'), noVerdict));
+  });
+});
+

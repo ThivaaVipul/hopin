@@ -333,4 +333,36 @@ class AppLocalizationsTa extends AppLocalizations {
   @override
   String get checkFailed =>
       'சரிபார்க்க முடியவில்லை. இணையத்தைச் சரிபார்த்து மீண்டும் முயலவும்.';
+
+  @override
+  String get checkingRide => 'உங்கள் பயணத்தைச் சரிபார்க்கிறது';
+
+  @override
+  String get onABus => 'பஸ்ஸில் இருக்கிறீர்களா?';
+
+  @override
+  String get yes => 'ஆம்';
+
+  @override
+  String get notABus => 'பஸ் அல்ல';
+
+  @override
+  String get busRide => 'பஸ் பயணம்';
+
+  @override
+  String get noticeRides => 'பஸ் பயணங்களைக் கவனி';
+
+  @override
+  String get noticeWhy =>
+      'Hopin உங்கள் பஸ் பயணங்களைக் கவனித்து, எங்கே இறங்குகிறீர்கள் என்று கேட்கும்.';
+
+  @override
+  String get needsAllTheTime =>
+      'இருப்பிடம் \"Allow all the time\" ஆக இருக்க வேண்டும்';
+
+  @override
+  String get needsActivity => 'Physical activity அனுமதி தேவை';
+
+  @override
+  String get pretendRide => 'பயணம் தொடங்கியதாகக் கொள்';
 }

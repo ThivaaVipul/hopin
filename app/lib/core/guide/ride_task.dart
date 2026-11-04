@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
@@ -8,14 +9,35 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart'
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hopin/core/geo/geo.dart';
+import 'package:hopin/core/ride/bus_logic.dart';
 import 'package:hopin/core/ride/guide.dart';
 import 'package:hopin/core/ride/guide_engine.dart';
 import 'package:hopin/core/ride/patterns.dart';
+import 'package:hopin/core/ride/ride_config.dart';
+import 'package:hopin/core/ride/ride_record.dart';
 import 'package:hopin/l10n/app_localizations.dart';
 import 'package:vibration/vibration.dart';
 
+/// A button on one of the ride service's alerts (On a bus?, Keep): handed
+/// to the service like the app's answers.
+@pragma('vm:entry-point')
+void alertButtonPressed(NotificationResponse response) {
+  final id = response.actionId;
+  if (id != null) FlutterForegroundTask.sendDataToTask(id);
+}
+
 /// Where the running guide's ride is kept, for the service and the app.
 const rideKey = 'guide.ride';
+
+/// The places, stages and language the service needs when it wakes for a
+/// ride with Hopin closed (kept up to date by the app).
+const configKey = 'ride.config';
+
+/// A finished ride waiting for the app, one key per ride.
+const pendingRidePrefix = 'ride.pending.';
+
+/// When Android last said the phone left a vehicle (written natively).
+const vehicleExitKey = 'vehicle.exitAt';
 
 /// Asks the ride service for its latest status.
 const askStatus = 'status';
@@ -27,53 +49,104 @@ const endButton = 'end';
 /// the app sends when Keep is tapped on the ride board.
 const keepButton = 'keep';
 
+/// The "On a bus?" answers, from the notification or the app's card.
+const yesButton = 'yes';
+const notBusButton = 'notbus';
+String placeButton(int index) => 'place$index';
+
+/// From the app: a guide was saved under [rideKey]; guide to it.
+const guideNow = 'guide';
+
 /// The ride service's entry point. flutter_foreground_task runs it in an
 /// isolate of its own, which lives on when the app is swiped away.
 @pragma('vm:entry-point')
 void startRideTask() => FlutterForegroundTask.setTaskHandler(RideTask());
 
-/// The guide inside the ride service (docs/PLAN.md, The guide): a GPS fix
-/// every 5 seconds into the engine, then the buzz, the alert on the lock
-/// screen, the ongoing notification and the app's ride board.
+/// The ride service (docs/PLAN.md, The guide and Ride detection). It logs
+/// every ride through [BusLogic]. Started by the app it guides at once;
+/// woken by Android's vehicle transition it first watches the ride (a fix
+/// every 10 seconds) and asks "On a bus?" once it looks like one: a place
+/// button guides there, Not a bus stops.
 class RideTask extends TaskHandler {
   static const _alertId = 7;
   static const _amber = Color(0xFFFFB020);
 
+  /// Without moving this long after leaving the vehicle, the ride is over;
+  /// without moving this long at all, too.
+  static const _offAfter = Duration(minutes: 2);
+  static const _stillAfter = Duration(minutes: 15);
+
+  /// Rides shorter than these aren't kept (a false start).
+  static const _keepAfter = Duration(minutes: 2);
+  static const _keepAfterMetres = 300.0;
+
   final _alerts = FlutterLocalNotificationsPlugin();
+  final _logic = BusLogic();
+  final _rideId =
+      '${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}'
+      '${math.Random().nextInt(1 << 30).toRadixString(36)}';
+  var _config = const RideConfig();
+  late final DateTime _startedAt;
   GuideRide? _ride;
   GuideEngine? _engine;
   AppLocalizations? _l;
   StreamSubscription<Position>? _fixes;
+  var _interval = const Duration(seconds: 10);
   GuideStatus? _status;
   String? _shown;
+  RideVerdict? _verdict;
+  var _asking = false;
   var _arrived = false;
   var _gaveUp = false;
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
-    final saved = await FlutterForegroundTask.getData<String>(key: rideKey);
-    final ride = saved == null ? null : GuideRide.fromJson(jsonDecode(saved));
-    if (ride == null) {
-      await FlutterForegroundTask.stopService();
-      return;
-    }
-    _ride = ride;
-    _engine = GuideEngine(ride);
-    if (kDebugMode) debugPrint('guide: started to ${ride.title}');
-    _l = lookupAppLocalizations(Locale(ride.language));
+    _startedAt = DateTime.now();
+    final config = await FlutterForegroundTask.getData<String>(key: configKey);
+    _config = RideConfig.fromJson(_decode(config));
+    final ride = await _savedRide();
+    _l = lookupAppLocalizations(Locale(ride?.language ?? _config.language));
     await _alerts.initialize(
       settings: const InitializationSettings(
         android: AndroidInitializationSettings('ic_notification'),
       ),
+      onDidReceiveBackgroundNotificationResponse: alertButtonPressed,
     );
+    if (ride != null) {
+      _guide(ride);
+    } else {
+      if (kDebugMode) debugPrint('ride: watching');
+      await FlutterForegroundTask.updateService(
+        notificationTitle: _l!.checkingRide,
+        notificationText: '',
+        notificationButtons: const [],
+      );
+    }
     _follow();
   }
 
+  Future<GuideRide?> _savedRide() async {
+    final saved = await FlutterForegroundTask.getData<String>(key: rideKey);
+    return GuideRide.fromJson(_decode(saved));
+  }
+
+  /// Guides to [ride] from here on; the ride is a bus.
+  void _guide(GuideRide ride) {
+    _ride = ride;
+    _engine = GuideEngine(ride);
+    _verdict = RideVerdict.bus;
+    _asking = false;
+    if (kDebugMode) debugPrint('guide: started to ${ride.title}');
+  }
+
   void _follow() {
+    _interval = _engine == null
+        ? const Duration(seconds: 10)
+        : const Duration(seconds: 5);
     _fixes = Geolocator.getPositionStream(
       locationSettings: AndroidSettings(
         accuracy: LocationAccuracy.high,
-        intervalDuration: const Duration(seconds: 5),
+        intervalDuration: _interval,
       ),
     ).listen(_onFix, onError: (Object _) => _lost(), onDone: _lost);
   }
@@ -84,21 +157,52 @@ class RideTask extends TaskHandler {
     _fixes = null;
   }
 
+  /// A guide began in a watched ride: fixes come faster.
+  void _followFaster() {
+    if (_interval == const Duration(seconds: 5)) return;
+    _lost();
+    _follow();
+  }
+
   @override
   void onRepeatEvent(DateTime timestamp) {
-    if (_fixes == null && _engine != null) _follow();
+    if (_fixes == null) _follow();
+    if (_engine == null) unawaited(_checkOver());
+  }
+
+  /// A watched ride is over once the vehicle is left and you stop moving.
+  Future<void> _checkOver() async {
+    final exit = int.tryParse(
+      await FlutterForegroundTask.getData<String>(key: vehicleExitKey) ?? '',
+    );
+    final left = exit != null && exit > _startedAt.millisecondsSinceEpoch;
+    final moved = _logic.movedAt ?? _logic.startedAt ?? _startedAt;
+    final still = DateTime.now().difference(moved);
+    if ((left && still >= _offAfter) || still >= _stillAfter) {
+      await FlutterForegroundTask.stopService();
+    }
   }
 
   Future<void> _onFix(Position position) async {
+    final fix = RideFix(
+      GeoPoint(position.latitude, position.longitude),
+      position.timestamp,
+      accuracy: position.accuracy,
+    );
+    _logic.add(fix);
+    final engine = _engine;
+    if (engine == null) {
+      if (kDebugMode) {
+        debugPrint(
+          'ride: ${_logic.distance.round()} m, score ${_logic.score.toStringAsFixed(2)}',
+        );
+      }
+      if (_verdict == null && !_asking && _logic.ask) await _askOnABus();
+      return;
+    }
     final ride = _ride;
     final l = _l;
-    final step = _engine?.update(
-      RideFix(
-        GeoPoint(position.latitude, position.longitude),
-        position.timestamp,
-        accuracy: position.accuracy,
-      ),
-    );
+    final step = engine.update(fix);
     if (kDebugMode) {
       debugPrint(
         'guide: fix ${position.accuracy.round()} m accurate, '
@@ -115,11 +219,11 @@ class RideTask extends TaskHandler {
         final last = index == ride.stages.length - 1;
         await _alert(
           last ? l.getOffNext : l.getReady,
-          ride.stages[index].pattern.buzz.repeated(2),
-          status,
+          _to(status),
+          buzz: ride.stages[index].pattern.buzz.repeated(2),
         );
       case StopPassed():
-        await _alert(l.passedStop, passedBuzz, status);
+        await _alert(l.passedStop, _to(status), buzz: passedBuzz);
       case Arrived():
         _arrived = true;
         await _buzz(arrivedBuzz);
@@ -128,8 +232,9 @@ class RideTask extends TaskHandler {
       case StillGoing():
         await _alert(
           l.stillGoing(ride.title),
-          AlertPattern.gentleDoubleTap.buzz.repeated(2),
-          status,
+          _to(status),
+          buzz: AlertPattern.gentleDoubleTap.buzz.repeated(2),
+          buttons: [AndroidNotificationAction(keepButton, l.keep)],
         );
       case GaveUp():
         _gaveUp = true;
@@ -140,6 +245,87 @@ class RideTask extends TaskHandler {
         break;
     }
     await _show(status);
+  }
+
+  /// "On a bus?": quiet, with the rider's first two places, Yes when there
+  /// are fewer, and Not a bus.
+  Future<void> _askOnABus() async {
+    final l = _l!;
+    _asking = true;
+    final places = _config.places.take(RideConfig.buttons).toList();
+    await FlutterForegroundTask.updateService(
+      notificationTitle: l.onABus,
+      notificationText: '',
+      notificationButtons: [
+        for (final (i, place) in places.indexed)
+          NotificationButton(id: placeButton(i), text: place.name),
+        if (places.length < RideConfig.buttons)
+          NotificationButton(id: yesButton, text: l.yes),
+        NotificationButton(id: notBusButton, text: l.notABus),
+      ],
+    );
+    await _alert(
+      l.onABus,
+      '',
+      buttons: [
+        for (final (i, place) in places.indexed)
+          AndroidNotificationAction(placeButton(i), place.name),
+        if (places.length < RideConfig.buttons)
+          AndroidNotificationAction(yesButton, l.yes),
+        AndroidNotificationAction(notBusButton, l.notABus),
+      ],
+    );
+    FlutterForegroundTask.sendDataToMain({'type': 'asking'});
+  }
+
+  /// An answer to "On a bus?", from the notification or the app.
+  Future<void> _answer(String id) async {
+    if (!_asking) return;
+    final l = _l!;
+    _asking = false;
+    await _alerts.cancel(id: _alertId);
+    FlutterForegroundTask.sendDataToMain({'type': 'answered'});
+    if (id == notBusButton) {
+      _verdict = RideVerdict.notBus;
+      await FlutterForegroundTask.stopService();
+      return;
+    }
+    _verdict = RideVerdict.bus;
+    final index = id.startsWith('place') ? int.tryParse(id.substring(5)) : null;
+    if (index != null && index < _config.places.length) {
+      final ride = _config.guideTo(_config.places[index]);
+      await FlutterForegroundTask.saveData(
+        key: rideKey,
+        value: jsonEncode(ride.toJson()),
+      );
+      _guide(ride);
+      _followFaster();
+      FlutterForegroundTask.sendDataToMain({
+        'type': 'guiding',
+        'ride': ride.toJson(),
+      });
+      await FlutterForegroundTask.updateService(
+        notificationTitle: ride.title,
+        notificationText: l.findingYou,
+        notificationButtons: [NotificationButton(id: endButton, text: l.end)],
+      );
+      return;
+    }
+    await FlutterForegroundTask.updateService(
+      notificationTitle: l.busRide,
+      notificationText: '',
+      notificationButtons: [NotificationButton(id: endButton, text: l.end)],
+    );
+  }
+
+  /// The app started a guide during a watched ride.
+  Future<void> _guideFromApp() async {
+    final ride = await _savedRide();
+    if (ride == null) return;
+    _asking = false;
+    await _alerts.cancel(id: _alertId);
+    _guide(ride);
+    _followFaster();
   }
 
   /// Keep, in the notification or on the ride board.
@@ -168,14 +354,21 @@ class RideTask extends TaskHandler {
     );
   }
 
-  /// The buzz, and an alert on the lock screen: silent, and the screen stays
-  /// off.
-  Future<void> _alert(String title, Buzz buzz, GuideStatus status) async {
-    await _buzz(buzz);
+  /// An alert on the lock screen, silent, the screen staying off; with
+  /// [buzz] played first. Alerts are a group of their own: left ungrouped,
+  /// some phones bundle them with the ride notification and hide both
+  /// notifications' buttons.
+  Future<void> _alert(
+    String title,
+    String body, {
+    Buzz? buzz,
+    List<AndroidNotificationAction> buttons = const [],
+  }) async {
+    if (buzz != null) await _buzz(buzz);
     await _alerts.show(
       id: _alertId,
       title: title,
-      body: _to(status),
+      body: body,
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
           'alerts',
@@ -188,6 +381,8 @@ class RideTask extends TaskHandler {
           category: AndroidNotificationCategory.navigation,
           icon: 'ic_notification',
           color: _amber,
+          groupKey: 'app.hopin.alerts',
+          actions: buttons,
         ),
       ),
     );
@@ -233,17 +428,31 @@ class RideTask extends TaskHandler {
   @override
   void onReceiveData(Object data) {
     final status = _status;
-    if (data == askStatus && status != null) {
-      FlutterForegroundTask.sendDataToMain(statusMessage(status));
+    if (data == askStatus) {
+      if (status != null) {
+        FlutterForegroundTask.sendDataToMain(statusMessage(status));
+      }
+      if (_asking) {
+        FlutterForegroundTask.sendDataToMain({'type': 'asking'});
+      }
     } else if (data == keepButton) {
       unawaited(_keepGoing());
+    } else if (data == guideNow) {
+      unawaited(_guideFromApp());
+    } else if (data is String) {
+      unawaited(_answer(data));
     }
   }
 
   @override
   void onNotificationButtonPressed(String id) {
-    if (id == endButton) unawaited(FlutterForegroundTask.stopService());
-    if (id == keepButton) unawaited(_keepGoing());
+    if (id == endButton) {
+      unawaited(FlutterForegroundTask.stopService());
+    } else if (id == keepButton) {
+      unawaited(_keepGoing());
+    } else {
+      unawaited(_answer(id));
+    }
   }
 
   @override
@@ -254,9 +463,40 @@ class RideTask extends TaskHandler {
     if (!_arrived) await Vibration.cancel();
     await _alerts.cancel(id: _alertId);
     await FlutterForegroundTask.removeData(key: rideKey);
+    await _keepRide();
     FlutterForegroundTask.sendDataToMain(
       endedMessage(arrived: _arrived, gaveUp: _gaveUp),
     );
+  }
+
+  /// Hands the finished ride to the app: kept until the app has it.
+  Future<void> _keepRide() async {
+    final verdict = _verdict ?? RideVerdict.unknown;
+    final short =
+        _logic.length < _keepAfter || _logic.distance < _keepAfterMetres;
+    if (short && verdict != RideVerdict.notBus) return;
+    if (_logic.startedAt == null) return;
+    final ride = RideRecord.fromLogic(
+      _logic,
+      id: _rideId,
+      verdict: verdict,
+      endedAt: _logic.lastAt ?? DateTime.now(),
+      guideTo: _ride?.title,
+    ).toJson();
+    await FlutterForegroundTask.saveData(
+      key: '$pendingRidePrefix$_rideId',
+      value: jsonEncode(ride),
+    );
+    FlutterForegroundTask.sendDataToMain({'type': 'ride', 'ride': ride});
+  }
+}
+
+Object? _decode(String? json) {
+  if (json == null) return null;
+  try {
+    return jsonDecode(json);
+  } on FormatException {
+    return null;
   }
 }
 

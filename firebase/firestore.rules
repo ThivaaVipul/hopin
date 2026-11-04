@@ -67,6 +67,39 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // The rider's rides (docs/PLAN.md, Ride detection): private to their
+      // owner, kept until removed (marked with deletedAt). A ride that was not
+      // a bus comes without its path.
+      match /rides/{rideId} {
+        function optionalText(data, key, maxLength) {
+          return !(key in data) || data[key] == null || isString(data[key], 1, maxLength);
+        }
+
+        function validRide() {
+          let data = request.resource.data;
+          let before = resource == null ? null : resource.data.get('deletedAt', null);
+          return data.keys().hasOnly(['startedAt', 'endedAt', 'verdict', 'distanceM', 'path', 'halts', 'features', 'fromName', 'toName', 'guideTo', 'updatedAt', 'deletedAt'])
+            && data.keys().hasAll(['startedAt', 'endedAt', 'verdict', 'distanceM', 'features', 'updatedAt'])
+            && data.startedAt is timestamp
+            && data.endedAt is timestamp
+            && data.endedAt >= data.startedAt
+            && data.verdict in ['bus', 'not_bus', 'unknown']
+            && data.distanceM is number && data.distanceM >= 0 && data.distanceM <= 2000000
+            && optionalText(data, 'path', 20000)
+            && optionalText(data, 'halts', 10000)
+            && data.features is map && data.features.size() <= 24
+            && optionalText(data, 'fromName', 200)
+            && optionalText(data, 'toName', 200)
+            && optionalText(data, 'guideTo', 200)
+            && data.updatedAt == request.time
+            && (!('deletedAt' in data) || data.deletedAt == null || data.deletedAt == request.time || data.deletedAt == before);
+        }
+
+        allow read: if isSelf(uid);
+        allow create, update: if isSelf(uid) && validRide();
+        allow delete: if false;
+      }
+
       // The rider's settings, one private document: the app's language and
       // the alert stages (docs/PLAN.md, Settings and updates).
       match /settings/{docId} {

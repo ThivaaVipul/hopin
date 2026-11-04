@@ -685,6 +685,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t check. Check your internet and try again.'**
   String get checkFailed;
+
+  /// The ride service's notification while it watches a vehicle ride.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking your ride'**
+  String get checkingRide;
+
+  /// Asked when a vehicle ride looks like a bus.
+  ///
+  /// In en, this message translates to:
+  /// **'On a bus?'**
+  String get onABus;
+
+  /// Answers "On a bus?" when there are fewer than two saved places.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get yes;
+
+  /// Answers "On a bus?": the ride was a car, tuk-tuk or bike.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a bus'**
+  String get notABus;
+
+  /// The ride service's notification after Yes.
+  ///
+  /// In en, this message translates to:
+  /// **'On a bus'**
+  String get busRide;
+
+  /// Settings switch: Hopin notices bus rides by itself.
+  ///
+  /// In en, this message translates to:
+  /// **'Notice bus rides'**
+  String get noticeRides;
+
+  /// The one-time card on Home that offers ride detection.
+  ///
+  /// In en, this message translates to:
+  /// **'Hopin can notice your bus rides and ask where you are getting off.'**
+  String get noticeWhy;
+
+  /// Settings, under the switch, when background location is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs location set to Allow all the time'**
+  String get needsAllTheTime;
+
+  /// Settings, under the switch, when activity recognition is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Physical activity'**
+  String get needsActivity;
+
+  /// Test builds only: starts ride detection without a real vehicle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pretend a ride started'**
+  String get pretendRide;
 }
 
 class _AppLocalizationsDelegate

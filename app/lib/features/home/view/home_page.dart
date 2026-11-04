@@ -15,6 +15,7 @@ import 'package:hopin/features/home/cubit/home_cubit.dart';
 import 'package:hopin/features/home/widgets/home_parts.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
 import 'package:hopin/features/home/widgets/maker_steps.dart';
+import 'package:hopin/features/home/widgets/question_card.dart';
 import 'package:hopin/features/home/widgets/ride_board.dart';
 import 'package:hopin/features/update/cubit/update_cubit.dart';
 import 'package:hopin/features/update/widgets/update_banner.dart';
@@ -240,6 +241,11 @@ class _HomeViewState extends State<_HomeView> {
               onContinue: cubit.continueToPermission,
               onNotNow: cubit.notNow,
             ),
+            HomeState(question: true) => QuestionCard(
+              key: const ValueKey('question'),
+              places: state.places,
+              onAnswer: (button) => unawaited(cubit.answer(button)),
+            ),
             HomeState(explainNotifications: true) => ReasonCard(
               key: const ValueKey('notifications'),
               reason: l.notificationsWhy,
@@ -254,6 +260,13 @@ class _HomeViewState extends State<_HomeView> {
               onSave: () => _savePlace(context),
               onStart: () => _start(context, destination),
               onClose: cubit.clear,
+            ),
+            HomeState(offerDetection: true) => ReasonCard(
+              key: const ValueKey('detection'),
+              reason: l.noticeWhy,
+              continueLabel: l.turnOn,
+              onContinue: () => unawaited(cubit.turnOnDetection(language)),
+              onNotNow: () => unawaited(cubit.detectionNotNow()),
             ),
             _ => const SizedBox(key: ValueKey('none'), width: double.infinity),
           };

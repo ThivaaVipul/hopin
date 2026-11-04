@@ -344,9 +344,13 @@ class ReasonCard extends StatelessWidget {
     required this.reason,
     required this.onContinue,
     required this.onNotNow,
+    this.continueLabel,
   });
 
   final String reason;
+
+  /// The main button's label; Continue unless given.
+  final String? continueLabel;
   final VoidCallback onContinue;
   final VoidCallback onNotNow;
 
@@ -399,7 +403,7 @@ class ReasonCard extends StatelessWidget {
                     ),
                     minimumSize: const Size(0, 48),
                   ),
-                  child: Text(l.continueLabel),
+                  child: Text(continueLabel ?? l.continueLabel),
                 ),
               ],
             ),

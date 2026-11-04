@@ -9,6 +9,7 @@ import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/places/place.dart';
 import 'package:hopin/core/ride/guide.dart';
+import 'package:hopin/core/ride/ride_record.dart';
 import 'package:hopin/core/search/nominatim.dart';
 
 enum LocationStatus {
@@ -36,6 +37,8 @@ class HomeState extends Equatable {
     this.explainNotifications = false,
     this.makerSteps,
     this.notice,
+    this.question = false,
+    this.offerDetection = false,
   });
 
   final List<SavedPlace> places;
@@ -62,6 +65,12 @@ class HomeState extends Equatable {
   final PhoneMaker? makerSteps;
   final HomeNotice? notice;
 
+  /// The ride service asks "On a bus?": its card shows.
+  final bool question;
+
+  /// The one-time card offering ride detection.
+  final bool offerDetection;
+
   static const _keep = Object();
 
   /// Fields left out keep their value; nullable ones take an explicit null.
@@ -77,6 +86,8 @@ class HomeState extends Equatable {
     bool? explainNotifications,
     Object? makerSteps = _keep,
     Object? notice = _keep,
+    bool? question,
+    bool? offerDetection,
   }) => HomeState(
     places: places ?? this.places,
     location: location ?? this.location,
@@ -93,6 +104,8 @@ class HomeState extends Equatable {
         ? this.makerSteps
         : makerSteps as PhoneMaker?,
     notice: identical(notice, _keep) ? this.notice : notice as HomeNotice?,
+    question: question ?? this.question,
+    offerDetection: offerDetection ?? this.offerDetection,
   );
 
   HomeState withDestination(
@@ -113,6 +126,8 @@ class HomeState extends Equatable {
     explainNotifications,
     makerSteps,
     notice,
+    question,
+    offerDetection,
   ];
 }
 
@@ -143,6 +158,11 @@ class HomeCubit extends Cubit<HomeState> {
   static const nearEvery = Duration(minutes: 1);
 
   Future<void> start() async {
+    // Rides the service finished while Hopin was closed.
+    for (final ride in await _guide.pendingRides()) {
+      await _keepRide(ride);
+    }
+    if (isClosed) return;
     _places = _workspace.places.watch().listen(_onPlaces);
     _guideEvents = _guide.events.listen(_onGuide);
     // A guide outlives the app's screens: back in ride mode where it is.
@@ -157,6 +177,12 @@ class HomeCubit extends Cubit<HomeState> {
     if (isClosed) return;
     if (access == LocationAccess.granted) {
       await _track();
+      final offered =
+          await _workspace.settings.read(SettingsStore.detectionOffered) !=
+          null;
+      if (!offered && !(await _guide.detection()).on && !isClosed) {
+        emit(state.copyWith(offerDetection: true));
+      }
     } else {
       emit(
         state.copyWith(
@@ -355,7 +381,31 @@ class HomeCubit extends Cubit<HomeState> {
   }
 
   void _onGuide(GuideEvent event) {
-    if (state.ride == null) return;
+    switch (event) {
+      case RideLogged(:final ride):
+        unawaited(_keepRide(ride));
+        return;
+      case RideQuestion():
+        emit(state.copyWith(question: true));
+        return;
+      case RideAnswered():
+        emit(state.copyWith(question: false));
+        return;
+      case GuideStarted(:final ride):
+        _nearAt = null;
+        emit(
+          state.copyWith(
+            question: false,
+            ride: ride,
+            status: null,
+            near: null,
+            destination: ride.destination,
+          ),
+        );
+        return;
+      case GuideUpdate() || GuideEnded():
+        if (state.ride == null) return;
+    }
     switch (event) {
       case GuideUpdate(:final status):
         emit(state.copyWith(status: status));
@@ -374,7 +424,32 @@ class HomeCubit extends Cubit<HomeState> {
                 : null,
           ),
         );
+      case RideQuestion() || RideAnswered() || GuideStarted() || RideLogged():
+        break;
     }
+  }
+
+  Future<void> _keepRide(RideRecord ride) async {
+    await _workspace.rides.save(ride);
+    await _guide.forgetPendingRide(ride.id);
+  }
+
+  /// An answer on the "On a bus?" card (ride_task.dart's button IDs).
+  Future<void> answer(String button) async {
+    emit(state.copyWith(question: false));
+    await _guide.answer(button);
+  }
+
+  /// The one-time card's Turn on: Android's two permissions, then on.
+  Future<void> turnOnDetection(String language) async {
+    await _workspace.settings.write(SettingsStore.detectionOffered, '1');
+    emit(state.copyWith(offerDetection: false));
+    await _guide.turnOnDetection(language);
+  }
+
+  Future<void> detectionNotNow() async {
+    await _workspace.settings.write(SettingsStore.detectionOffered, '1');
+    emit(state.copyWith(offerDetection: false));
   }
 
   Future<void> _lookNear(GeoPoint at) async {

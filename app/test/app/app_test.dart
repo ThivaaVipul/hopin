@@ -529,4 +529,57 @@ void main() {
       await finish(tester);
     });
   });
+
+  group('ride detection', () {
+    testWidgets('offers to notice bus rides, then asks "On a bus?"', (
+      tester,
+    ) async {
+      await start(
+        tester,
+        location: FakeLocation(access: LocationAccess.granted),
+      );
+      auth.emit(rider);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('notice your bus rides'), findsOneWidget);
+
+      await tester.tap(find.text('Turn on'));
+      await tester.pumpAndSettle();
+      expect((await guide.detection()).on, isTrue);
+      expect(find.textContaining('notice your bus rides'), findsNothing);
+
+      guide.emit(const RideQuestion());
+      await tester.pumpAndSettle();
+      expect(find.text('On a bus?'), findsOneWidget);
+      expect(find.text('Yes'), findsOneWidget);
+      await tester.tap(find.text('Not a bus'));
+      await tester.pumpAndSettle();
+      expect(guide.answers, ['notbus']);
+      expect(find.text('On a bus?'), findsNothing);
+      await finish(tester);
+    });
+
+    testWidgets('the cards fit a small phone in Tamil with large text', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1080, 2160)
+        ..devicePixelRatio = 3;
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await start(
+        tester,
+        locale: const Locale('ta'),
+        location: FakeLocation(access: LocationAccess.granted),
+      );
+      auth.emit(rider);
+      await tester.pumpAndSettle();
+      expect(find.text('இயக்கு'), findsOneWidget);
+      guide.emit(const RideQuestion());
+      await tester.pumpAndSettle();
+      expect(find.text('பஸ் அல்ல'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await finish(tester);
+    });
+  });
 }

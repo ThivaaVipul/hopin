@@ -13,6 +13,8 @@ import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/profile/profile_repository.dart';
 import 'package:hopin/core/ride/guide.dart';
 import 'package:hopin/core/ride/patterns.dart';
+import 'package:hopin/core/ride/ride_config.dart';
+import 'package:hopin/core/ride/ride_record.dart';
 import 'package:hopin/core/search/nominatim.dart';
 import 'package:hopin/core/update/updates.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
@@ -187,6 +189,17 @@ class FakeGuide implements GuideService {
   int appSettingsOpened = 0;
   bool background = false;
   final played = <Buzz>[];
+  final answers = <String>[];
+  final configs = <RideConfig>[];
+  final pending = <RideRecord>[];
+  final forgotten = <String>[];
+  var detected = const Detection();
+  var detectionAfterTurnOn = const Detection(
+    on: true,
+    activity: true,
+    allTheTime: true,
+  );
+  int detectNows = 0;
   final _events = StreamController<GuideEvent>.broadcast(sync: true);
 
   void emit(GuideEvent event) => _events.add(event);
@@ -240,6 +253,35 @@ class FakeGuide implements GuideService {
 
   @override
   Future<void> play(Buzz buzz) async => played.add(buzz);
+
+  @override
+  Future<void> answer(String button) async => answers.add(button);
+
+  @override
+  Future<void> saveRideConfig(RideConfig config) async => configs.add(config);
+
+  @override
+  Future<List<RideRecord>> pendingRides() async => [...pending];
+
+  @override
+  Future<void> forgetPendingRide(String id) async {
+    forgotten.add(id);
+    pending.removeWhere((ride) => ride.id == id);
+  }
+
+  @override
+  Future<Detection> detection() async => detected;
+
+  @override
+  Future<Detection> turnOnDetection(String language) async =>
+      detected = detectionAfterTurnOn;
+
+  @override
+  Future<void> turnOffDetection() async =>
+      detected = const Detection(activity: true, allTheTime: true);
+
+  @override
+  Future<void> detectNow() async => detectNows++;
 }
 
 /// GitHub Releases without the network: [release] is what's out.

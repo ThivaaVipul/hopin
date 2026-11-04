@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hopin/app/language.dart';
+import 'package:hopin/app/ride_config_follower.dart';
 import 'package:hopin/app/router.dart';
 import 'package:hopin/app/session/session_cubit.dart';
 import 'package:hopin/app/theme.dart';
@@ -112,7 +113,11 @@ class _HopinAppState extends State<HopinApp> {
             remote: widget.remote,
             child: LanguageFollower(
               language: _language,
-              child: child ?? const SizedBox(),
+              child: RideConfigFollower(
+                guide: widget.guide,
+                language: _language,
+                child: child ?? const SizedBox(),
+              ),
             ),
           ),
         ),

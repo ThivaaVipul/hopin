@@ -5,6 +5,7 @@ import 'dart:math' show Point;
 import 'package:flutter/material.dart';
 import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/core/places/place.dart';
+import 'package:hopin/core/ride/stops.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 /// Moves the map's camera from outside the map widget.
@@ -31,6 +32,9 @@ class MapProps {
     required this.dark,
     this.watched,
     this.watchedGoal,
+    this.stops = const [],
+    this.onStopTap,
+    this.onCameraIdle,
   });
 
   final GeoPoint? me;
@@ -43,6 +47,14 @@ class MapProps {
   /// The other rider's shared position while watched, and their stop.
   final GeoPoint? watched;
   final GeoPoint? watchedGoal;
+
+  /// The bus stops in view, as small dots; a tap gives the stop's id.
+  final List<Stop> stops;
+  final void Function(String id)? onStopTap;
+
+  /// The map settled: its south-west and north-east corners, and its zoom.
+  final void Function(GeoPoint southWest, GeoPoint northEast, double zoom)?
+  onCameraIdle;
 }
 
 typedef MapBuilder = Widget Function(MapProps props);
@@ -85,6 +97,9 @@ class _BoardMapState extends State<BoardMap> {
   List<Circle> _places = const [];
   List<SavedPlace>? _drawnPlaces;
 
+  /// Stop dots by stop id.
+  Map<String, Circle> _stops = {};
+
   @override
   void initState() {
     super.initState();
@@ -103,6 +118,7 @@ class _BoardMapState extends State<BoardMap> {
       }
       _places = const [];
       _drawnPlaces = null;
+      _stops = {};
     } else {
       _redraw();
     }
@@ -169,11 +185,59 @@ class _BoardMapState extends State<BoardMap> {
           ),
       ];
     }
+    await _drawStops(controller, props.stops);
     await _destination.show(controller, props.destination?.point);
     await _theirGoal.show(controller, props.watchedGoal);
     await _them.show(controller, props.watched);
     await _halo.show(controller, props.me);
     await _me.show(controller, props.me);
+  }
+
+  /// Adds the stops that came into view and removes those that left.
+  Future<void> _drawStops(
+    MapLibreMapController controller,
+    List<Stop> stops,
+  ) async {
+    final wanted = {for (final stop in stops) stop.id: stop};
+    final gone = [
+      for (final MapEntry(:key, :value) in _stops.entries)
+        if (!wanted.containsKey(key)) value,
+    ];
+    if (gone.isNotEmpty) await controller.removeCircles(gone);
+    _stops = {
+      for (final MapEntry(:key, :value) in _stops.entries)
+        if (wanted.containsKey(key)) key: value,
+    };
+    for (final stop in stops) {
+      if (_stops.containsKey(stop.id)) continue;
+      _stops[stop.id] = await controller.addCircle(
+        CircleOptions(
+          geometry: _latLng(stop.point),
+          circleRadius: 5,
+          circleColor: '#F4F1E8',
+          circleStrokeColor: stop.learned ? _amber : _board,
+          circleStrokeWidth: 2,
+        ),
+        {'stop': stop.id},
+      );
+    }
+  }
+
+  void _tapped(Circle circle) {
+    final id = circle.data?['stop'];
+    if (id is String) widget.props.onStopTap?.call(id);
+  }
+
+  Future<void> _idle() async {
+    final controller = _controller;
+    final zoom = controller?.cameraPosition?.zoom;
+    if (controller == null || zoom == null || !mounted) return;
+    final region = await controller.getVisibleRegion();
+    widget.props.onCameraIdle?.call(
+      GeoPoint(region.southwest.latitude, region.southwest.longitude),
+      GeoPoint(region.northeast.latitude, region.northeast.longitude),
+      zoom,
+    );
   }
 
   @override
@@ -192,11 +256,17 @@ class _BoardMapState extends State<BoardMap> {
         target: _latLng(start),
         zoom: props.me == null ? 12 : 15,
       ),
-      onMapCreated: (controller) => _controller = controller,
+      onMapCreated: (controller) {
+        _controller = controller;
+        controller.onCircleTapped.add(_tapped);
+      },
       onStyleLoadedCallback: () {
         _styled = true;
         _redraw();
+        unawaited(_idle());
       },
+      trackCameraPosition: true,
+      onCameraIdle: () => unawaited(_idle()),
       onMapLongClick: (Point<double> _, LatLng at) =>
           props.onLongPress(GeoPoint(at.latitude, at.longitude)),
       compassEnabled: false,

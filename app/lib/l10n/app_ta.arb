@@ -134,5 +134,11 @@
   "updatedSecondsAgo": "{seconds} வினாடி முன் புதுப்பிக்கப்பட்டது",
   "updatedMinutesAgo": "{minutes} நிமி முன் புதுப்பிக்கப்பட்டது",
   "lostContact": "தொடர்பு இல்லை",
-  "shareRidesHere": "இங்கு செல்லும் பயணங்களைப் பகிர்"
+  "shareRidesHere": "இங்கு செல்லும் பயணங்களைப் பகிர்",
+  "busStop": "பஸ் நிறுத்தம்",
+  "renameStop": "பெயர் மாற்று",
+  "removeStop": "நீக்கு",
+  "stopName": "நிறுத்தத்தின் பெயர்",
+  "removeStopQuestion": "இந்த நிறுத்தத்தை இருவருக்கும் நீக்கவா?",
+  "moreOptions": "மேலும்"
 }

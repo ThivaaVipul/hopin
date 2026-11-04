@@ -4,16 +4,21 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:hopin/core/data/local/database.dart';
 import 'package:hopin/core/data/remote/remote.dart';
+import 'package:hopin/core/ride/bus_logic.dart';
 import 'package:hopin/core/ride/ride_record.dart';
+import 'package:hopin/core/ride/stops.dart';
 
 /// The rider's logged rides (docs/PLAN.md, Ride detection). The ride service
 /// hands finished rides to the app, which keeps them here first, marked
-/// pending until [RidesSync] has sent them.
+/// pending until [RidesSync] has sent them. A bus ride's halts also go into
+/// the pool both riders share, for the stops (Sharing and stops), when the
+/// rider's [uid] is known.
 class RidesRepository {
-  RidesRepository(this._db, {DateTime Function()? clock})
+  RidesRepository(this._db, {this.uid, DateTime Function()? clock})
     : _clock = clock ?? DateTime.now;
 
   final HopinDatabase _db;
+  final String? uid;
   final DateTime Function() _clock;
   var _lastStamp = 0;
 
@@ -73,7 +78,57 @@ class RidesRepository {
             pendingSince: Value(now),
           ),
         );
+    await _pool(
+      ride.id,
+      ride.verdict == RideVerdict.bus ? ride.halts : const [],
+    );
     onChange?.call();
+  }
+
+  /// Puts a bus ride's bus-like halts in the pool, or takes the ride's back
+  /// out; unchanged, nothing is written.
+  Future<void> _pool(String rideId, List<Halt> halts) async {
+    final uid = this.uid;
+    if (uid == null) return;
+    final points = encodeHalts(
+      halts.where(
+        (h) =>
+            h.seconds >= StopFinder.shortestHalt &&
+            h.seconds <= StopFinder.longestHalt,
+      ),
+    );
+    final row = await (_db.select(
+      _db.pooledHalts,
+    )..where((r) => r.rideId.equals(rideId))).getSingleOrNull();
+    if (points.isEmpty) {
+      if (row == null || row.deletedAt != null) return;
+      final now = _stamp();
+      await (_db.update(
+        _db.pooledHalts,
+      )..where((r) => r.rideId.equals(rideId))).write(
+        PooledHaltsCompanion(
+          points: const Value(''),
+          deletedAt: Value(now),
+          updatedAt: Value(now),
+          pendingSince: Value(now),
+        ),
+      );
+      return;
+    }
+    if (row != null && row.deletedAt == null && row.points == points) return;
+    final now = _stamp();
+    await _db
+        .into(_db.pooledHalts)
+        .insertOnConflictUpdate(
+          PooledHaltsCompanion.insert(
+            rideId: rideId,
+            uid: uid,
+            points: points,
+            updatedAt: now,
+            deletedAt: const Value(null),
+            pendingSince: Value(now),
+          ),
+        );
   }
 
   /// The rider's label; a ride that was not a bus loses its path and names.
@@ -108,6 +163,7 @@ class RidesRepository {
         pendingSince: Value(now),
       ),
     );
+    await _pool(id, const []);
     onChange?.call();
   }
 

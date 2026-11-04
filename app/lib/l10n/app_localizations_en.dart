@@ -457,4 +457,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareRidesHere => 'Share rides here';
+
+  @override
+  String get busStop => 'Bus stop';
+
+  @override
+  String get renameStop => 'Rename';
+
+  @override
+  String get removeStop => 'Remove';
+
+  @override
+  String get stopName => 'Stop name';
+
+  @override
+  String get removeStopQuestion => 'Remove this stop for both of you?';
+
+  @override
+  String get moreOptions => 'More';
 }

@@ -15,6 +15,7 @@ import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/profile/profile_repository.dart';
 import 'package:hopin/core/search/nominatim.dart';
+import 'package:hopin/core/search/overpass.dart';
 import 'package:hopin/core/share/shares.dart';
 import 'package:hopin/core/update/updates.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
@@ -38,6 +39,7 @@ class HopinApp extends StatefulWidget {
     required this.openDatabase,
     required this.location,
     required this.nominatim,
+    required this.overpass,
     required this.mapBuilder,
     required this.rideMapBuilder,
     required this.guide,
@@ -53,6 +55,7 @@ class HopinApp extends StatefulWidget {
   final DatabaseOpener openDatabase;
   final LocationService location;
   final Nominatim nominatim;
+  final Overpass overpass;
   final MapBuilder mapBuilder;
   final RideMapBuilder rideMapBuilder;
   final GuideService guide;
@@ -99,6 +102,7 @@ class _HopinAppState extends State<HopinApp> {
       RepositoryProvider<AuthRepository>.value(value: widget.auth),
       RepositoryProvider<LocationService>.value(value: widget.location),
       RepositoryProvider<Nominatim>.value(value: widget.nominatim),
+      RepositoryProvider<Overpass>.value(value: widget.overpass),
       RepositoryProvider<MapBuilder>.value(value: widget.mapBuilder),
       RepositoryProvider<RideMapBuilder>.value(value: widget.rideMapBuilder),
       RepositoryProvider<GuideService>.value(value: widget.guide),

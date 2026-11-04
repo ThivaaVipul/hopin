@@ -11,6 +11,7 @@ import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/places/place.dart';
 import 'package:hopin/core/search/nominatim.dart';
+import 'package:hopin/core/search/overpass.dart';
 import 'package:hopin/core/share/shares.dart';
 import 'package:hopin/features/home/cubit/home_cubit.dart';
 import 'package:hopin/features/home/widgets/home_parts.dart';
@@ -40,6 +41,7 @@ class HomePage extends StatelessWidget {
           context.read<Nominatim>(),
           context.read<GuideService>(),
           shares: context.read<Shares>(),
+          overpass: context.read<Overpass>(),
         );
         unawaited(cubit.start());
         return cubit;
@@ -134,6 +136,42 @@ class _HomeViewState extends State<_HomeView> {
       case null:
         break;
     }
+  }
+
+  /// Rename, on a learned stop's panel.
+  Future<void> _renameStop(BuildContext context) async {
+    final cubit = context.read<HomeCubit>();
+    final current = cubit.state.destination?.names.inLanguage(
+      Localizations.localeOf(context).languageCode,
+    );
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => _RenameStopDialog(name: current ?? ''),
+    );
+    if (name != null && name.trim().isNotEmpty) await cubit.renameStop(name);
+  }
+
+  /// Remove, on a learned stop's panel: asked first.
+  Future<void> _removeStop(BuildContext context) async {
+    final l = AppLocalizations.of(context);
+    final cubit = context.read<HomeCubit>();
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Text(l.removeStopQuestion),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l.removeStop),
+          ),
+        ],
+      ),
+    );
+    if (yes ?? false) await cubit.removeStop();
   }
 
   /// Share, on the ride board or bar: the share sheet with the ride's link;
@@ -307,6 +345,13 @@ class _HomeViewState extends State<_HomeView> {
               onSave: () => _savePlace(context),
               onStart: () => _start(context, destination),
               onClose: cubit.clear,
+              isStop: state.stop != null,
+              onRenameStop: state.stop?.learned ?? false
+                  ? () => unawaited(_renameStop(context))
+                  : null,
+              onRemoveStop: state.stop?.learned ?? false
+                  ? () => unawaited(_removeStop(context))
+                  : null,
             ),
             HomeState(:final other?) => SharedRideCard(
               key: ValueKey('shared ${other.id}'),
@@ -338,6 +383,10 @@ class _HomeViewState extends State<_HomeView> {
                       camera: _camera,
                       onLongPress: cubit.dropPin,
                       dark: Theme.of(context).brightness == Brightness.dark,
+                      stops: state.stops,
+                      onStopTap: (id) =>
+                          unawaited(cubit.selectStop(id, language: language)),
+                      onCameraIdle: cubit.cameraIdle,
                       watched: state.watching ? state.other?.at : null,
                       watchedGoal: state.watching
                           ? state.other?.goal?.point
@@ -451,6 +500,52 @@ class _HomeViewState extends State<_HomeView> {
           );
         },
       ),
+    );
+  }
+}
+
+/// Rename, for a learned stop. Its own widget, so the text field's
+/// controller lives until the dialog has finished closing.
+class _RenameStopDialog extends StatefulWidget {
+  const _RenameStopDialog({required this.name});
+
+  final String name;
+
+  @override
+  State<_RenameStopDialog> createState() => _RenameStopDialogState();
+}
+
+class _RenameStopDialogState extends State<_RenameStopDialog> {
+  late final _name = TextEditingController(text: widget.name);
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l.renameStop),
+      content: TextField(
+        controller: _name,
+        autofocus: true,
+        maxLength: 80,
+        decoration: InputDecoration(labelText: l.stopName),
+        onSubmitted: (text) => Navigator.of(context).pop(text),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l.cancel),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(_name.text),
+          child: Text(l.save),
+        ),
+      ],
     );
   }
 }

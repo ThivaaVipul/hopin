@@ -8,6 +8,7 @@ import 'package:hopin/core/guide/foreground_guide.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/profile/profile_repository.dart';
 import 'package:hopin/core/search/nominatim.dart';
+import 'package:hopin/core/search/overpass.dart';
 import 'package:hopin/core/share/shares.dart';
 import 'package:hopin/core/update/updates.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
@@ -34,6 +35,7 @@ Future<void> main() async {
       openDatabase: HopinDatabase.forAccount,
       location: GeolocatorLocation(),
       nominatim: Nominatim(),
+      overpass: Overpass(),
       mapBuilder: boardMap,
       rideMapBuilder: boardRideMap,
       guide: ForegroundGuideService(),

@@ -665,5 +665,29 @@
   "shareRidesHere": "Share rides here",
   "@shareRidesHere": {
     "description": "The place editor: a guide here shares the ride by itself."
+  },
+  "busStop": "Bus stop",
+  "@busStop": {
+    "description": "A stop on the map, in its panel."
+  },
+  "renameStop": "Rename",
+  "@renameStop": {
+    "description": "Renames a learned stop for both riders."
+  },
+  "removeStop": "Remove",
+  "@removeStop": {
+    "description": "Removes a learned stop for both riders."
+  },
+  "stopName": "Stop name",
+  "@stopName": {
+    "description": "The rename field's label."
+  },
+  "removeStopQuestion": "Remove this stop for both of you?",
+  "@removeStopQuestion": {
+    "description": "Asked before a learned stop is removed."
+  },
+  "moreOptions": "More",
+  "@moreOptions": {
+    "description": "A stop panel's menu of Rename and Remove."
   }
 }

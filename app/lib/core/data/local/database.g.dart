@@ -2075,6 +2075,1833 @@ class RidesCompanion extends UpdateCompanion<RideRow> {
   }
 }
 
+class $PooledHaltsTable extends PooledHalts
+    with TableInfo<$PooledHaltsTable, PooledHaltsRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PooledHaltsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _rideIdMeta = const VerificationMeta('rideId');
+  @override
+  late final GeneratedColumn<String> rideId = GeneratedColumn<String>(
+    'ride_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _uidMeta = const VerificationMeta('uid');
+  @override
+  late final GeneratedColumn<String> uid = GeneratedColumn<String>(
+    'uid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pointsMeta = const VerificationMeta('points');
+  @override
+  late final GeneratedColumn<String> points = GeneratedColumn<String>(
+    'points',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _pendingSinceMeta = const VerificationMeta(
+    'pendingSince',
+  );
+  @override
+  late final GeneratedColumn<int> pendingSince = GeneratedColumn<int>(
+    'pending_since',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    rideId,
+    uid,
+    points,
+    updatedAt,
+    deletedAt,
+    pendingSince,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pooled_halts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PooledHaltsRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('ride_id')) {
+      context.handle(
+        _rideIdMeta,
+        rideId.isAcceptableOrUnknown(data['ride_id']!, _rideIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_rideIdMeta);
+    }
+    if (data.containsKey('uid')) {
+      context.handle(
+        _uidMeta,
+        uid.isAcceptableOrUnknown(data['uid']!, _uidMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_uidMeta);
+    }
+    if (data.containsKey('points')) {
+      context.handle(
+        _pointsMeta,
+        points.isAcceptableOrUnknown(data['points']!, _pointsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pointsMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('pending_since')) {
+      context.handle(
+        _pendingSinceMeta,
+        pendingSince.isAcceptableOrUnknown(
+          data['pending_since']!,
+          _pendingSinceMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {rideId};
+  @override
+  PooledHaltsRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PooledHaltsRow(
+      rideId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ride_id'],
+      )!,
+      uid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uid'],
+      )!,
+      points: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}points'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      pendingSince: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pending_since'],
+      ),
+    );
+  }
+
+  @override
+  $PooledHaltsTable createAlias(String alias) {
+    return $PooledHaltsTable(attachedDatabase, alias);
+  }
+}
+
+class PooledHaltsRow extends DataClass implements Insertable<PooledHaltsRow> {
+  final String rideId;
+  final String uid;
+
+  /// "lat,lng,seconds;..." (ride_record.dart); empty once taken back.
+  final String points;
+  final int updatedAt;
+  final int? deletedAt;
+  final int? pendingSince;
+  const PooledHaltsRow({
+    required this.rideId,
+    required this.uid,
+    required this.points,
+    required this.updatedAt,
+    this.deletedAt,
+    this.pendingSince,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['ride_id'] = Variable<String>(rideId);
+    map['uid'] = Variable<String>(uid);
+    map['points'] = Variable<String>(points);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    if (!nullToAbsent || pendingSince != null) {
+      map['pending_since'] = Variable<int>(pendingSince);
+    }
+    return map;
+  }
+
+  PooledHaltsCompanion toCompanion(bool nullToAbsent) {
+    return PooledHaltsCompanion(
+      rideId: Value(rideId),
+      uid: Value(uid),
+      points: Value(points),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      pendingSince: pendingSince == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pendingSince),
+    );
+  }
+
+  factory PooledHaltsRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PooledHaltsRow(
+      rideId: serializer.fromJson<String>(json['rideId']),
+      uid: serializer.fromJson<String>(json['uid']),
+      points: serializer.fromJson<String>(json['points']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      pendingSince: serializer.fromJson<int?>(json['pendingSince']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'rideId': serializer.toJson<String>(rideId),
+      'uid': serializer.toJson<String>(uid),
+      'points': serializer.toJson<String>(points),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'pendingSince': serializer.toJson<int?>(pendingSince),
+    };
+  }
+
+  PooledHaltsRow copyWith({
+    String? rideId,
+    String? uid,
+    String? points,
+    int? updatedAt,
+    Value<int?> deletedAt = const Value.absent(),
+    Value<int?> pendingSince = const Value.absent(),
+  }) => PooledHaltsRow(
+    rideId: rideId ?? this.rideId,
+    uid: uid ?? this.uid,
+    points: points ?? this.points,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    pendingSince: pendingSince.present ? pendingSince.value : this.pendingSince,
+  );
+  PooledHaltsRow copyWithCompanion(PooledHaltsCompanion data) {
+    return PooledHaltsRow(
+      rideId: data.rideId.present ? data.rideId.value : this.rideId,
+      uid: data.uid.present ? data.uid.value : this.uid,
+      points: data.points.present ? data.points.value : this.points,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      pendingSince: data.pendingSince.present
+          ? data.pendingSince.value
+          : this.pendingSince,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PooledHaltsRow(')
+          ..write('rideId: $rideId, ')
+          ..write('uid: $uid, ')
+          ..write('points: $points, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('pendingSince: $pendingSince')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(rideId, uid, points, updatedAt, deletedAt, pendingSince);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PooledHaltsRow &&
+          other.rideId == this.rideId &&
+          other.uid == this.uid &&
+          other.points == this.points &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.pendingSince == this.pendingSince);
+}
+
+class PooledHaltsCompanion extends UpdateCompanion<PooledHaltsRow> {
+  final Value<String> rideId;
+  final Value<String> uid;
+  final Value<String> points;
+  final Value<int> updatedAt;
+  final Value<int?> deletedAt;
+  final Value<int?> pendingSince;
+  final Value<int> rowid;
+  const PooledHaltsCompanion({
+    this.rideId = const Value.absent(),
+    this.uid = const Value.absent(),
+    this.points = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.pendingSince = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PooledHaltsCompanion.insert({
+    required String rideId,
+    required String uid,
+    required String points,
+    required int updatedAt,
+    this.deletedAt = const Value.absent(),
+    this.pendingSince = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : rideId = Value(rideId),
+       uid = Value(uid),
+       points = Value(points),
+       updatedAt = Value(updatedAt);
+  static Insertable<PooledHaltsRow> custom({
+    Expression<String>? rideId,
+    Expression<String>? uid,
+    Expression<String>? points,
+    Expression<int>? updatedAt,
+    Expression<int>? deletedAt,
+    Expression<int>? pendingSince,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (rideId != null) 'ride_id': rideId,
+      if (uid != null) 'uid': uid,
+      if (points != null) 'points': points,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (pendingSince != null) 'pending_since': pendingSince,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PooledHaltsCompanion copyWith({
+    Value<String>? rideId,
+    Value<String>? uid,
+    Value<String>? points,
+    Value<int>? updatedAt,
+    Value<int?>? deletedAt,
+    Value<int?>? pendingSince,
+    Value<int>? rowid,
+  }) {
+    return PooledHaltsCompanion(
+      rideId: rideId ?? this.rideId,
+      uid: uid ?? this.uid,
+      points: points ?? this.points,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      pendingSince: pendingSince ?? this.pendingSince,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (rideId.present) {
+      map['ride_id'] = Variable<String>(rideId.value);
+    }
+    if (uid.present) {
+      map['uid'] = Variable<String>(uid.value);
+    }
+    if (points.present) {
+      map['points'] = Variable<String>(points.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (pendingSince.present) {
+      map['pending_since'] = Variable<int>(pendingSince.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PooledHaltsCompanion(')
+          ..write('rideId: $rideId, ')
+          ..write('uid: $uid, ')
+          ..write('points: $points, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('pendingSince: $pendingSince, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $StopNotesTable extends StopNotes
+    with TableInfo<$StopNotesTable, StopNoteRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $StopNotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _latMeta = const VerificationMeta('lat');
+  @override
+  late final GeneratedColumn<double> lat = GeneratedColumn<double>(
+    'lat',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lngMeta = const VerificationMeta('lng');
+  @override
+  late final GeneratedColumn<double> lng = GeneratedColumn<double>(
+    'lng',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _removedMeta = const VerificationMeta(
+    'removed',
+  );
+  @override
+  late final GeneratedColumn<bool> removed = GeneratedColumn<bool>(
+    'removed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("removed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _byMeta = const VerificationMeta('by');
+  @override
+  late final GeneratedColumn<String> by = GeneratedColumn<String>(
+    'by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pendingSinceMeta = const VerificationMeta(
+    'pendingSince',
+  );
+  @override
+  late final GeneratedColumn<int> pendingSince = GeneratedColumn<int>(
+    'pending_since',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    lat,
+    lng,
+    name,
+    removed,
+    by,
+    updatedAt,
+    pendingSince,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'stop_notes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StopNoteRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('lat')) {
+      context.handle(
+        _latMeta,
+        lat.isAcceptableOrUnknown(data['lat']!, _latMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_latMeta);
+    }
+    if (data.containsKey('lng')) {
+      context.handle(
+        _lngMeta,
+        lng.isAcceptableOrUnknown(data['lng']!, _lngMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lngMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    }
+    if (data.containsKey('removed')) {
+      context.handle(
+        _removedMeta,
+        removed.isAcceptableOrUnknown(data['removed']!, _removedMeta),
+      );
+    }
+    if (data.containsKey('by')) {
+      context.handle(_byMeta, by.isAcceptableOrUnknown(data['by']!, _byMeta));
+    } else if (isInserting) {
+      context.missing(_byMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('pending_since')) {
+      context.handle(
+        _pendingSinceMeta,
+        pendingSince.isAcceptableOrUnknown(
+          data['pending_since']!,
+          _pendingSinceMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  StopNoteRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StopNoteRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      lat: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lat'],
+      )!,
+      lng: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lng'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      ),
+      removed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}removed'],
+      )!,
+      by: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}by'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      pendingSince: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pending_since'],
+      ),
+    );
+  }
+
+  @override
+  $StopNotesTable createAlias(String alias) {
+    return $StopNotesTable(attachedDatabase, alias);
+  }
+}
+
+class StopNoteRow extends DataClass implements Insertable<StopNoteRow> {
+  final String id;
+  final double lat;
+  final double lng;
+  final String? name;
+  final bool removed;
+  final String by;
+  final int updatedAt;
+  final int? pendingSince;
+  const StopNoteRow({
+    required this.id,
+    required this.lat,
+    required this.lng,
+    this.name,
+    required this.removed,
+    required this.by,
+    required this.updatedAt,
+    this.pendingSince,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['lat'] = Variable<double>(lat);
+    map['lng'] = Variable<double>(lng);
+    if (!nullToAbsent || name != null) {
+      map['name'] = Variable<String>(name);
+    }
+    map['removed'] = Variable<bool>(removed);
+    map['by'] = Variable<String>(by);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || pendingSince != null) {
+      map['pending_since'] = Variable<int>(pendingSince);
+    }
+    return map;
+  }
+
+  StopNotesCompanion toCompanion(bool nullToAbsent) {
+    return StopNotesCompanion(
+      id: Value(id),
+      lat: Value(lat),
+      lng: Value(lng),
+      name: name == null && nullToAbsent ? const Value.absent() : Value(name),
+      removed: Value(removed),
+      by: Value(by),
+      updatedAt: Value(updatedAt),
+      pendingSince: pendingSince == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pendingSince),
+    );
+  }
+
+  factory StopNoteRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StopNoteRow(
+      id: serializer.fromJson<String>(json['id']),
+      lat: serializer.fromJson<double>(json['lat']),
+      lng: serializer.fromJson<double>(json['lng']),
+      name: serializer.fromJson<String?>(json['name']),
+      removed: serializer.fromJson<bool>(json['removed']),
+      by: serializer.fromJson<String>(json['by']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      pendingSince: serializer.fromJson<int?>(json['pendingSince']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'lat': serializer.toJson<double>(lat),
+      'lng': serializer.toJson<double>(lng),
+      'name': serializer.toJson<String?>(name),
+      'removed': serializer.toJson<bool>(removed),
+      'by': serializer.toJson<String>(by),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'pendingSince': serializer.toJson<int?>(pendingSince),
+    };
+  }
+
+  StopNoteRow copyWith({
+    String? id,
+    double? lat,
+    double? lng,
+    Value<String?> name = const Value.absent(),
+    bool? removed,
+    String? by,
+    int? updatedAt,
+    Value<int?> pendingSince = const Value.absent(),
+  }) => StopNoteRow(
+    id: id ?? this.id,
+    lat: lat ?? this.lat,
+    lng: lng ?? this.lng,
+    name: name.present ? name.value : this.name,
+    removed: removed ?? this.removed,
+    by: by ?? this.by,
+    updatedAt: updatedAt ?? this.updatedAt,
+    pendingSince: pendingSince.present ? pendingSince.value : this.pendingSince,
+  );
+  StopNoteRow copyWithCompanion(StopNotesCompanion data) {
+    return StopNoteRow(
+      id: data.id.present ? data.id.value : this.id,
+      lat: data.lat.present ? data.lat.value : this.lat,
+      lng: data.lng.present ? data.lng.value : this.lng,
+      name: data.name.present ? data.name.value : this.name,
+      removed: data.removed.present ? data.removed.value : this.removed,
+      by: data.by.present ? data.by.value : this.by,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      pendingSince: data.pendingSince.present
+          ? data.pendingSince.value
+          : this.pendingSince,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StopNoteRow(')
+          ..write('id: $id, ')
+          ..write('lat: $lat, ')
+          ..write('lng: $lng, ')
+          ..write('name: $name, ')
+          ..write('removed: $removed, ')
+          ..write('by: $by, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('pendingSince: $pendingSince')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, lat, lng, name, removed, by, updatedAt, pendingSince);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StopNoteRow &&
+          other.id == this.id &&
+          other.lat == this.lat &&
+          other.lng == this.lng &&
+          other.name == this.name &&
+          other.removed == this.removed &&
+          other.by == this.by &&
+          other.updatedAt == this.updatedAt &&
+          other.pendingSince == this.pendingSince);
+}
+
+class StopNotesCompanion extends UpdateCompanion<StopNoteRow> {
+  final Value<String> id;
+  final Value<double> lat;
+  final Value<double> lng;
+  final Value<String?> name;
+  final Value<bool> removed;
+  final Value<String> by;
+  final Value<int> updatedAt;
+  final Value<int?> pendingSince;
+  final Value<int> rowid;
+  const StopNotesCompanion({
+    this.id = const Value.absent(),
+    this.lat = const Value.absent(),
+    this.lng = const Value.absent(),
+    this.name = const Value.absent(),
+    this.removed = const Value.absent(),
+    this.by = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.pendingSince = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  StopNotesCompanion.insert({
+    required String id,
+    required double lat,
+    required double lng,
+    this.name = const Value.absent(),
+    this.removed = const Value.absent(),
+    required String by,
+    required int updatedAt,
+    this.pendingSince = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       lat = Value(lat),
+       lng = Value(lng),
+       by = Value(by),
+       updatedAt = Value(updatedAt);
+  static Insertable<StopNoteRow> custom({
+    Expression<String>? id,
+    Expression<double>? lat,
+    Expression<double>? lng,
+    Expression<String>? name,
+    Expression<bool>? removed,
+    Expression<String>? by,
+    Expression<int>? updatedAt,
+    Expression<int>? pendingSince,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+      if (name != null) 'name': name,
+      if (removed != null) 'removed': removed,
+      if (by != null) 'by': by,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (pendingSince != null) 'pending_since': pendingSince,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  StopNotesCompanion copyWith({
+    Value<String>? id,
+    Value<double>? lat,
+    Value<double>? lng,
+    Value<String?>? name,
+    Value<bool>? removed,
+    Value<String>? by,
+    Value<int>? updatedAt,
+    Value<int?>? pendingSince,
+    Value<int>? rowid,
+  }) {
+    return StopNotesCompanion(
+      id: id ?? this.id,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      name: name ?? this.name,
+      removed: removed ?? this.removed,
+      by: by ?? this.by,
+      updatedAt: updatedAt ?? this.updatedAt,
+      pendingSince: pendingSince ?? this.pendingSince,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (lat.present) {
+      map['lat'] = Variable<double>(lat.value);
+    }
+    if (lng.present) {
+      map['lng'] = Variable<double>(lng.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (removed.present) {
+      map['removed'] = Variable<bool>(removed.value);
+    }
+    if (by.present) {
+      map['by'] = Variable<String>(by.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (pendingSince.present) {
+      map['pending_since'] = Variable<int>(pendingSince.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StopNotesCompanion(')
+          ..write('id: $id, ')
+          ..write('lat: $lat, ')
+          ..write('lng: $lng, ')
+          ..write('name: $name, ')
+          ..write('removed: $removed, ')
+          ..write('by: $by, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('pendingSince: $pendingSince, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $OsmStopsTable extends OsmStops
+    with TableInfo<$OsmStopsTable, OsmStopRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $OsmStopsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _latMeta = const VerificationMeta('lat');
+  @override
+  late final GeneratedColumn<double> lat = GeneratedColumn<double>(
+    'lat',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lngMeta = const VerificationMeta('lng');
+  @override
+  late final GeneratedColumn<double> lng = GeneratedColumn<double>(
+    'lng',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _enMeta = const VerificationMeta('en');
+  @override
+  late final GeneratedColumn<String> en = GeneratedColumn<String>(
+    'en',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _taMeta = const VerificationMeta('ta');
+  @override
+  late final GeneratedColumn<String> ta = GeneratedColumn<String>(
+    'ta',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _siMeta = const VerificationMeta('si');
+  @override
+  late final GeneratedColumn<String> si = GeneratedColumn<String>(
+    'si',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _tileMeta = const VerificationMeta('tile');
+  @override
+  late final GeneratedColumn<String> tile = GeneratedColumn<String>(
+    'tile',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, lat, lng, en, ta, si, tile];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'osm_stops';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<OsmStopRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('lat')) {
+      context.handle(
+        _latMeta,
+        lat.isAcceptableOrUnknown(data['lat']!, _latMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_latMeta);
+    }
+    if (data.containsKey('lng')) {
+      context.handle(
+        _lngMeta,
+        lng.isAcceptableOrUnknown(data['lng']!, _lngMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lngMeta);
+    }
+    if (data.containsKey('en')) {
+      context.handle(_enMeta, en.isAcceptableOrUnknown(data['en']!, _enMeta));
+    }
+    if (data.containsKey('ta')) {
+      context.handle(_taMeta, ta.isAcceptableOrUnknown(data['ta']!, _taMeta));
+    }
+    if (data.containsKey('si')) {
+      context.handle(_siMeta, si.isAcceptableOrUnknown(data['si']!, _siMeta));
+    }
+    if (data.containsKey('tile')) {
+      context.handle(
+        _tileMeta,
+        tile.isAcceptableOrUnknown(data['tile']!, _tileMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tileMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  OsmStopRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return OsmStopRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      lat: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lat'],
+      )!,
+      lng: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lng'],
+      )!,
+      en: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}en'],
+      ),
+      ta: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ta'],
+      ),
+      si: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}si'],
+      ),
+      tile: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tile'],
+      )!,
+    );
+  }
+
+  @override
+  $OsmStopsTable createAlias(String alias) {
+    return $OsmStopsTable(attachedDatabase, alias);
+  }
+}
+
+class OsmStopRow extends DataClass implements Insertable<OsmStopRow> {
+  final int id;
+  final double lat;
+  final double lng;
+  final String? en;
+  final String? ta;
+  final String? si;
+  final String tile;
+  const OsmStopRow({
+    required this.id,
+    required this.lat,
+    required this.lng,
+    this.en,
+    this.ta,
+    this.si,
+    required this.tile,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['lat'] = Variable<double>(lat);
+    map['lng'] = Variable<double>(lng);
+    if (!nullToAbsent || en != null) {
+      map['en'] = Variable<String>(en);
+    }
+    if (!nullToAbsent || ta != null) {
+      map['ta'] = Variable<String>(ta);
+    }
+    if (!nullToAbsent || si != null) {
+      map['si'] = Variable<String>(si);
+    }
+    map['tile'] = Variable<String>(tile);
+    return map;
+  }
+
+  OsmStopsCompanion toCompanion(bool nullToAbsent) {
+    return OsmStopsCompanion(
+      id: Value(id),
+      lat: Value(lat),
+      lng: Value(lng),
+      en: en == null && nullToAbsent ? const Value.absent() : Value(en),
+      ta: ta == null && nullToAbsent ? const Value.absent() : Value(ta),
+      si: si == null && nullToAbsent ? const Value.absent() : Value(si),
+      tile: Value(tile),
+    );
+  }
+
+  factory OsmStopRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return OsmStopRow(
+      id: serializer.fromJson<int>(json['id']),
+      lat: serializer.fromJson<double>(json['lat']),
+      lng: serializer.fromJson<double>(json['lng']),
+      en: serializer.fromJson<String?>(json['en']),
+      ta: serializer.fromJson<String?>(json['ta']),
+      si: serializer.fromJson<String?>(json['si']),
+      tile: serializer.fromJson<String>(json['tile']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'lat': serializer.toJson<double>(lat),
+      'lng': serializer.toJson<double>(lng),
+      'en': serializer.toJson<String?>(en),
+      'ta': serializer.toJson<String?>(ta),
+      'si': serializer.toJson<String?>(si),
+      'tile': serializer.toJson<String>(tile),
+    };
+  }
+
+  OsmStopRow copyWith({
+    int? id,
+    double? lat,
+    double? lng,
+    Value<String?> en = const Value.absent(),
+    Value<String?> ta = const Value.absent(),
+    Value<String?> si = const Value.absent(),
+    String? tile,
+  }) => OsmStopRow(
+    id: id ?? this.id,
+    lat: lat ?? this.lat,
+    lng: lng ?? this.lng,
+    en: en.present ? en.value : this.en,
+    ta: ta.present ? ta.value : this.ta,
+    si: si.present ? si.value : this.si,
+    tile: tile ?? this.tile,
+  );
+  OsmStopRow copyWithCompanion(OsmStopsCompanion data) {
+    return OsmStopRow(
+      id: data.id.present ? data.id.value : this.id,
+      lat: data.lat.present ? data.lat.value : this.lat,
+      lng: data.lng.present ? data.lng.value : this.lng,
+      en: data.en.present ? data.en.value : this.en,
+      ta: data.ta.present ? data.ta.value : this.ta,
+      si: data.si.present ? data.si.value : this.si,
+      tile: data.tile.present ? data.tile.value : this.tile,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OsmStopRow(')
+          ..write('id: $id, ')
+          ..write('lat: $lat, ')
+          ..write('lng: $lng, ')
+          ..write('en: $en, ')
+          ..write('ta: $ta, ')
+          ..write('si: $si, ')
+          ..write('tile: $tile')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, lat, lng, en, ta, si, tile);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is OsmStopRow &&
+          other.id == this.id &&
+          other.lat == this.lat &&
+          other.lng == this.lng &&
+          other.en == this.en &&
+          other.ta == this.ta &&
+          other.si == this.si &&
+          other.tile == this.tile);
+}
+
+class OsmStopsCompanion extends UpdateCompanion<OsmStopRow> {
+  final Value<int> id;
+  final Value<double> lat;
+  final Value<double> lng;
+  final Value<String?> en;
+  final Value<String?> ta;
+  final Value<String?> si;
+  final Value<String> tile;
+  const OsmStopsCompanion({
+    this.id = const Value.absent(),
+    this.lat = const Value.absent(),
+    this.lng = const Value.absent(),
+    this.en = const Value.absent(),
+    this.ta = const Value.absent(),
+    this.si = const Value.absent(),
+    this.tile = const Value.absent(),
+  });
+  OsmStopsCompanion.insert({
+    this.id = const Value.absent(),
+    required double lat,
+    required double lng,
+    this.en = const Value.absent(),
+    this.ta = const Value.absent(),
+    this.si = const Value.absent(),
+    required String tile,
+  }) : lat = Value(lat),
+       lng = Value(lng),
+       tile = Value(tile);
+  static Insertable<OsmStopRow> custom({
+    Expression<int>? id,
+    Expression<double>? lat,
+    Expression<double>? lng,
+    Expression<String>? en,
+    Expression<String>? ta,
+    Expression<String>? si,
+    Expression<String>? tile,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+      if (en != null) 'en': en,
+      if (ta != null) 'ta': ta,
+      if (si != null) 'si': si,
+      if (tile != null) 'tile': tile,
+    });
+  }
+
+  OsmStopsCompanion copyWith({
+    Value<int>? id,
+    Value<double>? lat,
+    Value<double>? lng,
+    Value<String?>? en,
+    Value<String?>? ta,
+    Value<String?>? si,
+    Value<String>? tile,
+  }) {
+    return OsmStopsCompanion(
+      id: id ?? this.id,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      en: en ?? this.en,
+      ta: ta ?? this.ta,
+      si: si ?? this.si,
+      tile: tile ?? this.tile,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (lat.present) {
+      map['lat'] = Variable<double>(lat.value);
+    }
+    if (lng.present) {
+      map['lng'] = Variable<double>(lng.value);
+    }
+    if (en.present) {
+      map['en'] = Variable<String>(en.value);
+    }
+    if (ta.present) {
+      map['ta'] = Variable<String>(ta.value);
+    }
+    if (si.present) {
+      map['si'] = Variable<String>(si.value);
+    }
+    if (tile.present) {
+      map['tile'] = Variable<String>(tile.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OsmStopsCompanion(')
+          ..write('id: $id, ')
+          ..write('lat: $lat, ')
+          ..write('lng: $lng, ')
+          ..write('en: $en, ')
+          ..write('ta: $ta, ')
+          ..write('si: $si, ')
+          ..write('tile: $tile')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $StopTilesTable extends StopTiles
+    with TableInfo<$StopTilesTable, StopTileRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $StopTilesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fetchedAtMeta = const VerificationMeta(
+    'fetchedAt',
+  );
+  @override
+  late final GeneratedColumn<int> fetchedAt = GeneratedColumn<int>(
+    'fetched_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [key, fetchedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'stop_tiles';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StopTileRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('fetched_at')) {
+      context.handle(
+        _fetchedAtMeta,
+        fetchedAt.isAcceptableOrUnknown(data['fetched_at']!, _fetchedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fetchedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {key};
+  @override
+  StopTileRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StopTileRow(
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      fetchedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}fetched_at'],
+      )!,
+    );
+  }
+
+  @override
+  $StopTilesTable createAlias(String alias) {
+    return $StopTilesTable(attachedDatabase, alias);
+  }
+}
+
+class StopTileRow extends DataClass implements Insertable<StopTileRow> {
+  final String key;
+  final int fetchedAt;
+  const StopTileRow({required this.key, required this.fetchedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['key'] = Variable<String>(key);
+    map['fetched_at'] = Variable<int>(fetchedAt);
+    return map;
+  }
+
+  StopTilesCompanion toCompanion(bool nullToAbsent) {
+    return StopTilesCompanion(key: Value(key), fetchedAt: Value(fetchedAt));
+  }
+
+  factory StopTileRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StopTileRow(
+      key: serializer.fromJson<String>(json['key']),
+      fetchedAt: serializer.fromJson<int>(json['fetchedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'key': serializer.toJson<String>(key),
+      'fetchedAt': serializer.toJson<int>(fetchedAt),
+    };
+  }
+
+  StopTileRow copyWith({String? key, int? fetchedAt}) =>
+      StopTileRow(key: key ?? this.key, fetchedAt: fetchedAt ?? this.fetchedAt);
+  StopTileRow copyWithCompanion(StopTilesCompanion data) {
+    return StopTileRow(
+      key: data.key.present ? data.key.value : this.key,
+      fetchedAt: data.fetchedAt.present ? data.fetchedAt.value : this.fetchedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StopTileRow(')
+          ..write('key: $key, ')
+          ..write('fetchedAt: $fetchedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(key, fetchedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StopTileRow &&
+          other.key == this.key &&
+          other.fetchedAt == this.fetchedAt);
+}
+
+class StopTilesCompanion extends UpdateCompanion<StopTileRow> {
+  final Value<String> key;
+  final Value<int> fetchedAt;
+  final Value<int> rowid;
+  const StopTilesCompanion({
+    this.key = const Value.absent(),
+    this.fetchedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  StopTilesCompanion.insert({
+    required String key,
+    required int fetchedAt,
+    this.rowid = const Value.absent(),
+  }) : key = Value(key),
+       fetchedAt = Value(fetchedAt);
+  static Insertable<StopTileRow> custom({
+    Expression<String>? key,
+    Expression<int>? fetchedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (key != null) 'key': key,
+      if (fetchedAt != null) 'fetched_at': fetchedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  StopTilesCompanion copyWith({
+    Value<String>? key,
+    Value<int>? fetchedAt,
+    Value<int>? rowid,
+  }) {
+    return StopTilesCompanion(
+      key: key ?? this.key,
+      fetchedAt: fetchedAt ?? this.fetchedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (fetchedAt.present) {
+      map['fetched_at'] = Variable<int>(fetchedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StopTilesCompanion(')
+          ..write('key: $key, ')
+          ..write('fetchedAt: $fetchedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $StopNamesTable extends StopNames
+    with TableInfo<$StopNamesTable, StopNameRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $StopNamesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _latMeta = const VerificationMeta('lat');
+  @override
+  late final GeneratedColumn<double> lat = GeneratedColumn<double>(
+    'lat',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lngMeta = const VerificationMeta('lng');
+  @override
+  late final GeneratedColumn<double> lng = GeneratedColumn<double>(
+    'lng',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, lat, lng, name];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'stop_names';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StopNameRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('lat')) {
+      context.handle(
+        _latMeta,
+        lat.isAcceptableOrUnknown(data['lat']!, _latMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_latMeta);
+    }
+    if (data.containsKey('lng')) {
+      context.handle(
+        _lngMeta,
+        lng.isAcceptableOrUnknown(data['lng']!, _lngMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lngMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  StopNameRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StopNameRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      lat: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lat'],
+      )!,
+      lng: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lng'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+    );
+  }
+
+  @override
+  $StopNamesTable createAlias(String alias) {
+    return $StopNamesTable(attachedDatabase, alias);
+  }
+}
+
+class StopNameRow extends DataClass implements Insertable<StopNameRow> {
+  final int id;
+  final double lat;
+  final double lng;
+  final String name;
+  const StopNameRow({
+    required this.id,
+    required this.lat,
+    required this.lng,
+    required this.name,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['lat'] = Variable<double>(lat);
+    map['lng'] = Variable<double>(lng);
+    map['name'] = Variable<String>(name);
+    return map;
+  }
+
+  StopNamesCompanion toCompanion(bool nullToAbsent) {
+    return StopNamesCompanion(
+      id: Value(id),
+      lat: Value(lat),
+      lng: Value(lng),
+      name: Value(name),
+    );
+  }
+
+  factory StopNameRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StopNameRow(
+      id: serializer.fromJson<int>(json['id']),
+      lat: serializer.fromJson<double>(json['lat']),
+      lng: serializer.fromJson<double>(json['lng']),
+      name: serializer.fromJson<String>(json['name']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'lat': serializer.toJson<double>(lat),
+      'lng': serializer.toJson<double>(lng),
+      'name': serializer.toJson<String>(name),
+    };
+  }
+
+  StopNameRow copyWith({int? id, double? lat, double? lng, String? name}) =>
+      StopNameRow(
+        id: id ?? this.id,
+        lat: lat ?? this.lat,
+        lng: lng ?? this.lng,
+        name: name ?? this.name,
+      );
+  StopNameRow copyWithCompanion(StopNamesCompanion data) {
+    return StopNameRow(
+      id: data.id.present ? data.id.value : this.id,
+      lat: data.lat.present ? data.lat.value : this.lat,
+      lng: data.lng.present ? data.lng.value : this.lng,
+      name: data.name.present ? data.name.value : this.name,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StopNameRow(')
+          ..write('id: $id, ')
+          ..write('lat: $lat, ')
+          ..write('lng: $lng, ')
+          ..write('name: $name')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, lat, lng, name);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StopNameRow &&
+          other.id == this.id &&
+          other.lat == this.lat &&
+          other.lng == this.lng &&
+          other.name == this.name);
+}
+
+class StopNamesCompanion extends UpdateCompanion<StopNameRow> {
+  final Value<int> id;
+  final Value<double> lat;
+  final Value<double> lng;
+  final Value<String> name;
+  const StopNamesCompanion({
+    this.id = const Value.absent(),
+    this.lat = const Value.absent(),
+    this.lng = const Value.absent(),
+    this.name = const Value.absent(),
+  });
+  StopNamesCompanion.insert({
+    this.id = const Value.absent(),
+    required double lat,
+    required double lng,
+    required String name,
+  }) : lat = Value(lat),
+       lng = Value(lng),
+       name = Value(name);
+  static Insertable<StopNameRow> custom({
+    Expression<int>? id,
+    Expression<double>? lat,
+    Expression<double>? lng,
+    Expression<String>? name,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+      if (name != null) 'name': name,
+    });
+  }
+
+  StopNamesCompanion copyWith({
+    Value<int>? id,
+    Value<double>? lat,
+    Value<double>? lng,
+    Value<String>? name,
+  }) {
+    return StopNamesCompanion(
+      id: id ?? this.id,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      name: name ?? this.name,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (lat.present) {
+      map['lat'] = Variable<double>(lat.value);
+    }
+    if (lng.present) {
+      map['lng'] = Variable<double>(lng.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StopNamesCompanion(')
+          ..write('id: $id, ')
+          ..write('lat: $lat, ')
+          ..write('lng: $lng, ')
+          ..write('name: $name')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SettingsTable extends Settings
     with TableInfo<$SettingsTable, SettingRow> {
   @override
@@ -2288,6 +4115,11 @@ abstract class _$HopinDatabase extends GeneratedDatabase {
   late final $PlacesTable places = $PlacesTable(this);
   late final $RecentsTable recents = $RecentsTable(this);
   late final $RidesTable rides = $RidesTable(this);
+  late final $PooledHaltsTable pooledHalts = $PooledHaltsTable(this);
+  late final $StopNotesTable stopNotes = $StopNotesTable(this);
+  late final $OsmStopsTable osmStops = $OsmStopsTable(this);
+  late final $StopTilesTable stopTiles = $StopTilesTable(this);
+  late final $StopNamesTable stopNames = $StopNamesTable(this);
   late final $SettingsTable settings = $SettingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -2297,6 +4129,11 @@ abstract class _$HopinDatabase extends GeneratedDatabase {
     places,
     recents,
     rides,
+    pooledHalts,
+    stopNotes,
+    osmStops,
+    stopTiles,
+    stopNames,
     settings,
   ];
 }

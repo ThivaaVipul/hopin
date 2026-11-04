@@ -432,6 +432,7 @@ class HomeCubit extends Cubit<HomeState> {
   Future<void> _keepRide(RideRecord ride) async {
     await _workspace.rides.save(ride);
     await _guide.forgetPendingRide(ride.id);
+    if (ride.unnamed) unawaited(_workspace.namer(_nominatim).nameMissing());
   }
 
   /// An answer on the "On a bus?" card (ride_task.dart's button IDs).

@@ -9,8 +9,10 @@ import 'package:hopin/core/data/places_repository.dart';
 import 'package:hopin/core/data/places_sync.dart';
 import 'package:hopin/core/data/recents_repository.dart';
 import 'package:hopin/core/data/remote/remote.dart';
+import 'package:hopin/core/data/ride_namer.dart';
 import 'package:hopin/core/data/rides_repository.dart';
 import 'package:hopin/core/data/settings_sync.dart';
+import 'package:hopin/core/search/nominatim.dart';
 
 typedef DatabaseOpener = HopinDatabase Function(String uid);
 
@@ -46,6 +48,16 @@ class Workspace {
   final PlacesSync _sync;
   late final SettingsSync _settingsSync;
   final RidesSync _ridesSync;
+  RideNamer? _namer;
+
+  /// Names the rides' ends; one for the workspace, so Home and the Rides page
+  /// never look the same ride up twice at once.
+  RideNamer namer(Nominatim nominatim) => _namer ??= RideNamer(
+    rides: rides,
+    places: places,
+    settings: appSettings,
+    nominatim: nominatim,
+  );
 
   Future<void> setRider({required bool isRider}) async {
     if (isRider) {

@@ -745,6 +745,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pretend a ride started'**
   String get pretendRide;
+
+  /// Settings: the section for logged rides, and the Rides page's title.
+  ///
+  /// In en, this message translates to:
+  /// **'Rides'**
+  String get rides;
+
+  /// Settings: opens the list of logged rides.
+  ///
+  /// In en, this message translates to:
+  /// **'All rides'**
+  String get allRides;
+
+  /// The Rides page with nothing logged.
+  ///
+  /// In en, this message translates to:
+  /// **'No rides yet'**
+  String get noRides;
+
+  /// A day heading in the rides list.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
+  /// A day heading in the rides list.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get yesterday;
+
+  /// A ride's label: it was a bus.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus'**
+  String get bus;
+
+  /// A ride's label: not answered or not known.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsure'**
+  String get unsure;
+
+  /// Asked before a ride is deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this ride?'**
+  String get deleteRideQuestion;
+
+  /// Leaves a question without doing anything.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// Confirms marking a ride Not a bus, which removes its path.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removePath;
+
+  /// Asked before a ride with a path is marked Not a bus.
+  ///
+  /// In en, this message translates to:
+  /// **'Not a bus keeps no path. Remove it?'**
+  String get notBusQuestion;
+
+  /// A ride's duration under an hour.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String durationMinutes(int minutes);
+
+  /// A ride's duration of an hour or more.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h {minutes} min'**
+  String durationHours(int hours, int minutes);
+
+  /// A ride's start and end times.
+  ///
+  /// In en, this message translates to:
+  /// **'{start} - {end}'**
+  String timeRange(String start, String end);
 }
 
 class _AppLocalizationsDelegate

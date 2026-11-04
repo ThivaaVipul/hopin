@@ -4,15 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hopin/app/app.dart';
 import 'package:hopin/app/theme.dart';
+import 'package:hopin/app/widgets/board_choice.dart';
 import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/location/location_service.dart';
+import 'package:hopin/core/ride/bus_logic.dart';
 import 'package:hopin/core/ride/guide.dart';
+import 'package:hopin/core/ride/ride_record.dart';
 import 'package:hopin/core/update/updates.dart';
 import 'package:hopin/features/home/widgets/ride_board.dart';
 import 'package:http/http.dart' as http;
 
-import '../core/search/nominatim_test.dart' show uniJson;
+import '../core/data/ride_namer_test.dart' show slaveIslandJson;
+import '../core/search/nominatim_test.dart' show json, uniJson;
 import '../helpers/fakes.dart';
 
 void main() {
@@ -34,6 +38,7 @@ void main() {
     WidgetTester tester, {
     Locale locale = const Locale('en'),
     LocationService? location,
+    Future<http.Response> Function(http.Request request)? nominatim,
   }) async {
     await tester.pumpWidget(
       HopinApp(
@@ -43,10 +48,12 @@ void main() {
         openDatabase: memoryDatabase,
         location: location ?? FakeLocation(),
         nominatim: fakeNominatim(
-          (_) async =>
-              http.Response.bytes(utf8.encode(jsonEncode([uniJson])), 200),
+          nominatim ??
+              (_) async =>
+                  http.Response.bytes(utf8.encode(jsonEncode([uniJson])), 200),
         ),
         mapBuilder: fakeMap,
+        rideMapBuilder: fakeRideMap,
         guide: guide,
         updates: updates,
         locale: locale,
@@ -577,6 +584,148 @@ void main() {
       expect(find.text('இயக்கு'), findsOneWidget);
       guide.emit(const RideQuestion());
       await tester.pumpAndSettle();
+      expect(find.text('பஸ் அல்ல'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await finish(tester);
+    });
+  });
+
+  group('rides', () {
+    /// This morning's bus ride, with its path and a halt, and yesterday's
+    /// unanswered one without a path.
+    void logRides() {
+      final today = DateTime.now();
+      final morning = DateTime(today.year, today.month, today.day, 8, 10);
+      guide.pending.addAll([
+        RideRecord(
+          id: 'ride1',
+          startedAt: morning.toUtc(),
+          endedAt: morning.add(const Duration(minutes: 24)).toUtc(),
+          verdict: RideVerdict.bus,
+          distanceM: 2400,
+          path: const [GeoPoint(6.9270, 79.8510), GeoPoint(6.9344, 79.8501)],
+          halts: const [Halt(GeoPoint(6.9300, 79.8505), 30)],
+        ),
+        RideRecord(
+          id: 'ride2',
+          startedAt: morning.subtract(const Duration(hours: 15)).toUtc(),
+          endedAt: morning.subtract(const Duration(hours: 14)).toUtc(),
+          verdict: RideVerdict.unknown,
+          distanceM: 850,
+        ),
+      ]);
+    }
+
+    /// Lets the namer's lookups finish: the database's streams complete on
+    /// the real event loop, which the test's fake clock doesn't drive.
+    Future<void> namesFound(WidgetTester tester) async {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    /// Whether the ride's label [label] is the chosen one.
+    bool chosen(WidgetTester tester, String label) => tester
+        .widget<BoardChoice>(find.widgetWithText(BoardChoice, label))
+        .selected;
+
+    /// Reverse lookups name Slave Island (south) or the Fort (north).
+    Future<http.Response> places(http.Request request) async {
+      if (request.url.path != '/reverse') return json([uniJson]);
+      final lat = double.parse(request.url.queryParameters['lat']!);
+      return json(lat < 6.93 ? slaveIslandJson : uniJson);
+    }
+
+    testWidgets('lists rides by day; one opens, relabels and deletes', (
+      tester,
+    ) async {
+      logRides();
+      await start(
+        tester,
+        location: FakeLocation(access: LocationAccess.granted),
+        nominatim: places,
+      );
+      auth.emit(rider);
+      await tester.pumpAndSettle();
+      await openAccount(tester);
+      await showInSettings(tester, find.text('All rides'));
+      await tester.tap(find.text('All rides'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Today'), findsOneWidget);
+      expect(find.text('Yesterday'), findsOneWidget);
+      expect(find.text('8:10 AM'), findsOneWidget);
+      await namesFound(tester);
+      expect(find.textContaining('Slave Island'), findsOneWidget);
+      expect(find.textContaining('Colombo Fort'), findsOneWidget);
+      expect(find.text('24 min'), findsOneWidget);
+      expect(find.text('2.4 km'), findsOneWidget);
+      expect(find.text('Bus'), findsOneWidget);
+      expect(find.text('Unsure'), findsOneWidget);
+      expect(find.text('850 m'), findsOneWidget);
+
+      await tester.tap(find.text('8:10 AM'));
+      await tester.pumpAndSettle();
+      expect(find.text('ride map: 2 points, 1 halts'), findsOneWidget);
+      expect(find.text('8:10 AM - 8:34 AM'), findsOneWidget);
+      expect(chosen(tester, 'Bus'), isTrue);
+
+      // Not a bus keeps no path: asked first.
+      await tester.tap(find.text('Not a bus'));
+      await tester.pumpAndSettle();
+      expect(find.text('Not a bus keeps no path. Remove it?'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.text('ride map: 2 points, 1 halts'), findsOneWidget);
+      await tester.tap(find.text('Not a bus'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Remove'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('ride map'), findsNothing);
+      expect(chosen(tester, 'Not a bus'), isTrue);
+
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+      expect(find.text('Delete this ride?'), findsOneWidget);
+      await tester.tap(find.text('Delete').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Today'), findsNothing);
+      expect(find.text('Yesterday'), findsOneWidget);
+      await finish(tester);
+    });
+
+    testWidgets('the rides pages fit a small phone in Tamil with large text', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1080, 2160)
+        ..devicePixelRatio = 3;
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      logRides();
+      await start(
+        tester,
+        locale: const Locale('ta'),
+        location: FakeLocation(access: LocationAccess.granted),
+        nominatim: places,
+      );
+      auth.emit(rider);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('அமைப்புகள்'));
+      await tester.pumpAndSettle();
+      await showInSettings(tester, find.text('எல்லாப் பயணங்களும்'));
+      await tester.tap(find.text('எல்லாப் பயணங்களும்'));
+      await tester.pumpAndSettle();
+      await namesFound(tester);
+      expect(find.text('இன்று'), findsOneWidget);
+      expect(find.textContaining('Slave Island'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.textContaining('Slave Island'));
+      await tester.pumpAndSettle();
+      expect(find.text('தெரியாது'), findsOneWidget);
       expect(find.text('பஸ் அல்ல'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await finish(tester);

@@ -84,6 +84,7 @@ Every synced document carries `updatedAt` (a server timestamp) and is soft-delet
    - Messages between the service and the app are maps built at run time: a `const` map sent across isolates trips a debug check in the receiving isolate.
 5. **The end:** the vehicle left and 2 minutes without moving, or 15 minutes without moving; a guide ends as before. Whatever stops the service, the ride is kept: rides under 2 minutes or 300 m are dropped, except Not a bus. A ride the user guided by hand is logged as a bus.
 6. **Logged rides** go from the service to the app (one stored key per ride until the app has it, so none is lost with Hopin closed), into the local database and `people/{uid}/rides`, private: times, verdict, distance, the path and halts as encoded polylines (none for Not a bus), the logic's numbers, and the guide's stop. They are kept until deleted.
+7. **The Rides page** (Settings, Rides) reads only the local database: rides by day, and a ride's own page with its path on a small map of its own in the Board look (`RideMap`, swappable in widget tests like the home map), its label and Delete. `RideNamer` (one per workspace) names a ride's ends once: a saved place within 300 m, otherwise Nominatim's suburb at zoom 14 in the app's language; it runs when Hopin keeps a ride and when the page opens, so rides kept offline are named later. Marking a ride Not a bus removes its path, halts and names after asking.
 
 ## Get-off guide
 

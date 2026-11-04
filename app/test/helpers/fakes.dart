@@ -18,6 +18,7 @@ import 'package:hopin/core/ride/ride_record.dart';
 import 'package:hopin/core/search/nominatim.dart';
 import 'package:hopin/core/update/updates.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
+import 'package:hopin/features/rides/widgets/ride_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
@@ -154,6 +155,19 @@ Widget fakeMap(MapProps props) => ColoredBox(
     alignment: Alignment.center,
     child: Text(
       'map: ${props.places.length} places',
+      textDirection: TextDirection.ltr,
+    ),
+  ),
+);
+
+/// A ride's map without MapLibre: it says how much it was asked to draw.
+Widget fakeRideMap(RideMapProps props) => ColoredBox(
+  key: const ValueKey('ride map'),
+  color: const Color(0xFFECEFEA),
+  child: Align(
+    alignment: Alignment.center,
+    child: Text(
+      'ride map: ${props.path.length} points, ${props.halts.length} halts',
       textDirection: TextDirection.ltr,
     ),
   ),

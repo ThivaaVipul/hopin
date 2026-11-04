@@ -28,6 +28,28 @@ class RidesRepository {
           .watch()
           .map((rows) => [for (final row in rows) rideFromRow(row)]);
 
+  /// One ride as it changes; null once removed.
+  Stream<RideRecord?> watchRide(String id) =>
+      (_db.select(_db.rides)
+            ..where((r) => r.id.equals(id) & r.deletedAt.isNull()))
+          .watchSingleOrNull()
+          .map((row) => row == null ? null : rideFromRow(row));
+
+  /// Rides with a path and a name still missing, newest first.
+  Future<List<RideRecord>> unnamed() async {
+    final rows =
+        await (_db.select(_db.rides)
+              ..where(
+                (r) =>
+                    r.deletedAt.isNull() &
+                    r.path.isNotNull() &
+                    (r.fromName.isNull() | r.toName.isNull()),
+              )
+              ..orderBy([(r) => OrderingTerm.desc(r.startedAt)]))
+            .get();
+    return [for (final row in rows) rideFromRow(row)];
+  }
+
   Future<void> save(RideRecord ride) async {
     final now = _stamp();
     final json = ride.toJson();
@@ -44,6 +66,8 @@ class RidesRepository {
             halts: Value(json['halts'] as String?),
             features: jsonEncode(ride.features),
             guideTo: Value(ride.guideTo),
+            fromName: Value(ride.fromName),
+            toName: Value(ride.toName),
             updatedAt: now,
             deletedAt: const Value(null),
             pendingSince: Value(now),
@@ -52,13 +76,27 @@ class RidesRepository {
     onChange?.call();
   }
 
-  /// The rider's label; a ride that was not a bus loses its path.
+  /// The rider's label; a ride that was not a bus loses its path and names.
   Future<void> setVerdict(String id, RideVerdict verdict) async {
+    final ride = await _ride(id);
+    if (ride == null || ride.verdict == verdict) return;
+    await save(ride.withVerdict(verdict));
+  }
+
+  /// Names found for a ride's ends; a null keeps what it had.
+  Future<void> setNames(String id, {String? from, String? to}) async {
+    final ride = await _ride(id);
+    if (ride == null || ride.path.isEmpty) return;
+    final named = ride.withNames(from: from, to: to);
+    if (named == ride) return;
+    await save(named);
+  }
+
+  Future<RideRecord?> _ride(String id) async {
     final row = await (_db.select(
       _db.rides,
-    )..where((r) => r.id.equals(id))).getSingleOrNull();
-    if (row == null) return;
-    await save(rideFromRow(row).withVerdict(verdict));
+    )..where((r) => r.id.equals(id) & r.deletedAt.isNull())).getSingleOrNull();
+    return row == null ? null : rideFromRow(row);
   }
 
   Future<void> remove(String id) async {
@@ -91,6 +129,8 @@ RideRecord rideFromRow(RideRow row) =>
       'halts': row.halts,
       'features': _features(row.features),
       'guideTo': row.guideTo,
+      'fromName': row.fromName,
+      'toName': row.toName,
     }) ??
     RideRecord(
       id: row.id,

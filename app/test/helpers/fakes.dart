@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide Column;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:hopin/core/auth/auth_repository.dart';
@@ -16,6 +16,7 @@ import 'package:hopin/core/ride/patterns.dart';
 import 'package:hopin/core/ride/ride_config.dart';
 import 'package:hopin/core/ride/ride_record.dart';
 import 'package:hopin/core/search/nominatim.dart';
+import 'package:hopin/core/search/overpass.dart';
 import 'package:hopin/core/share/share.dart';
 import 'package:hopin/core/share/shares.dart';
 import 'package:hopin/core/update/updates.dart';
@@ -149,19 +150,38 @@ class FakeLocation implements LocationService {
   Stream<GeoPoint> positions() => _positions.stream;
 }
 
-/// The map without MapLibre's native view: it shows what it was asked to draw.
+/// The map without MapLibre's native view: it shows what it was asked to
+/// draw; buttons stand in for zooming in to [streetView] and tapping a stop.
 Widget fakeMap(MapProps props) => ColoredBox(
   key: const ValueKey('map'),
   color: const Color(0xFFECEFEA),
   child: Align(
     alignment: Alignment.center,
-    child: Text(
-      'map: ${props.places.length} places'
-      '${props.watched == null ? '' : ', watching'}',
-      textDirection: TextDirection.ltr,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'map: ${props.places.length} places'
+          '${props.watched == null ? '' : ', watching'}',
+          textDirection: TextDirection.ltr,
+        ),
+        GestureDetector(
+          onTap: () =>
+              props.onCameraIdle?.call(streetView.$1, streetView.$2, 16),
+          child: const Text('zoom in', textDirection: TextDirection.ltr),
+        ),
+        for (final stop in props.stops)
+          GestureDetector(
+            onTap: () => props.onStopTap?.call(stop.id),
+            child: Text('stop ${stop.id}', textDirection: TextDirection.ltr),
+          ),
+      ],
     ),
   ),
 );
+
+/// A street-level view over central Colombo (synthetic, as all test spots).
+const streetView = (GeoPoint(6.90, 79.83), GeoPoint(6.95, 79.88));
 
 /// A ride's map without MapLibre: it says how much it was asked to draw.
 Widget fakeRideMap(RideMapProps props) => ColoredBox(
@@ -385,3 +405,9 @@ class FakeShares implements Shares {
   @override
   Future<void> closeLeftOpen(String uid) async => closedFor.add(uid);
 }
+
+/// Overpass with no stops anywhere, and no waiting between requests.
+Overpass emptyOverpass() => Overpass(
+  client: MockClient((_) async => http.Response('{"elements": []}', 200)),
+  wait: (_) async {},
+);

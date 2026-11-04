@@ -7,6 +7,7 @@ import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/places/place.dart';
+import 'package:hopin/core/ride/bus_logic.dart';
 import 'package:hopin/core/ride/guide.dart';
 import 'package:hopin/core/ride/patterns.dart';
 import 'package:hopin/core/ride/ride_record.dart';
@@ -65,6 +66,7 @@ void main() {
     }),
     guide,
     shares: shares,
+    overpass: emptyOverpass(),
     clock: () => now,
   );
 
@@ -608,6 +610,94 @@ void main() {
       await again.start();
       expect(shares.closedFor, ['r1']);
       await again.close();
+    });
+  });
+
+  group('stops', () {
+    /// Two bus rides halting at the same synthetic spot: a learned stop.
+    Future<void> twoBusRides() async {
+      for (final id in ['ride1', 'ride2']) {
+        await workspace.rides.save(
+          RideRecord(
+            id: id,
+            startedAt: DateTime.utc(2026, 1, 1, 8),
+            endedAt: DateTime.utc(2026, 1, 1, 8, 30),
+            verdict: RideVerdict.bus,
+            distanceM: 4000,
+            path: const [GeoPoint(6.92, 79.85), GeoPoint(6.927, 79.851)],
+            halts: const [Halt(GeoPoint(6.927, 79.851), 30)],
+          ),
+        );
+      }
+    }
+
+    const sw = GeoPoint(6.90, 79.83);
+    const ne = GeoPoint(6.95, 79.88);
+
+    test('show at street level, and only those in view', () async {
+      await twoBusRides();
+      final home = cubit();
+      await home.start();
+      await pumpEventQueue();
+      home.cameraIdle(sw, ne, 13);
+      expect(home.state.stops, isEmpty);
+      home.cameraIdle(sw, ne, 16);
+      expect(home.state.stops.single.learned, isTrue);
+      home.cameraIdle(
+        const GeoPoint(7.0, 80.0),
+        const GeoPoint(7.05, 80.05),
+        16,
+      );
+      expect(home.state.stops, isEmpty);
+      await home.close();
+    });
+
+    test("a tap opens the stop's panel, named at street level", () async {
+      await twoBusRides();
+      final home = cubit();
+      await home.start();
+      await pumpEventQueue();
+      home.cameraIdle(sw, ne, 16);
+      final stop = home.state.stops.single;
+      await home.selectStop(stop.id, language: 'en');
+      expect(home.state.stop?.id, stop.id);
+      expect(home.state.destination?.point, stop.point);
+      expect(home.state.destination?.names.en, 'Colombo Fort');
+      expect(lookups.last.queryParameters['zoom'], '17');
+      await home.close();
+    });
+
+    test('rename and remove a learned stop, for both riders', () async {
+      await twoBusRides();
+      final home = cubit();
+      await home.start();
+      await pumpEventQueue();
+      home.cameraIdle(sw, ne, 16);
+      await home.selectStop(home.state.stops.single.id, language: 'en');
+
+      await home.renameStop('Lake gate');
+      await pumpEventQueue();
+      expect(home.state.destination?.names.en, 'Lake gate');
+      expect(home.state.stops.single.names.en, 'Lake gate');
+
+      await home.removeStop();
+      await pumpEventQueue();
+      expect(home.state.destination, isNull);
+      expect(home.state.stop, isNull);
+      expect(home.state.stops, isEmpty);
+      await home.close();
+    });
+
+    test('another destination closes the stop panel', () async {
+      await twoBusRides();
+      final home = cubit();
+      await home.start();
+      await pumpEventQueue();
+      home.cameraIdle(sw, ne, 16);
+      await home.selectStop(home.state.stops.single.id, language: 'en');
+      home.select(const Destination(point: GeoPoint(6.93, 79.86)));
+      expect(home.state.stop, isNull);
+      await home.close();
     });
   });
 }

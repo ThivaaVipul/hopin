@@ -182,5 +182,46 @@ service cloud.firestore {
         && validShare();
       allow delete: if isRider() && resource.data.uid == request.auth.uid;
     }
+
+    // A bus ride's halts (docs/PLAN.md, Sharing and stops): pooled, so both
+    // riders read them and each phone works out the stops; only the ride's
+    // rider writes. Taken back by marking with deletedAt, never deleted.
+    match /halts/{rideId} {
+      function validHalts() {
+        let data = request.resource.data;
+        let before = resource == null ? null : resource.data.get('deletedAt', null);
+        return data.keys().hasOnly(['uid', 'points', 'updatedAt', 'deletedAt'])
+          && data.keys().hasAll(['uid', 'points', 'updatedAt'])
+          && data.uid == request.auth.uid
+          && isString(data.points, 0, 10000)
+          && data.updatedAt == request.time
+          && (!('deletedAt' in data) || data.deletedAt == null || data.deletedAt == request.time || data.deletedAt == before);
+      }
+
+      allow read: if isRider();
+      allow create: if isRider() && rideId.matches('^[A-Za-z0-9]{8,40}$') && validHalts();
+      allow update: if isRider() && resource.data.uid == request.auth.uid && validHalts();
+      allow delete: if false;
+    }
+
+    // A rename or removal of a learned stop, kept at the stop's spot and
+    // shared: either rider writes one; none is deleted.
+    match /stopNotes/{noteId} {
+      function validNote() {
+        let data = request.resource.data;
+        return data.keys().hasOnly(['lat', 'lng', 'name', 'removed', 'by', 'updatedAt'])
+          && data.keys().hasAll(['lat', 'lng', 'removed', 'by', 'updatedAt'])
+          && data.lat is number && data.lat >= -90 && data.lat <= 90
+          && data.lng is number && data.lng >= -180 && data.lng <= 180
+          && (!('name' in data) || data.name == null || isString(data.name, 1, 80))
+          && data.removed is bool
+          && data.by == request.auth.uid
+          && data.updatedAt == request.time;
+      }
+
+      allow read: if isRider();
+      allow create, update: if isRider() && validNote();
+      allow delete: if false;
+    }
   }
 }

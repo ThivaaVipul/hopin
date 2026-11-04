@@ -80,6 +80,73 @@ class Rides extends Table {
 }
 
 /// This phone's own choices and bookkeeping (sync cursors, one-time cards).
+/// A bus ride's halts in the pool both riders share (`halts/{rideId}`):
+/// the stops are worked out from these (docs/PLAN.md, Sharing and stops).
+@DataClassName('PooledHaltsRow')
+class PooledHalts extends Table {
+  TextColumn get rideId => text()();
+  TextColumn get uid => text()();
+
+  /// "lat,lng,seconds;..." (ride_record.dart); empty once taken back.
+  TextColumn get points => text()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+  IntColumn get pendingSince => integer().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {rideId};
+}
+
+/// A rename or removal of a learned stop, shared (`stopNotes/{id}`).
+@DataClassName('StopNoteRow')
+class StopNotes extends Table {
+  TextColumn get id => text()();
+  RealColumn get lat => real()();
+  RealColumn get lng => real()();
+  TextColumn get name => text().nullable()();
+  BoolColumn get removed => boolean().withDefault(const Constant(false))();
+  TextColumn get by => text()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get pendingSince => integer().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// OpenStreetMap's bus stops, by square (Overpass), on this phone only.
+@DataClassName('OsmStopRow')
+class OsmStops extends Table {
+  IntColumn get id => integer()();
+  RealColumn get lat => real()();
+  RealColumn get lng => real()();
+  TextColumn get en => text().nullable()();
+  TextColumn get ta => text().nullable()();
+  TextColumn get si => text().nullable()();
+  TextColumn get tile => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+/// When each square of OSM's stops was fetched.
+@DataClassName('StopTileRow')
+class StopTiles extends Table {
+  TextColumn get key => text()();
+  IntColumn get fetchedAt => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {key};
+}
+
+/// Learned stops' names, looked up once at street level, on this phone.
+@DataClassName('StopNameRow')
+class StopNames extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  RealColumn get lat => real()();
+  RealColumn get lng => real()();
+  TextColumn get name => text()();
+}
+
 @DataClassName('SettingRow')
 class Settings extends Table {
   TextColumn get key => text()();
@@ -90,7 +157,19 @@ class Settings extends Table {
 }
 
 /// One database per account on a phone (`hopin_<uid>`).
-@DriftDatabase(tables: [Places, Recents, Rides, Settings])
+@DriftDatabase(
+  tables: [
+    Places,
+    Recents,
+    Rides,
+    PooledHalts,
+    StopNotes,
+    OsmStops,
+    StopTiles,
+    StopNames,
+    Settings,
+  ],
+)
 class HopinDatabase extends _$HopinDatabase {
   HopinDatabase(super.executor);
 
@@ -98,7 +177,7 @@ class HopinDatabase extends _$HopinDatabase {
       HopinDatabase(driftDatabase(name: 'hopin_$uid'));
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   // Places are a copy of Firestore, so a new schema rebuilds the tables and the
   // sync fills them again from the start; unsynced writes are read back from

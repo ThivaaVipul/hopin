@@ -461,4 +461,22 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get shareRidesHere => 'இங்கு செல்லும் பயணங்களைப் பகிர்';
+
+  @override
+  String get busStop => 'பஸ் நிறுத்தம்';
+
+  @override
+  String get renameStop => 'பெயர் மாற்று';
+
+  @override
+  String get removeStop => 'நீக்கு';
+
+  @override
+  String get stopName => 'நிறுத்தத்தின் பெயர்';
+
+  @override
+  String get removeStopQuestion => 'இந்த நிறுத்தத்தை இருவருக்கும் நீக்கவா?';
+
+  @override
+  String get moreOptions => 'மேலும்';
 }

@@ -57,6 +57,7 @@ void main() {
               (_) async =>
                   http.Response.bytes(utf8.encode(jsonEncode([uniJson])), 200),
         ),
+        overpass: emptyOverpass(),
         mapBuilder: fakeMap,
         rideMapBuilder: fakeRideMap,
         guide: guide,
@@ -890,6 +891,117 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.textContaining('பஸ் பயணம்'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await finish(tester);
+    });
+  });
+
+  group('stops', () {
+    /// Two bus rides halting at one synthetic spot, handed over on start.
+    void twoBusRides() {
+      for (final id in ['ride1', 'ride2']) {
+        guide.pending.add(
+          RideRecord(
+            id: id,
+            startedAt: DateTime.utc(2026, 1, 1, 8),
+            endedAt: DateTime.utc(2026, 1, 1, 8, 30),
+            verdict: RideVerdict.bus,
+            distanceM: 4000,
+            path: const [GeoPoint(6.92, 79.85), GeoPoint(6.927, 79.851)],
+            halts: const [Halt(GeoPoint(6.927, 79.851), 30)],
+          ),
+        );
+      }
+    }
+
+    /// Street-level lookups name the spot "Lake Road".
+    Future<http.Response> places(http.Request request) async {
+      if (request.url.path != '/reverse') return json([uniJson]);
+      return json({
+        'lat': '6.927',
+        'lon': '79.851',
+        'name': 'Lake Road',
+        'address': {'suburb': 'Slave Island'},
+      });
+    }
+
+    Future<void> openStop(
+      WidgetTester tester, {
+      Locale locale = const Locale('en'),
+    }) async {
+      twoBusRides();
+      // Detection already on: no offer card over the map.
+      guide.detected = const Detection(
+        on: true,
+        activity: true,
+        allTheTime: true,
+      );
+      await start(
+        tester,
+        locale: locale,
+        location: FakeLocation(access: LocationAccess.granted),
+        nominatim: places,
+      );
+      auth.emit(rider);
+      await tester.pumpAndSettle();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await tester.tap(find.text('zoom in'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('stop learned:'));
+      await tester.pumpAndSettle();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets("a stop's panel: rename it, then remove it", (tester) async {
+      await openStop(tester);
+      expect(find.text('Lake Road'), findsOneWidget);
+      expect(find.textContaining('Bus stop'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Rename'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, 'Lake gate');
+      await tester.tap(find.text('Save').last);
+      await tester.pumpAndSettle();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Lake gate'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Remove'));
+      await tester.pumpAndSettle();
+      expect(find.text('Remove this stop for both of you?'), findsOneWidget);
+      await tester.tap(find.text('Remove').last);
+      await tester.pumpAndSettle();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 300)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Lake gate'), findsNothing);
+      expect(find.textContaining('stop learned:'), findsNothing);
+      await finish(tester);
+    });
+
+    testWidgets("a stop's panel fits a small phone in Tamil with large text", (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1080, 2160)
+        ..devicePixelRatio = 3;
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await openStop(tester, locale: const Locale('ta'));
+      expect(find.textContaining('பஸ் நிறுத்தம்'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await finish(tester);
     });

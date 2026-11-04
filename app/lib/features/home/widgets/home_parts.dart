@@ -184,12 +184,20 @@ class DestinationPanel extends StatelessWidget {
     required this.onSave,
     required this.onStart,
     required this.onClose,
+    this.isStop = false,
+    this.onRenameStop,
+    this.onRemoveStop,
   });
 
   final Destination destination;
   final GeoPoint? me;
   final bool resolving;
   final VoidCallback onSave;
+
+  /// The destination is a bus stop; a learned one can be renamed or removed.
+  final bool isStop;
+  final VoidCallback? onRenameStop;
+  final VoidCallback? onRemoveStop;
 
   /// Starts the guide to [destination].
   final VoidCallback onStart;
@@ -203,8 +211,11 @@ class DestinationPanel extends StatelessWidget {
     final names = destination.names;
     final saved = destination.saved;
     final placeName = names.inLanguage(language);
-    final title = destinationTitle(l, destination, language);
+    // A stop not yet named reads "Bus stop", not "Dropped pin".
+    final named = destinationTitle(l, destination, language);
+    final title = isStop && named == l.droppedPin ? l.busStop : named;
     final detail = [
+      if (isStop && title != l.busStop) l.busStop,
       if (saved != null && placeName != null && placeName != saved.name)
         placeName,
       if (destination.area != null && destination.area != title)
@@ -258,6 +269,18 @@ class DestinationPanel extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (onRenameStop != null || onRemoveStop != null)
+                  PopupMenuButton<VoidCallback>(
+                    tooltip: l.moreOptions,
+                    icon: Icon(Icons.more_vert, color: colors.onBoardMuted),
+                    onSelected: (action) => action(),
+                    itemBuilder: (context) => [
+                      if (onRenameStop case final rename?)
+                        PopupMenuItem(value: rename, child: Text(l.renameStop)),
+                      if (onRemoveStop case final remove?)
+                        PopupMenuItem(value: remove, child: Text(l.removeStop)),
+                    ],
+                  ),
                 IconButton(
                   tooltip: l.close,
                   onPressed: onClose,

@@ -10,7 +10,9 @@ import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/places/place.dart';
 import 'package:hopin/core/ride/guide.dart';
 import 'package:hopin/core/ride/ride_record.dart';
+import 'package:hopin/core/ride/stops.dart';
 import 'package:hopin/core/search/nominatim.dart';
+import 'package:hopin/core/search/overpass.dart';
 import 'package:hopin/core/share/share.dart';
 import 'package:hopin/core/share/shares.dart';
 
@@ -45,6 +47,8 @@ class HomeState extends Equatable {
     this.noticedSince,
     this.other,
     this.watching = false,
+    this.stops = const [],
+    this.stop,
   });
 
   final List<SavedPlace> places;
@@ -87,6 +91,13 @@ class HomeState extends Equatable {
   final LiveShare? other;
   final bool watching;
 
+  /// The bus stops in view, from street level in (docs/PLAN.md, Sharing and
+  /// stops).
+  final List<Stop> stops;
+
+  /// The stop whose panel is open; the destination is its spot.
+  final Stop? stop;
+
   static const _keep = Object();
 
   /// Fields left out keep their value; nullable ones take an explicit null.
@@ -108,6 +119,8 @@ class HomeState extends Equatable {
     Object? noticedSince = _keep,
     Object? other = _keep,
     bool? watching,
+    List<Stop>? stops,
+    Object? stop = _keep,
   }) => HomeState(
     places: places ?? this.places,
     location: location ?? this.location,
@@ -132,12 +145,16 @@ class HomeState extends Equatable {
         : noticedSince as DateTime?,
     other: identical(other, _keep) ? this.other : other as LiveShare?,
     watching: watching ?? this.watching,
+    stops: stops ?? this.stops,
+    stop: identical(stop, _keep) ? this.stop : stop as Stop?,
   );
 
+  /// A new destination; the stop panel goes unless [stop] is its stop.
   HomeState withDestination(
     Destination? destination, {
     bool resolving = false,
-  }) => copyWith(destination: destination, resolving: resolving);
+    Stop? stop,
+  }) => copyWith(destination: destination, resolving: resolving, stop: stop);
 
   @override
   List<Object?> get props => [
@@ -158,6 +175,8 @@ class HomeState extends Equatable {
     noticedSince,
     other,
     watching,
+    stops,
+    stop,
   ];
 }
 
@@ -168,6 +187,7 @@ class HomeCubit extends Cubit<HomeState> {
     this._nominatim,
     this._guide, {
     required Shares shares,
+    required this._overpass,
     DateTime Function()? clock,
   }) : _shareSource = shares,
        _clock = clock ?? DateTime.now,
@@ -178,7 +198,19 @@ class HomeCubit extends Cubit<HomeState> {
   final Nominatim _nominatim;
   final GuideService _guide;
   final Shares _shareSource;
+  final Overpass _overpass;
   final DateTime Function() _clock;
+  StreamSubscription<List<Stop>>? _stopsWatch;
+  List<Stop> _allStops = const [];
+
+  /// The map's view when it last settled: corners and zoom.
+  (GeoPoint, GeoPoint, double)? _view;
+
+  /// Stop dots show from this zoom in (street level).
+  static const stopsFrom = 15.0;
+
+  /// At most this many dots at once.
+  static const mostStops = 400;
   StreamSubscription<List<SavedPlace>>? _places;
   StreamSubscription<GeoPoint>? _positions;
   StreamSubscription<GuideEvent>? _guideEvents;
@@ -205,6 +237,19 @@ class HomeCubit extends Cubit<HomeState> {
     if (isClosed) return;
     _places = _workspace.places.watch().listen(_onPlaces);
     _guideEvents = _guide.events.listen(_onGuide);
+    _stopsWatch = _workspace.stops.watch().listen((stops) {
+      _allStops = stops;
+      _showStops();
+    });
+    // OSM's stops around the saved places, once a month.
+    unawaited(
+      _workspace.places.watch().first.then(
+        (places) => _workspace.stops.ensureAround(
+          places.map((p) => p.point),
+          _overpass,
+        ),
+      ),
+    );
     // Only riders may look for shares; for anyone else the listen fails.
     _shares = _shareSource.watchOpen().listen(
       _onShares,
@@ -506,6 +551,14 @@ class HomeCubit extends Cubit<HomeState> {
   }
 
   Future<void> _keepRide(RideRecord ride) async {
+    if (ride.verdict == RideVerdict.bus && ride.halts.isNotEmpty) {
+      unawaited(
+        _workspace.stops.ensureAround(
+          ride.halts.map((h) => h.point),
+          _overpass,
+        ),
+      );
+    }
     await _workspace.rides.save(ride);
     await _guide.forgetPendingRide(ride.id);
     if (ride.unnamed) unawaited(_workspace.namer(_nominatim).nameMissing());
@@ -570,6 +623,106 @@ class HomeCubit extends Cubit<HomeState> {
     emit(state.copyWith(other: null, watching: false));
   }
 
+  /// The map settled: its corners and zoom. From street level in, the stops
+  /// in view show, and OSM's around are fetched if missing.
+  void cameraIdle(GeoPoint southWest, GeoPoint northEast, double zoom) {
+    _view = (southWest, northEast, zoom);
+    _showStops();
+    if (zoom < stopsFrom) return;
+    final centre = GeoPoint(
+      (southWest.lat + northEast.lat) / 2,
+      (southWest.lng + northEast.lng) / 2,
+    );
+    unawaited(
+      _workspace.stops.ensureAround([centre, southWest, northEast], _overpass),
+    );
+  }
+
+  void _showStops() {
+    final view = _view;
+    final List<Stop> shown;
+    if (view == null || view.$3 < stopsFrom) {
+      shown = const [];
+    } else {
+      final (sw, ne, _) = view;
+      shown = _allStops
+          .where(
+            (s) =>
+                s.point.lat >= sw.lat &&
+                s.point.lat <= ne.lat &&
+                s.point.lng >= sw.lng &&
+                s.point.lng <= ne.lng,
+          )
+          .take(mostStops)
+          .toList();
+    }
+    if (isClosed) return;
+    // The open stop follows its rename; a removed one closes.
+    final open = state.stop;
+    final now = open == null
+        ? null
+        : _allStops.where((s) => s.id == open.id).firstOrNull;
+    if (open != null && now == null && open.learned) {
+      emit(state.copyWith(stops: shown).withDestination(null));
+      return;
+    }
+    emit(state.copyWith(stops: shown));
+  }
+
+  /// A tap on a stop's dot: its panel, as for a place.
+  Future<void> selectStop(String id, {required String language}) async {
+    if (state.ride != null) return;
+    final stop = _allStops.where((s) => s.id == id).firstOrNull;
+    if (stop == null) return;
+    emit(
+      state.withDestination(
+        Destination(point: stop.point, names: stop.names),
+        stop: stop,
+      ),
+    );
+    if (!stop.learned || !stop.names.isEmpty) return;
+    final name = await _workspace.stops.nameOf(
+      stop,
+      _nominatim,
+      language: language,
+    );
+    if (isClosed || name == null || state.stop?.id != id) return;
+    emit(
+      state.withDestination(
+        Destination(
+          point: stop.point,
+          names: PlaceNames(en: name),
+        ),
+        stop: stop,
+      ),
+    );
+  }
+
+  /// Rename, on a learned stop's panel: for both riders.
+  Future<void> renameStop(String name) async {
+    final stop = state.stop;
+    if (stop == null || !stop.learned || name.trim().isEmpty) return;
+    await _workspace.stops.rename(stop, name.trim());
+    if (isClosed || state.stop?.id != stop.id) return;
+    emit(
+      state.withDestination(
+        Destination(
+          point: stop.point,
+          names: PlaceNames(en: name.trim()),
+        ),
+        stop: stop,
+      ),
+    );
+  }
+
+  /// Remove, on a learned stop's panel: for both riders, for good.
+  Future<void> removeStop() async {
+    final stop = state.stop;
+    if (stop == null || !stop.learned) return;
+    await _workspace.stops.remove(stop);
+    if (!isClosed) emit(state.withDestination(null));
+  }
+
   /// An answer on the "On a bus?" card (ride_task.dart's button IDs).
   Future<void> answer(String button) async {
     emit(state.copyWith(question: false));
@@ -620,6 +773,7 @@ class HomeCubit extends Cubit<HomeState> {
     await _positions?.cancel();
     await _guideEvents?.cancel();
     await _shares?.cancel();
+    await _stopsWatch?.cancel();
     return super.close();
   }
 }

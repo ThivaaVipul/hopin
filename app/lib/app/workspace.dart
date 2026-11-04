@@ -12,6 +12,8 @@ import 'package:hopin/core/data/remote/remote.dart';
 import 'package:hopin/core/data/ride_namer.dart';
 import 'package:hopin/core/data/rides_repository.dart';
 import 'package:hopin/core/data/settings_sync.dart';
+import 'package:hopin/core/data/stops_repository.dart';
+import 'package:hopin/core/data/stops_sync.dart';
 import 'package:hopin/core/search/nominatim.dart';
 
 typedef DatabaseOpener = HopinDatabase Function(String uid);
@@ -24,14 +26,21 @@ class Workspace {
       places = PlacesRepository(db),
       recents = RecentsRepository(db),
       settings = SettingsStore(db),
-      rides = RidesRepository(db),
+      rides = RidesRepository(db, uid: uid),
+      stops = StopsRepository(db, uid: uid),
       _sync = PlacesSync(db, remote, uid),
-      _ridesSync = RidesSync(db, remote, uid) {
+      _ridesSync = RidesSync(db, remote, uid),
+      _haltsSync = HaltsSync(db, remote),
+      _notesSync = StopNotesSync(db, remote) {
     appSettings = AppSettings(settings);
     _settingsSync = SettingsSync(appSettings, settings, remote, uid);
     places.onChange = () => unawaited(_sync.push());
     appSettings.onChange = () => unawaited(_settingsSync.push());
-    rides.onChange = () => unawaited(_ridesSync.push());
+    rides.onChange = () {
+      unawaited(_ridesSync.push());
+      unawaited(_haltsSync.push());
+    };
+    stops.onChange = () => unawaited(_notesSync.push());
   }
 
   final String uid;
@@ -43,11 +52,16 @@ class Workspace {
   /// The logged vehicle rides.
   final RidesRepository rides;
 
+  /// OSM's and the learned bus stops (docs/PLAN.md, Sharing and stops).
+  final StopsRepository stops;
+
   /// The language and alert stages, which follow the account.
   late final AppSettings appSettings;
   final PlacesSync _sync;
   late final SettingsSync _settingsSync;
   final RidesSync _ridesSync;
+  final HaltsSync _haltsSync;
+  final StopNotesSync _notesSync;
   RideNamer? _namer;
 
   /// Names the rides' ends; one for the workspace, so Home and the Rides page
@@ -65,18 +79,28 @@ class Workspace {
         _sync.start(),
         _settingsSync.start(),
         _ridesSync.start(),
+        _haltsSync.start(),
+        _notesSync.start(),
       ]);
     } else {
       await Future.wait([
         _sync.stop(),
         _settingsSync.stop(),
         _ridesSync.stop(),
+        _haltsSync.stop(),
+        _notesSync.stop(),
       ]);
     }
   }
 
   Future<void> close() async {
-    await Future.wait([_sync.stop(), _settingsSync.stop(), _ridesSync.stop()]);
+    await Future.wait([
+      _sync.stop(),
+      _settingsSync.stop(),
+      _ridesSync.stop(),
+      _haltsSync.stop(),
+      _notesSync.stop(),
+    ]);
     await _db.close();
   }
 }

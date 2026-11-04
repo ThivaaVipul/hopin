@@ -907,6 +907,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Share rides here'**
   String get shareRidesHere;
+
+  /// A stop on the map, in its panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus stop'**
+  String get busStop;
+
+  /// Renames a learned stop for both riders.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get renameStop;
+
+  /// Removes a learned stop for both riders.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removeStop;
+
+  /// The rename field's label.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop name'**
+  String get stopName;
+
+  /// Asked before a learned stop is removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this stop for both of you?'**
+  String get removeStopQuestion;
+
+  /// A stop panel's menu of Rename and Remove.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get moreOptions;
 }
 
 class _AppLocalizationsDelegate

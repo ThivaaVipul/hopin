@@ -491,3 +491,122 @@ describe('shares', () => {
     );
   });
 });
+
+// A bus ride's halts, pooled between the riders so both phones can work
+// out the stops (docs/PLAN.md, Sharing and stops).
+function halts(changes: Fields = {}): Fields {
+  return {
+    uid: 'r1',
+    points: '6.92700,79.85100,30;6.93100,79.85050,45',
+    updatedAt: serverTimestamp(),
+    deletedAt: null,
+    ...changes,
+  };
+}
+
+describe('halts', () => {
+  it("lets riders read the pool, and write only their own rides' halts", async () => {
+    await assertSucceeds(setDoc(doc(rider('r1'), 'halts/k2x9w1ab7q'), halts()));
+    await assertSucceeds(getDoc(doc(rider('r2'), 'halts/k2x9w1ab7q')));
+    const since = where('updatedAt', '>', Timestamp.fromMillis(0));
+    await assertSucceeds(getDocs(query(collection(rider('r2'), 'halts'), since)));
+    await assertFails(setDoc(doc(rider('r2'), 'halts/k2x9w1ab7r'), halts()));
+    await assertFails(
+      updateDoc(doc(rider('r2'), 'halts/k2x9w1ab7q'), { points: '', updatedAt: serverTimestamp() }),
+    );
+    // Not even by making it theirs.
+    await assertFails(
+      updateDoc(doc(rider('r2'), 'halts/k2x9w1ab7q'), { uid: 'r2', points: '', updatedAt: serverTimestamp() }),
+    );
+  });
+
+  it('keeps everyone else out', async () => {
+    await seed('halts/k2x9w1ab7q', halts({ updatedAt: Timestamp.now() }));
+    await assertFails(getDoc(doc(signedOut(), 'halts/k2x9w1ab7q')));
+    await assertFails(getDoc(doc(stranger('s1'), 'halts/k2x9w1ab7q')));
+    await assertFails(setDoc(doc(stranger('s1'), 'halts/k2x9w1ab7z'), halts({ uid: 's1' })));
+  });
+
+  it('takes a ride back by marking, never by deleting', async () => {
+    const db = rider('r1');
+    await assertSucceeds(setDoc(doc(db, 'halts/k2x9w1ab7q'), halts()));
+    await assertSucceeds(
+      updateDoc(doc(db, 'halts/k2x9w1ab7q'), {
+        points: '',
+        deletedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(deleteDoc(doc(db, 'halts/k2x9w1ab7q')));
+  });
+
+  it('checks every field', async () => {
+    const db = rider('r1');
+    const bad: Fields[] = [
+      { uid: 'r2' },
+      { points: 'x'.repeat(10_001) },
+      { points: 12 },
+      { name: 'Fort' },
+      { updatedAt: Timestamp.now() },
+      { deletedAt: Timestamp.now() },
+    ];
+    for (const changes of bad) {
+      await assertFails(setDoc(doc(db, 'halts/k2x9w1ab7q'), halts(changes)));
+    }
+    await assertFails(setDoc(doc(db, 'halts/a-b'), halts()));
+  });
+});
+
+// A rename or removal of a learned stop, shared by both riders and kept at
+// the stop's spot.
+function stopNote(changes: Fields = {}): Fields {
+  return {
+    lat: 6.9271,
+    lng: 79.851,
+    name: 'Clock tower',
+    removed: false,
+    by: 'r1',
+    updatedAt: serverTimestamp(),
+    ...changes,
+  };
+}
+
+describe('stop notes', () => {
+  it('lets either rider rename or remove a learned stop', async () => {
+    await assertSucceeds(setDoc(doc(rider('r1'), 'stopNotes/n1'), stopNote()));
+    await assertSucceeds(getDoc(doc(rider('r2'), 'stopNotes/n1')));
+    await assertSucceeds(
+      setDoc(doc(rider('r2'), 'stopNotes/n1'), stopNote({ by: 'r2', name: null, removed: true })),
+    );
+    const since = where('updatedAt', '>', Timestamp.fromMillis(0));
+    await assertSucceeds(getDocs(query(collection(rider('r1'), 'stopNotes'), since)));
+  });
+
+  it('keeps everyone else out, and is never deleted', async () => {
+    await seed('stopNotes/n1', stopNote({ updatedAt: Timestamp.now() }));
+    await assertFails(getDoc(doc(signedOut(), 'stopNotes/n1')));
+    await assertFails(getDoc(doc(stranger('s1'), 'stopNotes/n1')));
+    await assertFails(setDoc(doc(stranger('s1'), 'stopNotes/n2'), stopNote({ by: 's1' })));
+    await assertFails(deleteDoc(doc(rider('r1'), 'stopNotes/n1')));
+  });
+
+  it('checks every field', async () => {
+    const db = rider('r1');
+    const bad: Fields[] = [
+      { by: 'r2' },
+      { lat: 91 },
+      { lng: '79.8' },
+      { name: '' },
+      { name: 'x'.repeat(81) },
+      { removed: 'yes' },
+      { colour: 'amber' },
+      { updatedAt: Timestamp.now() },
+    ];
+    for (const changes of bad) {
+      await assertFails(setDoc(doc(db, 'stopNotes/n1'), stopNote(changes)));
+    }
+    const { removed: _r, ...noRemoved } = stopNote();
+    await assertFails(setDoc(doc(db, 'stopNotes/n1'), noRemoved));
+  });
+});
+

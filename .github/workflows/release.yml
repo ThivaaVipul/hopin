@@ -176,6 +176,9 @@ jobs:
           tag="v$VERSION"
           if gh release view "$tag" > /dev/null 2>&1; then
             gh release upload "$tag" dist/*.apk dist/SHA256SUMS.txt --clobber
+            # A create cut short by a GitHub error, after its upload, leaves
+            # a draft: publish it (a published release stays as it is).
+            gh release edit "$tag" --draft=false
           else
             gh release create "$tag" dist/*.apk dist/SHA256SUMS.txt \
               --target "$GITHUB_SHA" --title "Hopin $tag" --notes-file release-notes.md

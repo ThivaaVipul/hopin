@@ -19,6 +19,9 @@ class Places extends Table {
   /// The rider's own order (Settings, Places); 0 until they reorder.
   IntColumn get position => integer().withDefault(const Constant(0))();
 
+  /// A guide here shares the ride by itself.
+  BoolColumn get shareRides => boolean().withDefault(const Constant(false))();
+
   /// Microseconds since the epoch; the server's time once synced.
   IntColumn get updatedAt => integer()();
   IntColumn get deletedAt => integer().nullable()();
@@ -95,7 +98,7 @@ class HopinDatabase extends _$HopinDatabase {
       HopinDatabase(driftDatabase(name: 'hopin_$uid'));
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   // Places are a copy of Firestore, so a new schema rebuilds the tables and the
   // sync fills them again from the start; unsynced writes are read back from

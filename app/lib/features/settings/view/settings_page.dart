@@ -75,10 +75,13 @@ class _SettingsViewState extends State<_SettingsView> {
       name: place.name,
       kind: place.kind,
       editing: true,
+      shareRides: place.shareRides,
     );
     switch (edit) {
-      case SavePlaceEdit(:final name, :final kind):
-        await cubit.updatePlace(place.copyWith(name: name, kind: kind));
+      case SavePlaceEdit(:final name, :final kind, :final shareRides):
+        await cubit.updatePlace(
+          place.copyWith(name: name, kind: kind, shareRides: shareRides),
+        );
       case DeletePlaceEdit():
         await cubit.removePlace(place);
       case null:

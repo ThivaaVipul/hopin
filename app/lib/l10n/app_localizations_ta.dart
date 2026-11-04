@@ -414,4 +414,51 @@ class AppLocalizationsTa extends AppLocalizations {
   String timeRange(String start, String end) {
     return '$start - $end';
   }
+
+  @override
+  String get share => 'பகிர்';
+
+  @override
+  String get sharingRide => 'இந்தப் பயணம் பகிரப்படுகிறது';
+
+  @override
+  String get sendLink => 'இணைப்பை அனுப்பு';
+
+  @override
+  String get stopSharing => 'பகிர்வதை நிறுத்து';
+
+  @override
+  String followMyRide(String link) {
+    return 'என் பஸ் பயணத்தை நேரலையில் பாருங்கள்: $link';
+  }
+
+  @override
+  String get sharedRide => 'பகிர்ந்த பயணம்';
+
+  @override
+  String sharedRideTo(String stop) {
+    return '$stop நோக்கிப் பகிர்ந்த பயணம்';
+  }
+
+  @override
+  String get watch => 'பார்';
+
+  @override
+  String get updatedJustNow => 'இப்போது புதுப்பிக்கப்பட்டது';
+
+  @override
+  String updatedSecondsAgo(int seconds) {
+    return '$seconds வினாடி முன் புதுப்பிக்கப்பட்டது';
+  }
+
+  @override
+  String updatedMinutesAgo(int minutes) {
+    return '$minutes நிமி முன் புதுப்பிக்கப்பட்டது';
+  }
+
+  @override
+  String get lostContact => 'தொடர்பு இல்லை';
+
+  @override
+  String get shareRidesHere => 'இங்கு செல்லும் பயணங்களைப் பகிர்';
 }

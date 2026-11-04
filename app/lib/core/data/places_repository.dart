@@ -42,11 +42,13 @@ class PlacesRepository {
     Destination destination, {
     required String name,
     required PlaceKind kind,
+    bool shareRides = false,
   }) async {
     final place = SavedPlace(
       id: newId(),
       name: name,
       kind: kind,
+      shareRides: shareRides,
       point: destination.point,
       names: destination.names,
     );
@@ -111,6 +113,7 @@ class PlacesRepository {
             placeTa: Value(place.names.ta),
             placeSi: Value(place.names.si),
             position: Value(position),
+            shareRides: Value(place.shareRides),
             updatedAt: now,
             deletedAt: const Value(null),
             pendingSince: Value(now),
@@ -147,4 +150,5 @@ SavedPlace placeFromRow(PlaceRow row) => SavedPlace(
   kind: PlaceKind.values.asNameMap()[row.kind] ?? PlaceKind.other,
   point: GeoPoint(row.lat, row.lng),
   names: PlaceNames(en: row.placeEn, ta: row.placeTa, si: row.placeSi),
+  shareRides: row.shareRides,
 );

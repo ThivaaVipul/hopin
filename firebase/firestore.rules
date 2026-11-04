@@ -48,7 +48,7 @@ service cloud.firestore {
         function validPlace() {
           let data = request.resource.data;
           let before = resource == null ? null : resource.data.get('deletedAt', null);
-          return data.keys().hasOnly(['name', 'kind', 'lat', 'lng', 'placeEn', 'placeTa', 'placeSi', 'order', 'updatedAt', 'deletedAt'])
+          return data.keys().hasOnly(['name', 'kind', 'lat', 'lng', 'placeEn', 'placeTa', 'placeSi', 'order', 'shareRides', 'updatedAt', 'deletedAt'])
             && data.keys().hasAll(['name', 'kind', 'lat', 'lng', 'updatedAt'])
             && isString(data.name, 1, 40)
             && data.kind in ['home', 'work', 'uni', 'other']
@@ -58,6 +58,7 @@ service cloud.firestore {
             && optionalName(data, 'placeTa')
             && optionalName(data, 'placeSi')
             && (!('order' in data) || (data.order is int && data.order >= 0 && data.order <= 999))
+            && (!('shareRides' in data) || data.shareRides is bool)
             && data.updatedAt == request.time
             && (!('deletedAt' in data) || data.deletedAt == null || data.deletedAt == request.time || data.deletedAt == before);
         }
@@ -131,6 +132,55 @@ service cloud.firestore {
         allow create, update: if isSelf(uid) && docId == 'app' && validSettings();
         allow delete: if false;
       }
+    }
+
+    // A live share (docs/PLAN.md, Sharing and stops). Anyone holding a ride's
+    // link reads its one document, so the id is long and unguessable; only
+    // riders can look for open shares, and only the sharing rider writes. It
+    // holds no name, and an ended share keeps no position and stays ended.
+    match /shares/{shareId} {
+      function optionalNumber(data, key, low, high) {
+        return data[key] == null || (data[key] is number && data[key] >= low && data[key] <= high);
+      }
+
+      function optionalInt(data, key, low, high) {
+        return data[key] == null || (data[key] is int && data[key] >= low && data[key] <= high);
+      }
+
+      function optionalText(data, key) {
+        return data[key] == null || isString(data[key], 1, 200);
+      }
+
+      function validShare() {
+        let data = request.resource.data;
+        return data.keys().hasOnly(['uid', 'lat', 'lng', 'toName', 'toTa', 'toLat', 'toLng', 'leftMin', 'metresLeft', 'startedAt', 'endedAt', 'updatedAt'])
+          && data.keys().hasAll(['uid', 'lat', 'lng', 'toName', 'toTa', 'toLat', 'toLng', 'leftMin', 'metresLeft', 'startedAt', 'endedAt', 'updatedAt'])
+          && data.uid == request.auth.uid
+          && optionalNumber(data, 'lat', -90, 90)
+          && optionalNumber(data, 'lng', -180, 180)
+          && optionalText(data, 'toName')
+          && optionalText(data, 'toTa')
+          && optionalNumber(data, 'toLat', -90, 90)
+          && optionalNumber(data, 'toLng', -180, 180)
+          && optionalInt(data, 'leftMin', 0, 1440)
+          && optionalInt(data, 'metresLeft', 0, 2000000)
+          && data.startedAt is timestamp
+          && (data.endedAt == null || (data.endedAt is timestamp && data.lat == null && data.lng == null))
+          && data.updatedAt == request.time;
+      }
+
+      allow get: if true;
+      allow list: if isRider();
+      allow create: if isRider()
+        && shareId.matches('^[A-Za-z0-9]{20,40}$')
+        && validShare()
+        && request.resource.data.endedAt == null;
+      allow update: if isRider()
+        && resource.data.uid == request.auth.uid
+        && resource.data.endedAt == null
+        && request.resource.data.startedAt == resource.data.startedAt
+        && validShare();
+      allow delete: if isRider() && resource.data.uid == request.auth.uid;
     }
   }
 }

@@ -11,6 +11,8 @@ import 'package:hopin/core/places/place.dart';
 import 'package:hopin/core/ride/guide.dart';
 import 'package:hopin/core/ride/ride_record.dart';
 import 'package:hopin/core/search/nominatim.dart';
+import 'package:hopin/core/share/share.dart';
+import 'package:hopin/core/share/shares.dart';
 
 enum LocationStatus {
   checking,
@@ -39,6 +41,10 @@ class HomeState extends Equatable {
     this.notice,
     this.question = false,
     this.offerDetection = false,
+    this.sharing,
+    this.noticedSince,
+    this.other,
+    this.watching = false,
   });
 
   final List<SavedPlace> places;
@@ -71,6 +77,16 @@ class HomeState extends Equatable {
   /// The one-time card offering ride detection.
   final bool offerDetection;
 
+  /// This ride's open share (docs/PLAN.md, Sharing and stops).
+  final String? sharing;
+
+  /// A bus ride with no guide is on: Home shows its slim bar.
+  final DateTime? noticedSince;
+
+  /// The other rider's open share: its card, then Watch.
+  final LiveShare? other;
+  final bool watching;
+
   static const _keep = Object();
 
   /// Fields left out keep their value; nullable ones take an explicit null.
@@ -88,6 +104,10 @@ class HomeState extends Equatable {
     Object? notice = _keep,
     bool? question,
     bool? offerDetection,
+    Object? sharing = _keep,
+    Object? noticedSince = _keep,
+    Object? other = _keep,
+    bool? watching,
   }) => HomeState(
     places: places ?? this.places,
     location: location ?? this.location,
@@ -106,6 +126,12 @@ class HomeState extends Equatable {
     notice: identical(notice, _keep) ? this.notice : notice as HomeNotice?,
     question: question ?? this.question,
     offerDetection: offerDetection ?? this.offerDetection,
+    sharing: identical(sharing, _keep) ? this.sharing : sharing as String?,
+    noticedSince: identical(noticedSince, _keep)
+        ? this.noticedSince
+        : noticedSince as DateTime?,
+    other: identical(other, _keep) ? this.other : other as LiveShare?,
+    watching: watching ?? this.watching,
   );
 
   HomeState withDestination(
@@ -128,6 +154,10 @@ class HomeState extends Equatable {
     notice,
     question,
     offerDetection,
+    sharing,
+    noticedSince,
+    other,
+    watching,
   ];
 }
 
@@ -137,18 +167,28 @@ class HomeCubit extends Cubit<HomeState> {
     this._location,
     this._nominatim,
     this._guide, {
+    required Shares shares,
     DateTime Function()? clock,
-  }) : _clock = clock ?? DateTime.now,
+  }) : _shareSource = shares,
+       _clock = clock ?? DateTime.now,
        super(const HomeState());
 
   final Workspace _workspace;
   final LocationService _location;
   final Nominatim _nominatim;
   final GuideService _guide;
+  final Shares _shareSource;
   final DateTime Function() _clock;
   StreamSubscription<List<SavedPlace>>? _places;
   StreamSubscription<GeoPoint>? _positions;
   StreamSubscription<GuideEvent>? _guideEvents;
+  StreamSubscription<List<LiveShare>>? _shares;
+
+  /// Shares whose card was put away with Not now.
+  final _dismissed = <String>{};
+
+  /// A share silent this long is left out (its service stopped, say).
+  static const staleAfter = Duration(minutes: 15);
 
   /// The guide waiting on the notifications card.
   GuideRide? _pending;
@@ -165,12 +205,24 @@ class HomeCubit extends Cubit<HomeState> {
     if (isClosed) return;
     _places = _workspace.places.watch().listen(_onPlaces);
     _guideEvents = _guide.events.listen(_onGuide);
+    // Only riders may look for shares; for anyone else the listen fails.
+    _shares = _shareSource.watchOpen().listen(
+      _onShares,
+      onError: (Object _) {},
+    );
     // A guide outlives the app's screens: back in ride mode where it is.
     final running = await _guide.running();
     if (isClosed) return;
     if (running != null) {
       emit(state.copyWith(ride: running, destination: running.destination));
     }
+    // No ride service: a share it left open (stopped by the phone) ends.
+    if (!await _guide.serviceRunning()) {
+      unawaited(
+        _shareSource.closeLeftOpen(_workspace.uid).catchError((Object _) {}),
+      );
+    }
+    if (isClosed) return;
     final explained =
         await _workspace.settings.read(SettingsStore.locationExplained) != null;
     final access = await _location.check();
@@ -266,17 +318,24 @@ class HomeCubit extends Cubit<HomeState> {
   }
 
   /// Saves the destination as a new place, or renames the one it is.
-  Future<void> save({required String name, required PlaceKind kind}) async {
+  Future<void> save({
+    required String name,
+    required PlaceKind kind,
+    bool shareRides = false,
+  }) async {
     final destination = state.destination;
     if (destination == null) return;
     final saved = destination.saved;
     if (saved != null) {
-      await _workspace.places.update(saved.copyWith(name: name, kind: kind));
+      await _workspace.places.update(
+        saved.copyWith(name: name, kind: kind, shareRides: shareRides),
+      );
     } else {
       final place = await _workspace.places.add(
         destination,
         name: name,
         kind: kind,
+        shareRides: shareRides,
       );
       if (!isClosed) emit(state.withDestination(destination.withSaved(place)));
     }
@@ -302,6 +361,7 @@ class HomeCubit extends Cubit<HomeState> {
       area: destination.area,
       stages: await _workspace.appSettings.stages(),
       language: language,
+      share: destination.saved?.shareRides ?? false,
     );
     if (isClosed) return;
     if (state.location != LocationStatus.granted) {
@@ -385,6 +445,12 @@ class HomeCubit extends Cubit<HomeState> {
       case RideLogged(:final ride):
         unawaited(_keepRide(ride));
         return;
+      case ShareChanged(:final id):
+        emit(state.copyWith(sharing: id));
+        return;
+      case RideNoticed(:final since):
+        if (state.ride == null) emit(state.copyWith(noticedSince: since));
+        return;
       case RideQuestion():
         emit(state.copyWith(question: true));
         return;
@@ -396,6 +462,7 @@ class HomeCubit extends Cubit<HomeState> {
         emit(
           state.copyWith(
             question: false,
+            noticedSince: null,
             ride: ride,
             status: null,
             near: null,
@@ -403,7 +470,11 @@ class HomeCubit extends Cubit<HomeState> {
           ),
         );
         return;
-      case GuideUpdate() || GuideEnded():
+      case GuideEnded():
+        // Whatever ended, the ride's share and bar went with it.
+        emit(state.copyWith(sharing: null, noticedSince: null));
+        if (state.ride == null) return;
+      case GuideUpdate():
         if (state.ride == null) return;
     }
     switch (event) {
@@ -424,7 +495,12 @@ class HomeCubit extends Cubit<HomeState> {
                 : null,
           ),
         );
-      case RideQuestion() || RideAnswered() || GuideStarted() || RideLogged():
+      case RideQuestion() ||
+          RideAnswered() ||
+          GuideStarted() ||
+          RideLogged() ||
+          ShareChanged() ||
+          RideNoticed():
         break;
     }
   }
@@ -433,6 +509,65 @@ class HomeCubit extends Cubit<HomeState> {
     await _workspace.rides.save(ride);
     await _guide.forgetPendingRide(ride.id);
     if (ride.unnamed) unawaited(_workspace.namer(_nominatim).nameMissing());
+  }
+
+  /// Share, on the ride board or the ride bar: the link to send. A ride
+  /// already shared keeps its link.
+  Future<String> share() async {
+    final open = state.sharing;
+    if (open != null) return shareLink(open);
+    final id = newShareId();
+    emit(state.copyWith(sharing: id));
+    await _guide.share(id);
+    return shareLink(id);
+  }
+
+  Future<void> stopSharing() async {
+    await _guide.stopSharing();
+    if (!isClosed) emit(state.copyWith(sharing: null));
+  }
+
+  /// End, on the ride bar of a noticed ride.
+  Future<void> endRide() async {
+    await _guide.end();
+    if (!isClosed) emit(state.copyWith(noticedSince: null, sharing: null));
+  }
+
+  void _onShares(List<LiveShare> open) {
+    final now = _clock();
+    final others =
+        open
+            .where(
+              (share) =>
+                  share.uid != _workspace.uid &&
+                  !_dismissed.contains(share.id) &&
+                  (share.updatedAt == null ||
+                      now.difference(share.updatedAt!) < staleAfter),
+            )
+            .toList()
+          ..sort((a, b) => (b.updatedAt ?? now).compareTo(a.updatedAt ?? now));
+    final other = others.firstOrNull;
+    emit(
+      state.copyWith(
+        other: other,
+        watching: state.watching && other?.id == state.other?.id,
+      ),
+    );
+  }
+
+  /// Watch, on the other rider's card: they show on the map.
+  void watch() {
+    if (state.other != null) emit(state.copyWith(watching: true));
+  }
+
+  void closeWatch() => emit(state.copyWith(watching: false));
+
+  /// Not now, on the other rider's card: this share's card goes.
+  void dismissShare() {
+    final other = state.other;
+    if (other == null) return;
+    _dismissed.add(other.id);
+    emit(state.copyWith(other: null, watching: false));
   }
 
   /// An answer on the "On a bus?" card (ride_task.dart's button IDs).
@@ -484,6 +619,7 @@ class HomeCubit extends Cubit<HomeState> {
     await _places?.cancel();
     await _positions?.cancel();
     await _guideEvents?.cancel();
+    await _shares?.cancel();
     return super.close();
   }
 }

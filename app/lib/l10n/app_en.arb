@@ -589,5 +589,81 @@
         "example": "8:34"
       }
     }
+  },
+  "share": "Share",
+  "@share": {
+    "description": "The ride's Share button."
+  },
+  "sharingRide": "Sharing this ride",
+  "@sharingRide": {
+    "description": "The ride is being shared live."
+  },
+  "sendLink": "Send link",
+  "@sendLink": {
+    "description": "Sends the ride's link again."
+  },
+  "stopSharing": "Stop sharing",
+  "@stopSharing": {
+    "description": "Ends the live share."
+  },
+  "followMyRide": "Follow my bus ride live: {link}",
+  "@followMyRide": {
+    "description": "The message sent with the link.",
+    "placeholders": {
+      "link": {
+        "type": "String",
+        "example": "https://hopin-riders.web.app/r/abc"
+      }
+    }
+  },
+  "sharedRide": "Shared ride",
+  "@sharedRide": {
+    "description": "The other rider's share, with no destination."
+  },
+  "sharedRideTo": "Shared ride to {stop}",
+  "@sharedRideTo": {
+    "description": "The other rider's share, going to a stop.",
+    "placeholders": {
+      "stop": {
+        "type": "String",
+        "example": "Colombo Fort"
+      }
+    }
+  },
+  "watch": "Watch",
+  "@watch": {
+    "description": "Shows the other rider's share on the map."
+  },
+  "updatedJustNow": "Updated just now",
+  "@updatedJustNow": {
+    "description": "When the shared position last changed."
+  },
+  "updatedSecondsAgo": "Updated {seconds} s ago",
+  "@updatedSecondsAgo": {
+    "description": "When the shared position last changed.",
+    "placeholders": {
+      "seconds": {
+        "type": "int",
+        "example": "20"
+      }
+    }
+  },
+  "updatedMinutesAgo": "Updated {minutes} min ago",
+  "@updatedMinutesAgo": {
+    "description": "When the shared position last changed.",
+    "placeholders": {
+      "minutes": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "lostContact": "Lost contact",
+  "@lostContact": {
+    "description": "No update from the shared ride for 10 minutes."
+  },
+  "shareRidesHere": "Share rides here",
+  "@shareRidesHere": {
+    "description": "The place editor: a guide here shares the ride by itself."
   }
 }

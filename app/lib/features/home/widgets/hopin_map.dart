@@ -29,6 +29,8 @@ class MapProps {
     required this.camera,
     required this.onLongPress,
     required this.dark,
+    this.watched,
+    this.watchedGoal,
   });
 
   final GeoPoint? me;
@@ -37,6 +39,10 @@ class MapProps {
   final MapCamera camera;
   final void Function(GeoPoint point) onLongPress;
   final bool dark;
+
+  /// The other rider's shared position while watched, and their stop.
+  final GeoPoint? watched;
+  final GeoPoint? watchedGoal;
 }
 
 typedef MapBuilder = Widget Function(MapProps props);
@@ -74,6 +80,8 @@ class _BoardMapState extends State<BoardMap> {
   final _halo = _Marker(radius: 20, color: _amber, opacity: 0.2, stroke: 0);
   final _me = _Marker(radius: 7, color: _amber);
   final _destination = _Marker(radius: 9, color: _amber);
+  final _them = _Marker(radius: 9, color: '#F4F1E8');
+  final _theirGoal = _Marker(radius: 7, color: _amber, stroke: 2);
   List<Circle> _places = const [];
   List<SavedPlace>? _drawnPlaces;
 
@@ -90,7 +98,7 @@ class _BoardMapState extends State<BoardMap> {
     if (old.props.dark != widget.props.dark) {
       // A new style drops the markers; they come back once it has loaded.
       _styled = false;
-      for (final marker in [_halo, _me, _destination]) {
+      for (final marker in [_halo, _me, _destination, _them, _theirGoal]) {
         marker.forget();
       }
       _places = const [];
@@ -162,6 +170,8 @@ class _BoardMapState extends State<BoardMap> {
       ];
     }
     await _destination.show(controller, props.destination?.point);
+    await _theirGoal.show(controller, props.watchedGoal);
+    await _them.show(controller, props.watched);
     await _halo.show(controller, props.me);
     await _me.show(controller, props.me);
   }

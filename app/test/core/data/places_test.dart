@@ -218,4 +218,37 @@ void main() {
     expect(list.first.names.en, 'Stop 3');
     expect(list.map((d) => d.names.en), isNot(contains('Stop 0')));
   });
+
+  test('a place can share rides there, and that syncs', () async {
+    await sync.start();
+    final fort = await places.add(
+      uni,
+      name: 'Fort',
+      kind: PlaceKind.other,
+      shareRides: true,
+    );
+    await sync.push();
+    expect((await places.watch().first).single.shareRides, isTrue);
+    expect(remote.puts.last.$2['shareRides'], isTrue);
+
+    await places.update(fort.copyWith(shareRides: false));
+    await sync.push();
+    expect((await places.watch().first).single.shareRides, isFalse);
+
+    remote.push(collection, [
+      const RemoteDoc('p2', {
+        'name': 'Campus',
+        'kind': 'uni',
+        'lat': 6.95,
+        'lng': 79.86,
+        'shareRides': true,
+        'deletedAt': null,
+      }, 9000000000000000),
+    ]);
+    await pumpEventQueue();
+    final campus = (await places.watch().first).firstWhere(
+      (p) => p.name == 'Campus',
+    );
+    expect(campus.shareRides, isTrue);
+  });
 }

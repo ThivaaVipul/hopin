@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hopin/app/workspace.dart';
+import 'package:hopin/core/data/recents_repository.dart';
 import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/location/location_service.dart';
@@ -9,6 +10,7 @@ import 'package:hopin/core/places/place.dart';
 import 'package:hopin/core/ride/guide.dart';
 import 'package:hopin/core/ride/patterns.dart';
 import 'package:hopin/core/ride/ride_record.dart';
+import 'package:hopin/core/share/share.dart';
 import 'package:hopin/features/home/cubit/home_cubit.dart';
 import 'package:http/http.dart' as http;
 
@@ -24,6 +26,7 @@ void main() {
   late Workspace workspace;
   late FakeLocation location;
   late FakeGuide guide;
+  late FakeShares shares;
   late DateTime now;
   late List<Uri> lookups;
 
@@ -31,6 +34,7 @@ void main() {
     workspace = Workspace('r1', memoryDatabase(), FakeRemote());
     location = FakeLocation(here: here);
     guide = FakeGuide();
+    shares = FakeShares();
     now = DateTime.utc(2026, 1, 1, 8);
     lookups = [];
   });
@@ -60,6 +64,7 @@ void main() {
       );
     }),
     guide,
+    shares: shares,
     clock: () => now,
   );
 
@@ -480,6 +485,129 @@ void main() {
         'ride1',
       ]);
       await home.close();
+    });
+  });
+
+  group('sharing', () {
+    const fortRide = GuideRide(to: GeoPoint(6.9344, 79.8501), title: 'Fort');
+
+    test(
+      "Share starts the ride's share once and hands back its link",
+      () async {
+        guide.ride = fortRide;
+        final home = cubit();
+        await home.start();
+        final link = await home.share();
+        final id = guide.shared.single;
+        expect(link, 'https://hopin-riders.web.app/r/$id');
+        expect(home.state.sharing, id);
+
+        expect(await home.share(), link);
+        expect(guide.shared, hasLength(1));
+
+        await home.stopSharing();
+        expect(guide.sharing, isNull);
+        expect(home.state.sharing, isNull);
+        await home.close();
+      },
+    );
+
+    test('a noticed ride shows its bar until it ends', () async {
+      final home = cubit();
+      await home.start();
+      final since = DateTime.utc(2026, 1, 1, 7, 50);
+      guide.emit(RideNoticed(since));
+      expect(home.state.noticedSince, since);
+      await home.share();
+      expect(home.state.sharing, isNotNull);
+
+      guide.emit(const GuideEnded(arrived: false));
+      expect(home.state.noticedSince, isNull);
+      expect(home.state.sharing, isNull);
+
+      guide.emit(RideNoticed(since));
+      await home.endRide();
+      expect(guide.ends, 1);
+      expect(home.state.noticedSince, isNull);
+      await home.close();
+    });
+
+    test('a guide to a place shared by itself starts shared', () async {
+      final shared = await workspace.places.add(
+        const Destination(point: GeoPoint(6.9344, 79.8501)),
+        name: 'Fort',
+        kind: PlaceKind.other,
+        shareRides: true,
+      );
+      location.access = LocationAccess.granted;
+      guide.notifications = true;
+      await workspace.settings.write(SettingsStore.batteryExplained, '1');
+      final home = cubit();
+      await home.start();
+      home.select(Destination.fromSaved(shared));
+      await home.startGuide(title: 'Fort', language: 'en');
+      expect(guide.started.single.share, isTrue);
+      await home.close();
+    });
+
+    LiveShare shareOf(
+      String uid, {
+      String id = 's1',
+      Duration age = Duration.zero,
+    }) => LiveShare(
+      id: id,
+      uid: uid,
+      at: const GeoPoint(6.9101, 79.8523),
+      goal: const ShareGoal(
+        name: 'Fort',
+        point: GeoPoint(6.9344, 79.8501),
+        minutesLeft: 12,
+      ),
+      updatedAt: now.subtract(age),
+    );
+
+    test("the other rider's share: a card, Watch, then Not now", () async {
+      final home = cubit();
+      await home.start();
+      shares.emit([shareOf('r1', id: 'mine'), shareOf('r2')]);
+      expect(home.state.other?.id, 's1');
+
+      home.watch();
+      expect(home.state.watching, isTrue);
+      home.closeWatch();
+      expect(home.state.watching, isFalse);
+
+      home.dismissShare();
+      expect(home.state.other, isNull);
+      shares.emit([shareOf('r2')]);
+      expect(home.state.other, isNull);
+
+      shares.emit([shareOf('r2', id: 's2')]);
+      expect(home.state.other?.id, 's2');
+      shares.emit([]);
+      expect(home.state.other, isNull);
+      await home.close();
+    });
+
+    test('leaves out a share gone quiet', () async {
+      final home = cubit();
+      await home.start();
+      shares.emit([shareOf('r2', age: const Duration(minutes: 16))]);
+      expect(home.state.other, isNull);
+      await home.close();
+    });
+
+    test('ends a share the stopped service left open', () async {
+      final home = cubit();
+      await home.start();
+      expect(shares.closedFor, ['r1']);
+      await home.close();
+
+      guide.watchingRide = true;
+      final again = cubit();
+      await again.start();
+      expect(shares.closedFor, ['r1']);
+      await again.close();
     });
   });
 }

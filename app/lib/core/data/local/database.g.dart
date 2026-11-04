@@ -98,6 +98,21 @@ class $PlacesTable extends Places with TableInfo<$PlacesTable, PlaceRow> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _shareRidesMeta = const VerificationMeta(
+    'shareRides',
+  );
+  @override
+  late final GeneratedColumn<bool> shareRides = GeneratedColumn<bool>(
+    'share_rides',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("share_rides" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -142,6 +157,7 @@ class $PlacesTable extends Places with TableInfo<$PlacesTable, PlaceRow> {
     placeTa,
     placeSi,
     position,
+    shareRides,
     updatedAt,
     deletedAt,
     pendingSince,
@@ -219,6 +235,12 @@ class $PlacesTable extends Places with TableInfo<$PlacesTable, PlaceRow> {
         position.isAcceptableOrUnknown(data['position']!, _positionMeta),
       );
     }
+    if (data.containsKey('share_rides')) {
+      context.handle(
+        _shareRidesMeta,
+        shareRides.isAcceptableOrUnknown(data['share_rides']!, _shareRidesMeta),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -287,6 +309,10 @@ class $PlacesTable extends Places with TableInfo<$PlacesTable, PlaceRow> {
         DriftSqlType.int,
         data['${effectivePrefix}position'],
       )!,
+      shareRides: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}share_rides'],
+      )!,
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}updated_at'],
@@ -321,6 +347,9 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
   /// The rider's own order (Settings, Places); 0 until they reorder.
   final int position;
 
+  /// A guide here shares the ride by itself.
+  final bool shareRides;
+
   /// Microseconds since the epoch; the server's time once synced.
   final int updatedAt;
   final int? deletedAt;
@@ -335,6 +364,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
     this.placeTa,
     this.placeSi,
     required this.position,
+    required this.shareRides,
     required this.updatedAt,
     this.deletedAt,
     this.pendingSince,
@@ -357,6 +387,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
       map['place_si'] = Variable<String>(placeSi);
     }
     map['position'] = Variable<int>(position);
+    map['share_rides'] = Variable<bool>(shareRides);
     map['updated_at'] = Variable<int>(updatedAt);
     if (!nullToAbsent || deletedAt != null) {
       map['deleted_at'] = Variable<int>(deletedAt);
@@ -384,6 +415,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
           ? const Value.absent()
           : Value(placeSi),
       position: Value(position),
+      shareRides: Value(shareRides),
       updatedAt: Value(updatedAt),
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
@@ -409,6 +441,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
       placeTa: serializer.fromJson<String?>(json['placeTa']),
       placeSi: serializer.fromJson<String?>(json['placeSi']),
       position: serializer.fromJson<int>(json['position']),
+      shareRides: serializer.fromJson<bool>(json['shareRides']),
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
       deletedAt: serializer.fromJson<int?>(json['deletedAt']),
       pendingSince: serializer.fromJson<int?>(json['pendingSince']),
@@ -427,6 +460,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
       'placeTa': serializer.toJson<String?>(placeTa),
       'placeSi': serializer.toJson<String?>(placeSi),
       'position': serializer.toJson<int>(position),
+      'shareRides': serializer.toJson<bool>(shareRides),
       'updatedAt': serializer.toJson<int>(updatedAt),
       'deletedAt': serializer.toJson<int?>(deletedAt),
       'pendingSince': serializer.toJson<int?>(pendingSince),
@@ -443,6 +477,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
     Value<String?> placeTa = const Value.absent(),
     Value<String?> placeSi = const Value.absent(),
     int? position,
+    bool? shareRides,
     int? updatedAt,
     Value<int?> deletedAt = const Value.absent(),
     Value<int?> pendingSince = const Value.absent(),
@@ -456,6 +491,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
     placeTa: placeTa.present ? placeTa.value : this.placeTa,
     placeSi: placeSi.present ? placeSi.value : this.placeSi,
     position: position ?? this.position,
+    shareRides: shareRides ?? this.shareRides,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     pendingSince: pendingSince.present ? pendingSince.value : this.pendingSince,
@@ -471,6 +507,9 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
       placeTa: data.placeTa.present ? data.placeTa.value : this.placeTa,
       placeSi: data.placeSi.present ? data.placeSi.value : this.placeSi,
       position: data.position.present ? data.position.value : this.position,
+      shareRides: data.shareRides.present
+          ? data.shareRides.value
+          : this.shareRides,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       pendingSince: data.pendingSince.present
@@ -491,6 +530,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
           ..write('placeTa: $placeTa, ')
           ..write('placeSi: $placeSi, ')
           ..write('position: $position, ')
+          ..write('shareRides: $shareRides, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('pendingSince: $pendingSince')
@@ -509,6 +549,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
     placeTa,
     placeSi,
     position,
+    shareRides,
     updatedAt,
     deletedAt,
     pendingSince,
@@ -526,6 +567,7 @@ class PlaceRow extends DataClass implements Insertable<PlaceRow> {
           other.placeTa == this.placeTa &&
           other.placeSi == this.placeSi &&
           other.position == this.position &&
+          other.shareRides == this.shareRides &&
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt &&
           other.pendingSince == this.pendingSince);
@@ -541,6 +583,7 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
   final Value<String?> placeTa;
   final Value<String?> placeSi;
   final Value<int> position;
+  final Value<bool> shareRides;
   final Value<int> updatedAt;
   final Value<int?> deletedAt;
   final Value<int?> pendingSince;
@@ -555,6 +598,7 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
     this.placeTa = const Value.absent(),
     this.placeSi = const Value.absent(),
     this.position = const Value.absent(),
+    this.shareRides = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.pendingSince = const Value.absent(),
@@ -570,6 +614,7 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
     this.placeTa = const Value.absent(),
     this.placeSi = const Value.absent(),
     this.position = const Value.absent(),
+    this.shareRides = const Value.absent(),
     required int updatedAt,
     this.deletedAt = const Value.absent(),
     this.pendingSince = const Value.absent(),
@@ -590,6 +635,7 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
     Expression<String>? placeTa,
     Expression<String>? placeSi,
     Expression<int>? position,
+    Expression<bool>? shareRides,
     Expression<int>? updatedAt,
     Expression<int>? deletedAt,
     Expression<int>? pendingSince,
@@ -605,6 +651,7 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
       if (placeTa != null) 'place_ta': placeTa,
       if (placeSi != null) 'place_si': placeSi,
       if (position != null) 'position': position,
+      if (shareRides != null) 'share_rides': shareRides,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (pendingSince != null) 'pending_since': pendingSince,
@@ -622,6 +669,7 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
     Value<String?>? placeTa,
     Value<String?>? placeSi,
     Value<int>? position,
+    Value<bool>? shareRides,
     Value<int>? updatedAt,
     Value<int?>? deletedAt,
     Value<int?>? pendingSince,
@@ -637,6 +685,7 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
       placeTa: placeTa ?? this.placeTa,
       placeSi: placeSi ?? this.placeSi,
       position: position ?? this.position,
+      shareRides: shareRides ?? this.shareRides,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       pendingSince: pendingSince ?? this.pendingSince,
@@ -674,6 +723,9 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
     if (position.present) {
       map['position'] = Variable<int>(position.value);
     }
+    if (shareRides.present) {
+      map['share_rides'] = Variable<bool>(shareRides.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<int>(updatedAt.value);
     }
@@ -701,6 +753,7 @@ class PlacesCompanion extends UpdateCompanion<PlaceRow> {
           ..write('placeTa: $placeTa, ')
           ..write('placeSi: $placeSi, ')
           ..write('position: $position, ')
+          ..write('shareRides: $shareRides, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('pendingSince: $pendingSince, ')

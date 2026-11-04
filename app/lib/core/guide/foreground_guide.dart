@@ -50,6 +50,13 @@ class ForegroundGuideService implements GuideService {
         if (RideRecord.fromJson(message['ride']) case final ride?) {
           _events.add(RideLogged(ride));
         }
+      case 'sharing':
+        final id = message['id'];
+        _events.add(ShareChanged(id is String ? id : null));
+      case 'riding':
+        if (message['since'] case final int since) {
+          _events.add(RideNoticed(DateTime.fromMicrosecondsSinceEpoch(since)));
+        }
       case 'ended':
         _events.add(
           GuideEnded(
@@ -62,6 +69,9 @@ class ForegroundGuideService implements GuideService {
 
   @override
   Stream<GuideEvent> get events => _events.stream;
+
+  @override
+  Future<bool> serviceRunning() => FlutterForegroundTask.isRunningService;
 
   @override
   Future<GuideRide?> running() async {
@@ -282,4 +292,12 @@ class ForegroundGuideService implements GuideService {
       await Geolocator.openAppSettings();
     }
   }
+
+  @override
+  Future<void> share(String id) async =>
+      FlutterForegroundTask.sendDataToTask({shareCommand: id});
+
+  @override
+  Future<void> stopSharing() async =>
+      FlutterForegroundTask.sendDataToTask(stopShareCommand);
 }

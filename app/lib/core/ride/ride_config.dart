@@ -27,6 +27,7 @@ class RideConfig extends Equatable {
     names: place.names,
     stages: stages,
     language: language,
+    share: place.shareRides,
   );
 
   Map<String, Object?> toJson() => {
@@ -41,6 +42,7 @@ class RideConfig extends Equatable {
           'en': place.names.en,
           'ta': place.names.ta,
           'si': place.names.si,
+          'share': place.shareRides,
         },
     ],
     'stages': [for (final stage in stages) stage.toJson()],
@@ -74,6 +76,7 @@ class RideConfig extends Equatable {
                   ta: text(place, 'ta'),
                   si: text(place, 'si'),
                 ),
+                shareRides: place['share'] == true,
               ),
       ],
       stages: stagesFromJson(json['stages']),

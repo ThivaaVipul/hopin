@@ -70,6 +70,7 @@ class GuideRide extends Equatable {
     this.area,
     this.stages = defaultStages,
     this.language = 'en',
+    this.share = false,
   });
 
   final GeoPoint to;
@@ -85,6 +86,10 @@ class GuideRide extends Equatable {
   /// The app's language, for the notifications.
   final String language;
 
+  /// Shared from the start: the stop is a place the rider shares rides to
+  /// (docs/PLAN.md, Sharing and stops).
+  final bool share;
+
   Destination get destination =>
       Destination(point: to, names: names, area: area);
 
@@ -98,6 +103,7 @@ class GuideRide extends Equatable {
     'area': area,
     'stages': [for (final stage in stages) stage.toJson()],
     'language': language,
+    'share': share,
   };
 
   static GuideRide? fromJson(Object? json) {
@@ -121,11 +127,12 @@ class GuideRide extends Equatable {
       area: text('area'),
       stages: stages,
       language: text('language') ?? 'en',
+      share: json['share'] == true,
     );
   }
 
   @override
-  List<Object?> get props => [to, title, names, area, stages, language];
+  List<Object?> get props => [to, title, names, area, stages, language, share];
 }
 
 /// Whole minutes for the board, never less than one.

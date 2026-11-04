@@ -16,6 +16,8 @@ import 'package:hopin/core/ride/patterns.dart';
 import 'package:hopin/core/ride/ride_config.dart';
 import 'package:hopin/core/ride/ride_record.dart';
 import 'package:hopin/core/search/nominatim.dart';
+import 'package:hopin/core/share/share.dart';
+import 'package:hopin/core/share/shares.dart';
 import 'package:hopin/core/update/updates.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
 import 'package:hopin/features/rides/widgets/ride_map.dart';
@@ -154,7 +156,8 @@ Widget fakeMap(MapProps props) => ColoredBox(
   child: Align(
     alignment: Alignment.center,
     child: Text(
-      'map: ${props.places.length} places',
+      'map: ${props.places.length} places'
+      '${props.watched == null ? '' : ', watching'}',
       textDirection: TextDirection.ltr,
     ),
   ),
@@ -223,6 +226,12 @@ class FakeGuide implements GuideService {
 
   @override
   Future<GuideRide?> running() async => ride;
+
+  /// A watched ride with no guide also keeps the service running.
+  bool watchingRide = false;
+
+  @override
+  Future<bool> serviceRunning() async => ride != null || watchingRide;
 
   @override
   Future<bool> start(GuideRide ride) async {
@@ -296,6 +305,24 @@ class FakeGuide implements GuideService {
 
   @override
   Future<void> detectNow() async => detectNows++;
+
+  /// The share the service holds; [share] and [stopSharing] answer at once,
+  /// as the service does.
+  String? sharing;
+  final shared = <String>[];
+
+  @override
+  Future<void> share(String id) async {
+    shared.add(id);
+    sharing ??= id;
+    emit(ShareChanged(sharing));
+  }
+
+  @override
+  Future<void> stopSharing() async {
+    sharing = null;
+    emit(const ShareChanged(null));
+  }
 }
 
 /// GitHub Releases without the network: [release] is what's out.
@@ -336,4 +363,25 @@ class FakeUpdates implements UpdateService {
     installs.add(file);
     return mayInstall;
   }
+}
+
+/// Open shares without Firestore: [emit] stands in for the listen.
+class FakeShares implements Shares {
+  final _open = StreamController<List<LiveShare>>.broadcast(sync: true);
+  var _current = <LiveShare>[];
+  final closedFor = <String>[];
+
+  void emit(List<LiveShare> open) {
+    _current = open;
+    _open.add(open);
+  }
+
+  @override
+  Stream<List<LiveShare>> watchOpen() async* {
+    yield _current;
+    yield* _open.stream;
+  }
+
+  @override
+  Future<void> closeLeftOpen(String uid) async => closedFor.add(uid);
 }

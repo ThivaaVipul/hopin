@@ -11,6 +11,7 @@ import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/ride/bus_logic.dart';
 import 'package:hopin/core/ride/guide.dart';
 import 'package:hopin/core/ride/ride_record.dart';
+import 'package:hopin/core/share/share.dart';
 import 'package:hopin/core/update/updates.dart';
 import 'package:hopin/features/home/widgets/ride_board.dart';
 import 'package:http/http.dart' as http;
@@ -25,6 +26,8 @@ void main() {
   late FakeRemote remote;
   late FakeGuide guide;
   late FakeUpdates updates;
+  late FakeShares shares;
+  late List<String> sent;
 
   setUp(() {
     auth = FakeAuth();
@@ -32,6 +35,8 @@ void main() {
     remote = FakeRemote();
     guide = FakeGuide();
     updates = FakeUpdates();
+    shares = FakeShares();
+    sent = [];
   });
 
   Future<void> start(
@@ -55,6 +60,8 @@ void main() {
         mapBuilder: fakeMap,
         rideMapBuilder: fakeRideMap,
         guide: guide,
+        shares: shares,
+        shareSheet: (text) async => sent.add(text),
         updates: updates,
         locale: locale,
       ),
@@ -727,6 +734,162 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('தெரியாது'), findsOneWidget);
       expect(find.text('பஸ் அல்ல'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await finish(tester);
+    });
+  });
+
+  group('sharing', () {
+    const fortRide = GuideRide(
+      to: GeoPoint(6.9344, 79.8501),
+      title: 'Colombo Fort',
+    );
+
+    LiveShare theirs() => LiveShare(
+      id: 's1',
+      uid: 'r2',
+      at: const GeoPoint(6.9101, 79.8523),
+      goal: const ShareGoal(
+        name: 'Colombo Fort',
+        nameTa: 'கொழும்பு கோட்டை',
+        point: GeoPoint(6.9344, 79.8501),
+        minutesLeft: 12,
+      ),
+      updatedAt: DateTime.now(),
+    );
+
+    Future<void> signedIn(
+      WidgetTester tester, {
+      Locale locale = const Locale('en'),
+    }) async {
+      await start(
+        tester,
+        locale: locale,
+        location: FakeLocation(access: LocationAccess.granted),
+      );
+      auth.emit(rider);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('Share on the ride board sends the link, then can stop', (
+      tester,
+    ) async {
+      guide.ride = fortRide;
+      await signedIn(tester);
+      expect(find.byType(RideBoard), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Share'));
+      await tester.pumpAndSettle();
+      final id = guide.shared.single;
+      expect(sent, [
+        'Follow my bus ride live: https://hopin-riders.web.app/r/$id',
+      ]);
+
+      await tester.tap(find.byTooltip('Sharing this ride'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Send link'));
+      await tester.pumpAndSettle();
+      expect(sent, hasLength(2));
+      expect(guide.shared, hasLength(1));
+
+      await tester.tap(find.byTooltip('Sharing this ride'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Stop sharing'));
+      await tester.pumpAndSettle();
+      expect(guide.sharing, isNull);
+      expect(find.byTooltip('Share'), findsOneWidget);
+      await finish(tester);
+    });
+
+    testWidgets('a noticed ride shows its bar, with Share and End', (
+      tester,
+    ) async {
+      await signedIn(tester);
+      guide.emit(
+        RideNoticed(DateTime.now().subtract(const Duration(minutes: 12))),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('On a bus'), findsOneWidget);
+      expect(find.textContaining('12 min'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Share'));
+      await tester.pumpAndSettle();
+      expect(sent, hasLength(1));
+
+      await tester.tap(find.text('End'));
+      await tester.pumpAndSettle();
+      expect(guide.ends, 1);
+      expect(find.textContaining('On a bus'), findsNothing);
+      await finish(tester);
+    });
+
+    testWidgets("the other rider's share: a card, Watch, then Not now", (
+      tester,
+    ) async {
+      await signedIn(tester);
+      shares.emit([theirs()]);
+      await tester.pumpAndSettle();
+      expect(find.text('Shared ride to Colombo Fort'), findsOneWidget);
+      expect(find.text('12 min'), findsOneWidget);
+
+      await tester.tap(find.text('Watch'));
+      await tester.pumpAndSettle();
+      expect(find.text('Updated just now'), findsOneWidget);
+      expect(find.textContaining('watching'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('watching'), findsNothing);
+      await tester.tap(find.text('Not now').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Shared ride to Colombo Fort'), findsNothing);
+      await finish(tester);
+    });
+
+    testWidgets('a place can share rides there', (tester) async {
+      await openPlace(tester);
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save').last);
+      await tester.pumpAndSettle();
+      final place = remote.puts.lastWhere(
+        (put) => put.$1.startsWith('people/r1/places/'),
+      );
+      expect(place.$2['shareRides'], isTrue);
+      await finish(tester);
+    });
+
+    testWidgets('sharing fits a small phone in Tamil with large text', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1080, 2160)
+        ..devicePixelRatio = 3;
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await signedIn(tester, locale: const Locale('ta'));
+
+      shares.emit([theirs()]);
+      await tester.pumpAndSettle();
+      expect(
+        find.text('கொழும்பு கோட்டை நோக்கிப் பகிர்ந்த பயணம்'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.text('பார்'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.byTooltip('மூடு'));
+      await tester.pumpAndSettle();
+
+      guide.emit(
+        RideNoticed(DateTime.now().subtract(const Duration(minutes: 5))),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('பஸ் பயணம்'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await finish(tester);
     });

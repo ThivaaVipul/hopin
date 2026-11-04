@@ -420,9 +420,12 @@ sealed class PlaceEdit {
 }
 
 class SavePlaceEdit extends PlaceEdit {
-  const SavePlaceEdit(this.name, this.kind);
+  const SavePlaceEdit(this.name, this.kind, {this.shareRides = false});
   final String name;
   final PlaceKind kind;
+
+  /// A guide here shares the ride by itself.
+  final bool shareRides;
 }
 
 class DeletePlaceEdit extends PlaceEdit {
@@ -435,6 +438,7 @@ Future<PlaceEdit?> showPlaceEditor(
   required String name,
   required PlaceKind kind,
   required bool editing,
+  bool shareRides = false,
 }) => showModalBottomSheet<PlaceEdit>(
   context: context,
   isScrollControlled: true,
@@ -442,7 +446,12 @@ Future<PlaceEdit?> showPlaceEditor(
   shape: const RoundedRectangleBorder(
     borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
   ),
-  builder: (context) => _PlaceEditor(name: name, kind: kind, editing: editing),
+  builder: (context) => _PlaceEditor(
+    name: name,
+    kind: kind,
+    editing: editing,
+    shareRides: shareRides,
+  ),
 );
 
 class _PlaceEditor extends StatefulWidget {
@@ -450,11 +459,13 @@ class _PlaceEditor extends StatefulWidget {
     required this.name,
     required this.kind,
     required this.editing,
+    required this.shareRides,
   });
 
   final String name;
   final PlaceKind kind;
   final bool editing;
+  final bool shareRides;
 
   @override
   State<_PlaceEditor> createState() => _PlaceEditorState();
@@ -463,6 +474,7 @@ class _PlaceEditor extends StatefulWidget {
 class _PlaceEditorState extends State<_PlaceEditor> {
   late final _name = TextEditingController(text: widget.name);
   late PlaceKind _kind = widget.kind;
+  late bool _shareRides = widget.shareRides;
 
   @override
   void dispose() {
@@ -546,7 +558,28 @@ class _PlaceEditorState extends State<_PlaceEditor> {
                   ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l.shareRidesHere,
+                    style: context.text.bodyLarge?.copyWith(
+                      color: colors.onBoard,
+                    ),
+                  ),
+                ),
+                Switch(
+                  value: _shareRides,
+                  onChanged: (on) => setState(() => _shareRides = on),
+                  activeThumbColor: colors.onAmber,
+                  activeTrackColor: colors.amber,
+                  inactiveThumbColor: colors.onBoardMuted,
+                  inactiveTrackColor: colors.board,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             Row(
               children: [
                 if (widget.editing)
@@ -563,8 +596,10 @@ class _PlaceEditorState extends State<_PlaceEditor> {
                 FilledButton(
                   onPressed: name.isEmpty
                       ? null
-                      : () =>
-                            Navigator.pop(context, SavePlaceEdit(name, _kind)),
+                      : () => Navigator.pop(
+                          context,
+                          SavePlaceEdit(name, _kind, shareRides: _shareRides),
+                        ),
                   style: FilledButton.styleFrom(
                     backgroundColor: colors.amber,
                     foregroundColor: colors.onAmber,

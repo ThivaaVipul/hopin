@@ -689,5 +689,107 @@
   "moreOptions": "More",
   "@moreOptions": {
     "description": "A stop panel's menu of Rename and Remove."
+  },
+  "noBusKnown": "No bus known yet",
+  "@noBusKnown": {
+    "description": "The destination panel, when no known bus goes there from here."
+  },
+  "showName": "Show",
+  "@showName": {
+    "description": "Shows the place's name full screen, to show a conductor or someone at the stop and ask which bus goes there."
+  },
+  "boardAt": "Board at {stop}",
+  "@boardAt": {
+    "description": "Where to get on a bus in the destination panel.",
+    "placeholders": {
+      "stop": {
+        "type": "String",
+        "example": "Kollupitiya"
+      }
+    }
+  },
+  "boardOnRoad": "Board on this road",
+  "@boardOnRoad": {
+    "description": "Where to get on when the route lists no stop near you."
+  },
+  "boardAtStand": "Board at the bus stand",
+  "@boardAtStand": {
+    "description": "Where to get on a long-distance bus whose bus stand has no name."
+  },
+  "walkM": "{m} m walk",
+  "@walkM": {
+    "description": "How far you walk to the bus, in metres.",
+    "placeholders": {
+      "m": {
+        "type": "String",
+        "example": "350"
+      }
+    }
+  },
+  "walkKm": "{km} km walk",
+  "@walkKm": {
+    "description": "How far you walk (or go) to the bus, in kilometres.",
+    "placeholders": {
+      "km": {
+        "type": "String",
+        "example": "1.2"
+      }
+    }
+  },
+  "allTimes": "All times",
+  "@allTimes": {
+    "description": "Opens a bus's times for today where you board."
+  },
+  "timesAt": "Times at {stop}",
+  "@timesAt": {
+    "description": "The title of a bus's times for today.",
+    "placeholders": {
+      "stop": {
+        "type": "String",
+        "example": "Kollupitiya"
+      }
+    }
+  },
+  "tomorrow": "Tomorrow",
+  "@tomorrow": {
+    "description": "Before a bus time that is tomorrow."
+  },
+  "noneLeftToday": "None left today",
+  "@noneLeftToday": {
+    "description": "A bus's times when none are left today."
+  },
+  "alsoNumbers": "also {numbers}",
+  "@alsoNumbers": {
+    "description": "Other route numbers the same buses may show.",
+    "placeholders": {
+      "numbers": {
+        "type": "String",
+        "example": "1-3, 1-4"
+      }
+    }
+  },
+  "classNormal": "Normal",
+  "@classNormal": {
+    "description": "A bus class: normal service."
+  },
+  "classSemiLuxury": "Semi luxury",
+  "@classSemiLuxury": {
+    "description": "A bus class."
+  },
+  "classLuxury": "Luxury",
+  "@classLuxury": {
+    "description": "A bus class."
+  },
+  "classAc": "AC",
+  "@classAc": {
+    "description": "A bus class: air conditioned."
+  },
+  "classExpressway": "Expressway",
+  "@classExpressway": {
+    "description": "A bus class: runs on the expressway."
+  },
+  "routeCredits": "Routes: OpenStreetMap, NTC, LMT",
+  "@routeCredits": {
+    "description": "Where the bus routes and times come from, under the buses."
   }
 }

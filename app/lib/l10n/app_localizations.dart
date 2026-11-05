@@ -943,6 +943,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More'**
   String get moreOptions;
+
+  /// The destination panel, when no known bus goes there from here.
+  ///
+  /// In en, this message translates to:
+  /// **'No bus known yet'**
+  String get noBusKnown;
+
+  /// Shows the place's name full screen, to show a conductor or someone at the stop and ask which bus goes there.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get showName;
+
+  /// Where to get on a bus in the destination panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Board at {stop}'**
+  String boardAt(String stop);
+
+  /// Where to get on when the route lists no stop near you.
+  ///
+  /// In en, this message translates to:
+  /// **'Board on this road'**
+  String get boardOnRoad;
+
+  /// Where to get on a long-distance bus whose bus stand has no name.
+  ///
+  /// In en, this message translates to:
+  /// **'Board at the bus stand'**
+  String get boardAtStand;
+
+  /// How far you walk to the bus, in metres.
+  ///
+  /// In en, this message translates to:
+  /// **'{m} m walk'**
+  String walkM(String m);
+
+  /// How far you walk (or go) to the bus, in kilometres.
+  ///
+  /// In en, this message translates to:
+  /// **'{km} km walk'**
+  String walkKm(String km);
+
+  /// Opens a bus's times for today where you board.
+  ///
+  /// In en, this message translates to:
+  /// **'All times'**
+  String get allTimes;
+
+  /// The title of a bus's times for today.
+  ///
+  /// In en, this message translates to:
+  /// **'Times at {stop}'**
+  String timesAt(String stop);
+
+  /// Before a bus time that is tomorrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get tomorrow;
+
+  /// A bus's times when none are left today.
+  ///
+  /// In en, this message translates to:
+  /// **'None left today'**
+  String get noneLeftToday;
+
+  /// Other route numbers the same buses may show.
+  ///
+  /// In en, this message translates to:
+  /// **'also {numbers}'**
+  String alsoNumbers(String numbers);
+
+  /// A bus class: normal service.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get classNormal;
+
+  /// A bus class.
+  ///
+  /// In en, this message translates to:
+  /// **'Semi luxury'**
+  String get classSemiLuxury;
+
+  /// A bus class.
+  ///
+  /// In en, this message translates to:
+  /// **'Luxury'**
+  String get classLuxury;
+
+  /// A bus class: air conditioned.
+  ///
+  /// In en, this message translates to:
+  /// **'AC'**
+  String get classAc;
+
+  /// A bus class: runs on the expressway.
+  ///
+  /// In en, this message translates to:
+  /// **'Expressway'**
+  String get classExpressway;
+
+  /// Where the bus routes and times come from, under the buses.
+  ///
+  /// In en, this message translates to:
+  /// **'Routes: OpenStreetMap, NTC, LMT'**
+  String get routeCredits;
 }
 
 class _AppLocalizationsDelegate

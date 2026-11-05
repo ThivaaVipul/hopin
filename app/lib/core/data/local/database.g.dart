@@ -3902,6 +3902,317 @@ class StopNamesCompanion extends UpdateCompanion<StopNameRow> {
   }
 }
 
+class $RouteDataTable extends RouteData
+    with TableInfo<$RouteDataTable, RouteDataRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RouteDataTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
+  @override
+  late final GeneratedColumn<String> source = GeneratedColumn<String>(
+    'source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _bodyMeta = const VerificationMeta('body');
+  @override
+  late final GeneratedColumn<String> body = GeneratedColumn<String>(
+    'body',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _etagMeta = const VerificationMeta('etag');
+  @override
+  late final GeneratedColumn<String> etag = GeneratedColumn<String>(
+    'etag',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _checkedAtMeta = const VerificationMeta(
+    'checkedAt',
+  );
+  @override
+  late final GeneratedColumn<int> checkedAt = GeneratedColumn<int>(
+    'checked_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [source, body, etag, checkedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'route_data';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RouteDataRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('source')) {
+      context.handle(
+        _sourceMeta,
+        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceMeta);
+    }
+    if (data.containsKey('body')) {
+      context.handle(
+        _bodyMeta,
+        body.isAcceptableOrUnknown(data['body']!, _bodyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_bodyMeta);
+    }
+    if (data.containsKey('etag')) {
+      context.handle(
+        _etagMeta,
+        etag.isAcceptableOrUnknown(data['etag']!, _etagMeta),
+      );
+    }
+    if (data.containsKey('checked_at')) {
+      context.handle(
+        _checkedAtMeta,
+        checkedAt.isAcceptableOrUnknown(data['checked_at']!, _checkedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_checkedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {source};
+  @override
+  RouteDataRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RouteDataRow(
+      source: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source'],
+      )!,
+      body: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}body'],
+      )!,
+      etag: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}etag'],
+      ),
+      checkedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}checked_at'],
+      )!,
+    );
+  }
+
+  @override
+  $RouteDataTable createAlias(String alias) {
+    return $RouteDataTable(attachedDatabase, alias);
+  }
+}
+
+class RouteDataRow extends DataClass implements Insertable<RouteDataRow> {
+  /// `osm`, `ntc` or `lmt`.
+  final String source;
+  final String body;
+  final String? etag;
+
+  /// When the file was last asked for, in microseconds since the epoch.
+  final int checkedAt;
+  const RouteDataRow({
+    required this.source,
+    required this.body,
+    this.etag,
+    required this.checkedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['source'] = Variable<String>(source);
+    map['body'] = Variable<String>(body);
+    if (!nullToAbsent || etag != null) {
+      map['etag'] = Variable<String>(etag);
+    }
+    map['checked_at'] = Variable<int>(checkedAt);
+    return map;
+  }
+
+  RouteDataCompanion toCompanion(bool nullToAbsent) {
+    return RouteDataCompanion(
+      source: Value(source),
+      body: Value(body),
+      etag: etag == null && nullToAbsent ? const Value.absent() : Value(etag),
+      checkedAt: Value(checkedAt),
+    );
+  }
+
+  factory RouteDataRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RouteDataRow(
+      source: serializer.fromJson<String>(json['source']),
+      body: serializer.fromJson<String>(json['body']),
+      etag: serializer.fromJson<String?>(json['etag']),
+      checkedAt: serializer.fromJson<int>(json['checkedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'source': serializer.toJson<String>(source),
+      'body': serializer.toJson<String>(body),
+      'etag': serializer.toJson<String?>(etag),
+      'checkedAt': serializer.toJson<int>(checkedAt),
+    };
+  }
+
+  RouteDataRow copyWith({
+    String? source,
+    String? body,
+    Value<String?> etag = const Value.absent(),
+    int? checkedAt,
+  }) => RouteDataRow(
+    source: source ?? this.source,
+    body: body ?? this.body,
+    etag: etag.present ? etag.value : this.etag,
+    checkedAt: checkedAt ?? this.checkedAt,
+  );
+  RouteDataRow copyWithCompanion(RouteDataCompanion data) {
+    return RouteDataRow(
+      source: data.source.present ? data.source.value : this.source,
+      body: data.body.present ? data.body.value : this.body,
+      etag: data.etag.present ? data.etag.value : this.etag,
+      checkedAt: data.checkedAt.present ? data.checkedAt.value : this.checkedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RouteDataRow(')
+          ..write('source: $source, ')
+          ..write('body: $body, ')
+          ..write('etag: $etag, ')
+          ..write('checkedAt: $checkedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(source, body, etag, checkedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RouteDataRow &&
+          other.source == this.source &&
+          other.body == this.body &&
+          other.etag == this.etag &&
+          other.checkedAt == this.checkedAt);
+}
+
+class RouteDataCompanion extends UpdateCompanion<RouteDataRow> {
+  final Value<String> source;
+  final Value<String> body;
+  final Value<String?> etag;
+  final Value<int> checkedAt;
+  final Value<int> rowid;
+  const RouteDataCompanion({
+    this.source = const Value.absent(),
+    this.body = const Value.absent(),
+    this.etag = const Value.absent(),
+    this.checkedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RouteDataCompanion.insert({
+    required String source,
+    required String body,
+    this.etag = const Value.absent(),
+    required int checkedAt,
+    this.rowid = const Value.absent(),
+  }) : source = Value(source),
+       body = Value(body),
+       checkedAt = Value(checkedAt);
+  static Insertable<RouteDataRow> custom({
+    Expression<String>? source,
+    Expression<String>? body,
+    Expression<String>? etag,
+    Expression<int>? checkedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (source != null) 'source': source,
+      if (body != null) 'body': body,
+      if (etag != null) 'etag': etag,
+      if (checkedAt != null) 'checked_at': checkedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RouteDataCompanion copyWith({
+    Value<String>? source,
+    Value<String>? body,
+    Value<String?>? etag,
+    Value<int>? checkedAt,
+    Value<int>? rowid,
+  }) {
+    return RouteDataCompanion(
+      source: source ?? this.source,
+      body: body ?? this.body,
+      etag: etag ?? this.etag,
+      checkedAt: checkedAt ?? this.checkedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (source.present) {
+      map['source'] = Variable<String>(source.value);
+    }
+    if (body.present) {
+      map['body'] = Variable<String>(body.value);
+    }
+    if (etag.present) {
+      map['etag'] = Variable<String>(etag.value);
+    }
+    if (checkedAt.present) {
+      map['checked_at'] = Variable<int>(checkedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RouteDataCompanion(')
+          ..write('source: $source, ')
+          ..write('body: $body, ')
+          ..write('etag: $etag, ')
+          ..write('checkedAt: $checkedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SettingsTable extends Settings
     with TableInfo<$SettingsTable, SettingRow> {
   @override
@@ -4120,6 +4431,7 @@ abstract class _$HopinDatabase extends GeneratedDatabase {
   late final $OsmStopsTable osmStops = $OsmStopsTable(this);
   late final $StopTilesTable stopTiles = $StopTilesTable(this);
   late final $StopNamesTable stopNames = $StopNamesTable(this);
+  late final $RouteDataTable routeData = $RouteDataTable(this);
   late final $SettingsTable settings = $SettingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -4134,6 +4446,7 @@ abstract class _$HopinDatabase extends GeneratedDatabase {
     osmStops,
     stopTiles,
     stopNames,
+    routeData,
     settings,
   ];
 }

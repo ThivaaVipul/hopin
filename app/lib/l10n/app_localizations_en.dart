@@ -475,4 +475,68 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get moreOptions => 'More';
+
+  @override
+  String get noBusKnown => 'No bus known yet';
+
+  @override
+  String get showName => 'Show';
+
+  @override
+  String boardAt(String stop) {
+    return 'Board at $stop';
+  }
+
+  @override
+  String get boardOnRoad => 'Board on this road';
+
+  @override
+  String get boardAtStand => 'Board at the bus stand';
+
+  @override
+  String walkM(String m) {
+    return '$m m walk';
+  }
+
+  @override
+  String walkKm(String km) {
+    return '$km km walk';
+  }
+
+  @override
+  String get allTimes => 'All times';
+
+  @override
+  String timesAt(String stop) {
+    return 'Times at $stop';
+  }
+
+  @override
+  String get tomorrow => 'Tomorrow';
+
+  @override
+  String get noneLeftToday => 'None left today';
+
+  @override
+  String alsoNumbers(String numbers) {
+    return 'also $numbers';
+  }
+
+  @override
+  String get classNormal => 'Normal';
+
+  @override
+  String get classSemiLuxury => 'Semi luxury';
+
+  @override
+  String get classLuxury => 'Luxury';
+
+  @override
+  String get classAc => 'AC';
+
+  @override
+  String get classExpressway => 'Expressway';
+
+  @override
+  String get routeCredits => 'Routes: OpenStreetMap, NTC, LMT';
 }

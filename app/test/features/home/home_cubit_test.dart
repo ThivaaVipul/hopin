@@ -10,8 +10,11 @@ import 'package:hopin/core/places/place.dart';
 import 'package:hopin/core/ride/bus_logic.dart';
 import 'package:hopin/core/ride/guide.dart';
 import 'package:hopin/core/ride/patterns.dart';
+import 'package:hopin/core/ride/polyline.dart';
 import 'package:hopin/core/ride/ride_record.dart';
+import 'package:hopin/core/ride/routes.dart';
 import 'package:hopin/core/search/overpass.dart';
+import 'package:hopin/core/search/route_files.dart';
 import 'package:hopin/core/share/share.dart';
 import 'package:hopin/features/home/cubit/home_cubit.dart';
 import 'package:http/http.dart' as http;
@@ -44,7 +47,11 @@ void main() {
 
   tearDown(() => workspace.close());
 
-  HomeCubit cubit({List<Object>? reverse, Overpass? overpass}) => HomeCubit(
+  HomeCubit cubit({
+    List<Object>? reverse,
+    Overpass? overpass,
+    RouteFiles? routeFiles,
+  }) => HomeCubit(
     workspace,
     location,
     fakeNominatim((request) async {
@@ -69,6 +76,7 @@ void main() {
     guide,
     shares: shares,
     overpass: overpass ?? emptyOverpass(),
+    routeFiles: routeFiles ?? emptyRouteFiles(),
     clock: () => now,
   );
 
@@ -613,6 +621,64 @@ void main() {
       expect(shares.closedFor, ['r1']);
       await again.close();
     });
+  });
+
+  group('which bus', () {
+    // A made-up road north past [here] and [uni].
+    final file = jsonEncode({
+      'format': routeFileFormat,
+      'source': 'osm',
+      'built': '2026-11-05T00:00:00Z',
+      'credit': 'x',
+      'routes': [
+        {
+          'id': 'osm:1',
+          'number': '101',
+          'directions': [
+            {
+              'board': {'en': 'Fort'},
+              'path': encodePolyline(const [
+                GeoPoint(6.9150, 79.8552),
+                GeoPoint(6.9344, 79.8505),
+                GeoPoint(6.9500, 79.8500),
+              ]),
+            },
+          ],
+        },
+      ],
+    });
+
+    test(
+      'the buses there follow the place, and a pick comes and goes',
+      () async {
+        location.access = LocationAccess.granted;
+        final home = cubit(routeFiles: routeFilesWith({'osm': file}));
+        await home.start();
+        home.select(uni);
+        await expectLater(
+          home.stream,
+          emitsThrough(predicate<HomeState>((s) => s.buses.isNotEmpty)),
+        );
+        final bus = home.state.buses.single;
+        expect(bus.direction.number, '101');
+        expect(bus.walkTo, closeTo(110, 10));
+
+        home.pickBus(bus);
+        expect(home.state.bus, bus);
+        home.pickBus(bus);
+        expect(home.state.bus, isNull);
+
+        // Another place: the pick goes, and no bus goes there.
+        home
+          ..pickBus(bus)
+          ..select(const Destination(point: GeoPoint(6.95, 79.88)));
+        expect(home.state.bus, isNull);
+        expect(home.state.buses, isEmpty);
+        home.clear();
+        expect(home.state.buses, isEmpty);
+        await home.close();
+      },
+    );
   });
 
   group('stops', () {

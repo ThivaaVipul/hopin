@@ -4,18 +4,28 @@ import 'package:drift/drift.dart';
 import 'package:hopin/core/data/local/database.dart';
 import 'package:hopin/core/ride/routes.dart';
 import 'package:hopin/core/search/route_files.dart';
+import 'package:hopin/core/update/updates.dart' show installedBuild;
 
 /// The bus routes (docs/PLAN.md, Which bus): the route files the weekly job
 /// publishes, kept on the phone as they came, so the buses show offline.
 class RoutesRepository {
-  RoutesRepository(this._db, {DateTime Function()? clock})
-    : _clock = clock ?? DateTime.now;
+  RoutesRepository(
+    this._db, {
+    DateTime Function()? clock,
+    this.build = installedBuild,
+  }) : _clock = clock ?? DateTime.now;
 
-  /// A file is asked for again after this long (the job runs weekly).
-  static const checkEvery = Duration(days: 7);
+  /// A file is asked for again after this long. Asking costs next to
+  /// nothing when it hasn't changed (a 304 with no body), so a new week's
+  /// files, or a rebuilt one, reach the phone within a day.
+  static const checkEvery = Duration(days: 1);
 
-  /// A file the release didn't have is asked for again after this long.
-  static const missingEvery = Duration(days: 1);
+  /// This app's build: after an update every file is asked for at once, so
+  /// a fix that needs new route data has it straight away.
+  final int build;
+
+  /// The build that last asked for the files, in the settings table.
+  static const _askedBy = 'routes.build';
 
   final HopinDatabase _db;
   final DateTime Function() _clock;
@@ -38,28 +48,34 @@ class RoutesRepository {
     }
   }
 
-  /// Fetches the files that are missing or a week old; offline, they wait
-  /// for the next time. One refresh at a time.
+  /// Fetches the files that are missing or a day old, or all of them after
+  /// an app update; offline, they wait for the next time. One refresh at a
+  /// time.
   Future<void> refresh(RouteFiles files) =>
       _refreshing ??= _refresh(files).whenComplete(() => _refreshing = null);
 
   Future<void> _refresh(RouteFiles files) async {
+    final askedBy = await (_db.select(
+      _db.settings,
+    )..where((s) => s.key.equals(_askedBy))).getSingleOrNull();
+    final updated = askedBy?.value != '$build';
     for (final source in RouteSource.values) {
+      // A row with no body stands for a file the release didn't have.
       final row = await (_db.select(
         _db.routeData,
       )..where((r) => r.source.equals(source.name))).getSingleOrNull();
       final now = _clock();
-      // A row with no body stands for a file the release didn't have.
-      final wait = row == null || row.body.isEmpty ? missingEvery : checkEvery;
-      if (row != null &&
+      if (!updated &&
+          row != null &&
           now.difference(DateTime.fromMicrosecondsSinceEpoch(row.checkedAt)) <
-              wait) {
+              checkEvery) {
         continue;
       }
       final RouteFileAnswer answer;
       try {
         answer = await files.fetch(source, etag: row?.etag);
       } on Exception {
+        // Offline: the files, and an update's check, wait for next time.
         return;
       }
       final checked = now.microsecondsSinceEpoch;
@@ -93,5 +109,10 @@ class RoutesRepository {
             );
       }
     }
+    await _db
+        .into(_db.settings)
+        .insertOnConflictUpdate(
+          SettingsCompanion.insert(key: _askedBy, value: '$build'),
+        );
   }
 }

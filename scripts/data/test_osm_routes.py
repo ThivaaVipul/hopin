@@ -93,9 +93,19 @@ def test_an_end_that_is_no_town_is_the_far_end_of_the_roads():
 def test_a_partly_mapped_route_keeps_the_part_that_is_mapped():
     tags = {"ref": "9", "name": "Alpha - Beta"}
     routes = routes_from(relation(tags, WAYS[1:2] + WAYS[0:1]), TOWNS)
-    path = decode_polyline(routes[0]["directions"][0]["path"])
-    assert routes[0]["directions"][0]["board"]["en"] == "Beta"
+    direction = routes[0]["directions"][0]
+    path = decode_polyline(direction["path"])
+    assert direction["board"]["en"] == "Beta"
     assert metres(path[-1], (6.920, 79.850)) < 10
+    # Its end town, a kilometre past where the mapped road stops.
+    assert direction["ends"] == [list(ALPHA), list(BETA)]
+
+
+def test_an_end_that_is_no_town_ends_where_the_road_does():
+    routes = routes_from(relation({"ref": "7", "name": "Alpha - Depot Junction"}, WAYS), TOWNS)
+    ends = routes[0]["directions"][0]["ends"]
+    assert ends[0] == list(ALPHA)
+    assert metres(tuple(ends[1]), BETA) < 10
 
 
 def test_each_number_of_a_shared_relation_is_a_route():

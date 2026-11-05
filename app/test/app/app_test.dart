@@ -10,7 +10,10 @@ import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/ride/bus_logic.dart';
 import 'package:hopin/core/ride/guide.dart';
+import 'package:hopin/core/ride/polyline.dart';
 import 'package:hopin/core/ride/ride_record.dart';
+import 'package:hopin/core/ride/routes.dart';
+import 'package:hopin/core/search/route_files.dart';
 import 'package:hopin/core/share/share.dart';
 import 'package:hopin/core/update/updates.dart';
 import 'package:hopin/features/home/widgets/ride_board.dart';
@@ -44,6 +47,7 @@ void main() {
     Locale locale = const Locale('en'),
     LocationService? location,
     Future<http.Response> Function(http.Request request)? nominatim,
+    RouteFiles? routeFiles,
   }) async {
     await tester.pumpWidget(
       HopinApp(
@@ -58,6 +62,7 @@ void main() {
                   http.Response.bytes(utf8.encode(jsonEncode([uniJson])), 200),
         ),
         overpass: emptyOverpass(),
+        routeFiles: routeFiles ?? emptyRouteFiles(),
         mapBuilder: fakeMap,
         rideMapBuilder: fakeRideMap,
         guide: guide,
@@ -81,6 +86,7 @@ void main() {
   Future<void> openPlace(
     WidgetTester tester, {
     Locale locale = const Locale('en'),
+    RouteFiles? routeFiles,
   }) async {
     await start(
       tester,
@@ -89,6 +95,7 @@ void main() {
         access: LocationAccess.granted,
         here: const GeoPoint(6.9200, 79.8550),
       ),
+      routeFiles: routeFiles,
     );
     auth.emit(rider);
     await tester.pumpAndSettle();
@@ -493,6 +500,149 @@ void main() {
       guide.notifications = false;
       await openSettings(tester, locale: const Locale('ta'));
       await showInSettings(tester, find.text('வெளியேறு'));
+      expect(tester.takeException(), isNull);
+      await finish(tester);
+    });
+  });
+
+  group('which bus', () {
+    // A made-up road north past where you are (6.92, 79.855) and Colombo Fort.
+    final road = encodePolyline(const [
+      GeoPoint(6.9150, 79.8552),
+      GeoPoint(6.9344, 79.8505),
+      GeoPoint(6.9500, 79.8500),
+    ]);
+    String file(String source, List<Map<String, Object?>> routes) =>
+        jsonEncode({
+          'format': routeFileFormat,
+          'source': source,
+          'built': '2026-11-05T00:00:00Z',
+          'credit': 'x',
+          'routes': routes,
+        });
+    final files = {
+      'osm': file('osm', [
+        {
+          'id': 'osm:1',
+          'number': '101',
+          'directions': [
+            {
+              'board': {'ta': 'கோட்டை', 'si': 'කොටුව', 'en': 'Fort'},
+              'path': road,
+            },
+          ],
+        },
+      ]),
+      'lmt': file('lmt', [
+        {
+          'id': 'lmt:CM9',
+          'number': 'CM9',
+          'directions': [
+            {
+              'board': {'en': 'Harbour'},
+              'path': road,
+              'stops': [
+                [6.9201, 79.8551, 'Lake Road', 4],
+              ],
+              'times': [
+                {
+                  'days': 127,
+                  'departs': [for (var m = 0; m < 1440; m += 30) m],
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+    };
+
+    /// The route files reach the phone's database on drift's real loop, one
+    /// step at a time between the test's own (each file is a read, a fetch
+    /// and a write).
+    Future<void> settleRoutes(WidgetTester tester) async {
+      for (var i = 0; i < 12; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 20)),
+        );
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('lists the buses there; a tap shows one on the map', (
+      tester,
+    ) async {
+      await openPlace(tester, routeFiles: routeFilesWith(files));
+      await settleRoutes(tester);
+      expect(find.text('101'), findsOneWidget);
+      expect(find.text('கோட்டை'), findsOneWidget);
+      expect(find.text('CM9'), findsOneWidget);
+      expect(find.textContaining('Board at Lake Road'), findsOneWidget);
+      expect(find.textContaining('Board on this road'), findsOneWidget);
+      expect(find.text('Routes: OpenStreetMap, NTC, LMT'), findsOneWidget);
+      // The bus with times comes first.
+      expect(
+        tester.getTopLeft(find.text('CM9')).dy,
+        lessThan(tester.getTopLeft(find.text('101')).dy),
+      );
+
+      await tester.tap(find.text('101'));
+      await tester.pumpAndSettle();
+      expect(find.text('route: 3 points, board here'), findsOneWidget);
+      await tester.tap(find.text('101'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('route:'), findsNothing);
+      await finish(tester);
+    });
+
+    testWidgets("a bus's times for today", (tester) async {
+      await openPlace(tester, routeFiles: routeFilesWith(files));
+      await settleRoutes(tester);
+      // The next times, by the bus's number.
+      final times = find.descendant(
+        of: find.byType(InkWell),
+        matching: find.textContaining(':'),
+      );
+      await tester.tap(times.first);
+      await tester.pumpAndSettle();
+      expect(find.text('CM9  Times at Lake Road'), findsOneWidget);
+      await finish(tester);
+    });
+
+    testWidgets('no known bus: the name full screen, to show and ask', (
+      tester,
+    ) async {
+      await openPlace(tester);
+      await settleRoutes(tester);
+      expect(find.text('No bus known yet'), findsOneWidget);
+      // The panel's own board leads with Tamil.
+      expect(find.text('கொழும்பு கோட்டை'), findsOneWidget);
+      await tester.tap(find.text('Show'));
+      await tester.pumpAndSettle();
+      expect(find.text('கொழும்பு கோட்டை'), findsNWidgets(2));
+      await tester.tapAt(const Offset(200, 200));
+      await tester.pumpAndSettle();
+      expect(find.text('கொழும்பு கோட்டை'), findsOneWidget);
+      await finish(tester);
+    });
+
+    testWidgets('the buses fit a small phone in Tamil with large text', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1080, 2160)
+        ..devicePixelRatio = 3;
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await openPlace(
+        tester,
+        locale: const Locale('ta'),
+        routeFiles: routeFilesWith(files),
+      );
+      await settleRoutes(tester);
+      expect(find.text('CM9'), findsOneWidget);
+      expect(find.textContaining('Lake Road இல் ஏறுங்கள்'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await finish(tester);
     });

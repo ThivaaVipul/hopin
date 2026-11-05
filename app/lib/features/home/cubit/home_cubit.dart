@@ -10,9 +10,12 @@ import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/places/place.dart';
 import 'package:hopin/core/ride/guide.dart';
 import 'package:hopin/core/ride/ride_record.dart';
+import 'package:hopin/core/ride/routes.dart';
 import 'package:hopin/core/ride/stops.dart';
+import 'package:hopin/core/ride/which_bus.dart';
 import 'package:hopin/core/search/nominatim.dart';
 import 'package:hopin/core/search/overpass.dart';
+import 'package:hopin/core/search/route_files.dart';
 import 'package:hopin/core/share/share.dart';
 import 'package:hopin/core/share/shares.dart';
 
@@ -49,6 +52,8 @@ class HomeState extends Equatable {
     this.watching = false,
     this.stops = const [],
     this.stop,
+    this.buses = const [],
+    this.bus,
   });
 
   final List<SavedPlace> places;
@@ -98,6 +103,13 @@ class HomeState extends Equatable {
   /// The stop whose panel is open; the destination is its spot.
   final Stop? stop;
 
+  /// The buses that take you from where you are to the destination
+  /// (docs/PLAN.md, Which bus), the soonest first.
+  final List<BusOption> buses;
+
+  /// The bus picked in the panel: the map shows its road and where to board.
+  final BusOption? bus;
+
   static const _keep = Object();
 
   /// Fields left out keep their value; nullable ones take an explicit null.
@@ -121,6 +133,8 @@ class HomeState extends Equatable {
     bool? watching,
     List<Stop>? stops,
     Object? stop = _keep,
+    List<BusOption>? buses,
+    Object? bus = _keep,
   }) => HomeState(
     places: places ?? this.places,
     location: location ?? this.location,
@@ -147,14 +161,22 @@ class HomeState extends Equatable {
     watching: watching ?? this.watching,
     stops: stops ?? this.stops,
     stop: identical(stop, _keep) ? this.stop : stop as Stop?,
+    buses: buses ?? this.buses,
+    bus: identical(bus, _keep) ? this.bus : bus as BusOption?,
   );
 
-  /// A new destination; the stop panel goes unless [stop] is its stop.
+  /// A new destination; the stop panel goes unless [stop] is its stop, and
+  /// so does the picked bus.
   HomeState withDestination(
     Destination? destination, {
     bool resolving = false,
     Stop? stop,
-  }) => copyWith(destination: destination, resolving: resolving, stop: stop);
+  }) => copyWith(
+    destination: destination,
+    resolving: resolving,
+    stop: stop,
+    bus: null,
+  );
 
   @override
   List<Object?> get props => [
@@ -177,6 +199,8 @@ class HomeState extends Equatable {
     watching,
     stops,
     stop,
+    buses,
+    bus,
   ];
 }
 
@@ -188,6 +212,7 @@ class HomeCubit extends Cubit<HomeState> {
     this._guide, {
     required Shares shares,
     required this._overpass,
+    required this._routeFiles,
     DateTime Function()? clock,
   }) : _shareSource = shares,
        _clock = clock ?? DateTime.now,
@@ -199,9 +224,20 @@ class HomeCubit extends Cubit<HomeState> {
   final GuideService _guide;
   final Shares _shareSource;
   final Overpass _overpass;
+  final RouteFiles _routeFiles;
   final DateTime Function() _clock;
   StreamSubscription<List<Stop>>? _stopsWatch;
   List<Stop> _allStops = const [];
+
+  /// The routes on the phone, and what the buses were last worked out for.
+  StreamSubscription<List<RouteDirection>>? _routesWatch;
+  List<RouteDirection> _routes = const [];
+  List<RouteDirection>? _busesWith;
+  GeoPoint? _busesFrom;
+  GeoPoint? _busesTo;
+
+  /// The buses are worked out again once you have moved this far.
+  static const busesAfterMetres = 50.0;
 
   /// Zoomed in this far, the squares of OSM's stops around the view are
   /// fetched (the map shows the dots from here too).
@@ -236,6 +272,12 @@ class HomeCubit extends Cubit<HomeState> {
       _allStops = stops;
       _showStops();
     });
+    // The route files, fetched once a week; the buses follow them.
+    _routesWatch = _workspace.routes.watch().listen((routes) {
+      _routes = routes;
+      if (!isClosed) emit(state);
+    });
+    unawaited(_workspace.routes.refresh(_routeFiles));
     // OSM's stops around the saved places, once a month.
     unawaited(
       _workspace.places.watch().first.then(
@@ -744,6 +786,55 @@ class HomeCubit extends Cubit<HomeState> {
           .where((p) => p.point.distanceTo(point) < 25)
           .firstOrNull;
 
+  /// A bus in the destination panel: the map shows its road and where to
+  /// board; the same bus again puts it away.
+  void pickBus(BusOption? option) => emit(
+    state.copyWith(
+      bus: option == null || option.direction == state.bus?.direction
+          ? null
+          : option,
+    ),
+  );
+
+  /// Every state passes here, so the buses follow the destination, your
+  /// position and the routes, wherever those change.
+  @override
+  void emit(HomeState state) => super.emit(_withBuses(state));
+
+  HomeState _withBuses(HomeState next) {
+    final to = next.destination?.point;
+    final from = next.me;
+    if (to == null || from == null || next.ride != null) {
+      _busesWith = _busesFrom = _busesTo = null;
+      return next.buses.isEmpty && next.bus == null
+          ? next
+          : next.copyWith(buses: const [], bus: null);
+    }
+    final known = _busesFrom;
+    if (to == _busesTo &&
+        identical(_routes, _busesWith) &&
+        known != null &&
+        from.distanceTo(known) < busesAfterMetres) {
+      return next;
+    }
+    _busesWith = _routes;
+    _busesFrom = from;
+    _busesTo = to;
+    final buses = const WhichBus().find(
+      _routes,
+      from: from,
+      to: to,
+      now: _clock(),
+    );
+    final picked = next.bus?.direction;
+    return next.copyWith(
+      buses: buses,
+      bus: picked == null
+          ? null
+          : buses.where((b) => b.direction == picked).firstOrNull,
+    );
+  }
+
   @override
   Future<void> close() async {
     await _places?.cancel();
@@ -751,6 +842,7 @@ class HomeCubit extends Cubit<HomeState> {
     await _guideEvents?.cancel();
     await _shares?.cancel();
     await _stopsWatch?.cancel();
+    await _routesWatch?.cancel();
     return super.close();
   }
 }

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:hopin/app/theme.dart';
+import 'package:hopin/app/widgets/board_names.dart';
 import 'package:hopin/app/widgets/led_dots.dart';
 import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/core/places/place.dart';
+import 'package:hopin/core/ride/stops.dart';
+import 'package:hopin/core/ride/which_bus.dart';
+import 'package:hopin/features/home/widgets/bus_parts.dart';
 import 'package:hopin/l10n/app_localizations.dart';
 
 IconData kindIcon(PlaceKind kind) => switch (kind) {
@@ -187,12 +191,29 @@ class DestinationPanel extends StatelessWidget {
     this.isStop = false,
     this.onRenameStop,
     this.onRemoveStop,
+    this.buses = const [],
+    this.bus,
+    this.stops = const [],
+    this.onPickBus,
+    this.onBusTimes,
+    this.onShowName,
   });
 
   final Destination destination;
   final GeoPoint? me;
   final bool resolving;
   final VoidCallback onSave;
+
+  /// The buses that go there from where you are (docs/PLAN.md, Which bus),
+  /// the one picked, and the stops that name where you board.
+  final List<BusOption> buses;
+  final BusOption? bus;
+  final List<Stop> stops;
+  final ValueChanged<BusOption>? onPickBus;
+  final ValueChanged<BusOption>? onBusTimes;
+
+  /// The place's name full screen, when no known bus goes there.
+  final VoidCallback? onShowName;
 
   /// The destination is a bus stop; a learned one can be renamed or removed.
   final bool isStop;
@@ -221,9 +242,14 @@ class DestinationPanel extends StatelessWidget {
       if (destination.area != null && destination.area != title)
         destination.area!,
     ].join(', ');
-    final away = me == null
-        ? null
-        : shortDistance(me!.distanceTo(destination.point));
+    final metres = me?.distanceTo(destination.point);
+    final away = metres == null ? null : shortDistance(metres);
+    // The board's own lines already name it; the title adds your name for
+    // it, the area or "Dropped pin".
+    final onBoard = boardLines(names).map((line) => line.text).toSet();
+    // Buses only from where you are, and not for a short walk.
+    final showBuses =
+        !resolving && metres != null && metres >= WhichBus.shortest;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 18, 12, 24),
@@ -244,21 +270,14 @@ class DestinationPanel extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (names.si != null)
+                      BoardNames(names, rest: colors.onBoard),
+                      if (!onBoard.contains(title))
                         Text(
-                          names.si!,
-                          style: context.text.headlineSmall?.copyWith(
-                            fontFamily: sinhalaFamily,
-                            color: colors.amber,
-                            height: 1.3,
+                          title,
+                          style: context.text.titleLarge?.copyWith(
+                            color: colors.onBoard,
                           ),
                         ),
-                      Text(
-                        title,
-                        style: context.text.titleLarge?.copyWith(
-                          color: colors.onBoard,
-                        ),
-                      ),
                       if (detail.isNotEmpty)
                         Text(
                           detail,
@@ -309,6 +328,19 @@ class DestinationPanel extends StatelessWidget {
                       ),
                     ),
             ),
+            if (showBuses)
+              Padding(
+                padding: const EdgeInsets.only(top: 6, right: 12),
+                child: buses.isEmpty
+                    ? NoBusKnown(onShow: names.isEmpty ? null : onShowName)
+                    : BusList(
+                        buses: buses,
+                        picked: bus,
+                        stops: stops,
+                        onPick: (option) => onPickBus?.call(option),
+                        onTimes: (option) => onBusTimes?.call(option),
+                      ),
+              ),
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.only(right: 12),

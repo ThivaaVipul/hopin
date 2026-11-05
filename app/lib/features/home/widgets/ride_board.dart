@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hopin/app/theme.dart';
+import 'package:hopin/app/widgets/board_names.dart';
 import 'package:hopin/app/widgets/led_dots.dart';
 import 'package:hopin/app/widgets/rolling.dart';
 import 'package:hopin/core/geo/geo.dart';
@@ -8,8 +9,9 @@ import 'package:hopin/features/home/widgets/share_parts.dart';
 import 'package:hopin/l10n/app_localizations.dart';
 import 'package:hopin/l10n/time_left.dart';
 
-/// The ride board (docs/PLAN.md, The guide and Look): the stop's Sinhala name
-/// in amber as on the bus, the distance and time left, the board's lights as
+/// The ride board (docs/PLAN.md, The guide and Look): the stop's names in
+/// amber as on a bus's board (Tamil, Sinhala, English; Which bus), the
+/// distance and time left, the board's lights as
 /// progress, "Now near" and End. At "Get off next" the whole board turns
 /// amber, in time with the buzz; past the stop it says so.
 class RideBoard extends StatelessWidget {
@@ -72,7 +74,7 @@ class _Ink {
   final Color text;
   final Color muted;
 
-  /// The Sinhala name and the lit lights.
+  /// The board's leading name and the lit lights.
   final Color lit;
   final Color unlit;
 }
@@ -92,7 +94,9 @@ class _Board extends StatelessWidget {
     final ride = board.ride;
     final status = board.status;
     final near = board.near;
-    final si = ride.names.si;
+    // The board's lines already name the stop; the title adds your name for
+    // it or the area.
+    final onBoard = boardLines(ride.names).map((line) => line.text).toSet();
     final asking = status?.asking ?? false;
     final headline = switch (status?.phase) {
       _ when asking => l.stillGoing(ride.title),
@@ -132,21 +136,19 @@ class _Board extends StatelessWidget {
                       ),
                     ),
             ),
-            if (si != null)
-              Text(
-                si,
-                style: text.headlineMedium?.copyWith(
-                  fontFamily: sinhalaFamily,
-                  color: ink.lit,
-                  height: 1.3,
-                ),
-              ),
-            Text(
-              ride.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: text.titleLarge?.copyWith(color: ink.text),
+            BoardNames(
+              ride.names,
+              size: BoardSize.ride,
+              lead: ink.lit,
+              rest: ink.text,
             ),
+            if (!onBoard.contains(ride.title))
+              Text(
+                ride.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: text.titleLarge?.copyWith(color: ink.text),
+              ),
             const SizedBox(height: 14),
             if (status == null)
               Row(

@@ -11,6 +11,7 @@ import 'package:hopin/core/data/recents_repository.dart';
 import 'package:hopin/core/data/remote/remote.dart';
 import 'package:hopin/core/data/ride_namer.dart';
 import 'package:hopin/core/data/rides_repository.dart';
+import 'package:hopin/core/data/routes_repository.dart';
 import 'package:hopin/core/data/settings_sync.dart';
 import 'package:hopin/core/data/stops_repository.dart';
 import 'package:hopin/core/data/stops_sync.dart';
@@ -28,6 +29,7 @@ class Workspace {
       settings = SettingsStore(db),
       rides = RidesRepository(db, uid: uid),
       stops = StopsRepository(db, uid: uid),
+      routes = RoutesRepository(db),
       _sync = PlacesSync(db, remote, uid),
       _ridesSync = RidesSync(db, remote, uid),
       _haltsSync = HaltsSync(db, remote),
@@ -54,6 +56,9 @@ class Workspace {
 
   /// OSM's and the learned bus stops (docs/PLAN.md, Sharing and stops).
   final StopsRepository stops;
+
+  /// The bus routes from the route files (docs/PLAN.md, Which bus).
+  final RoutesRepository routes;
 
   /// The language and alert stages, which follow the account.
   late final AppSettings appSettings;

@@ -12,8 +12,10 @@ import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/places/place.dart';
 import 'package:hopin/core/search/nominatim.dart';
 import 'package:hopin/core/search/overpass.dart';
+import 'package:hopin/core/search/route_files.dart';
 import 'package:hopin/core/share/shares.dart';
 import 'package:hopin/features/home/cubit/home_cubit.dart';
+import 'package:hopin/features/home/widgets/bus_parts.dart';
 import 'package:hopin/features/home/widgets/home_parts.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
 import 'package:hopin/features/home/widgets/maker_steps.dart';
@@ -42,6 +44,7 @@ class HomePage extends StatelessWidget {
           context.read<GuideService>(),
           shares: context.read<Shares>(),
           overpass: context.read<Overpass>(),
+          routeFiles: context.read<RouteFiles>(),
         );
         unawaited(cubit.start());
         return cubit;
@@ -264,6 +267,28 @@ class _HomeViewState extends State<_HomeView> {
               (before.ride == null && now.ride != null),
           listener: _frame,
         ),
+        // A picked bus: where to board it and the place, clear of the panel.
+        BlocListener<HomeCubit, HomeState>(
+          listenWhen: (before, now) =>
+              now.bus != null && before.bus?.direction != now.bus?.direction,
+          listener: (context, state) {
+            final bus = state.bus;
+            final to = state.destination?.point;
+            if (bus == null || to == null) return;
+            final screen = MediaQuery.sizeOf(context);
+            final top = MediaQuery.paddingOf(context).top;
+            _camera.fit(
+              bus.boardAt,
+              to,
+              padding: EdgeInsets.fromLTRB(
+                48,
+                top + 120,
+                48,
+                screen.height * 0.6,
+              ),
+            );
+          },
+        ),
         BlocListener<HomeCubit, HomeState>(
           listenWhen: (before, now) =>
               now.watching &&
@@ -352,6 +377,19 @@ class _HomeViewState extends State<_HomeView> {
               onRemoveStop: state.stop?.learned ?? false
                   ? () => unawaited(_removeStop(context))
                   : null,
+              buses: state.buses,
+              bus: state.bus,
+              stops: state.stops,
+              onPickBus: cubit.pickBus,
+              onBusTimes: (option) => unawaited(
+                showAllTimes(
+                  context,
+                  option,
+                  boardingName(option, state.stops, language),
+                ),
+              ),
+              onShowName: () =>
+                  unawaited(showNameBoard(context, destination.names)),
             ),
             HomeState(:final other?) => SharedRideCard(
               key: ValueKey('shared ${other.id}'),
@@ -391,6 +429,8 @@ class _HomeViewState extends State<_HomeView> {
                       watchedGoal: state.watching
                           ? state.other?.goal?.point
                           : null,
+                      route: state.bus?.direction.path ?? const [],
+                      boardAt: state.bus?.boardAt,
                     ),
                   ),
                 ),

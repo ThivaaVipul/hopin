@@ -30,7 +30,7 @@ class HopinColors extends ThemeExtension<HopinColors> {
   final Color onBoard;
   final Color onBoardMuted;
 
-  /// The board's lettering: Sinhala names, progress, the alert.
+  /// The board's lettering: its leading name, progress, the alert.
   final Color amber;
   final Color onAmber;
 
@@ -178,9 +178,11 @@ class HopinMotion extends ThemeExtension<HopinMotion> {
 /// Barlow for text. Tamil falls back to Anek Tamil and Sinhala to Noto Sans
 /// Sinhala, so mixed lines render without switching families by hand.
 const _text = 'Barlow';
-const _display = 'Barlow Semi Condensed';
+const displayFamily = 'Barlow Semi Condensed';
+const _display = displayFamily;
 const sinhalaFamily = 'Noto Sans Sinhala';
-const _fallback = ['Anek Tamil', sinhalaFamily];
+const tamilFamily = 'Anek Tamil';
+const _fallback = [tamilFamily, sinhalaFamily];
 
 ThemeData hopinTheme(Brightness brightness) {
   final c = brightness == Brightness.light

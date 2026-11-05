@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart' hide Column;
@@ -17,6 +18,7 @@ import 'package:hopin/core/ride/ride_config.dart';
 import 'package:hopin/core/ride/ride_record.dart';
 import 'package:hopin/core/search/nominatim.dart';
 import 'package:hopin/core/search/overpass.dart';
+import 'package:hopin/core/search/route_files.dart';
 import 'package:hopin/core/share/share.dart';
 import 'package:hopin/core/share/shares.dart';
 import 'package:hopin/core/update/updates.dart';
@@ -174,6 +176,12 @@ Widget fakeMap(MapProps props) => ColoredBox(
           GestureDetector(
             onTap: () => props.onStopTap?.call(stop.id),
             child: Text('stop ${stop.id}', textDirection: TextDirection.ltr),
+          ),
+        if (props.route.isNotEmpty)
+          Text(
+            'route: ${props.route.length} points'
+            '${props.boardAt == null ? '' : ', board here'}',
+            textDirection: TextDirection.ltr,
           ),
       ],
     ),
@@ -411,3 +419,26 @@ Overpass emptyOverpass() => Overpass(
   client: MockClient((_) async => http.Response('{"elements": []}', 200)),
   wait: (_) async {},
 );
+
+/// The data release with these route files (by source name), and nothing
+/// for the others; every request is kept in [asked] when given.
+RouteFiles routeFilesWith(
+  Map<String, String> files, {
+  List<http.Request>? asked,
+}) => RouteFiles(
+  client: MockClient((request) async {
+    asked?.add(request);
+    final name = request.url.pathSegments.last.replaceAll('-routes.json', '');
+    final body = files[name];
+    return body == null
+        ? http.Response('Not Found', 404)
+        : http.Response.bytes(
+            utf8.encode(body),
+            200,
+            headers: {'etag': '"$name-1"'},
+          );
+  }),
+);
+
+/// No route files at all (the release isn't there, or the phone is offline).
+RouteFiles emptyRouteFiles() => routeFilesWith(const {});

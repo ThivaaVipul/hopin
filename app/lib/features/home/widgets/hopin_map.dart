@@ -35,6 +35,8 @@ class MapProps {
     this.stops = const [],
     this.onStopTap,
     this.onCameraIdle,
+    this.route = const [],
+    this.boardAt,
   });
 
   final GeoPoint? me;
@@ -55,6 +57,10 @@ class MapProps {
   /// The map settled: its south-west and north-east corners, and its zoom.
   final void Function(GeoPoint southWest, GeoPoint northEast, double zoom)?
   onCameraIdle;
+
+  /// The picked bus's road (docs/PLAN.md, Which bus), and where to board it.
+  final List<GeoPoint> route;
+  final GeoPoint? boardAt;
 }
 
 typedef MapBuilder = Widget Function(MapProps props);
@@ -94,7 +100,14 @@ class _BoardMapState extends State<BoardMap> {
   final _destination = _Marker(radius: 9, color: _amber);
   final _them = _Marker(radius: 9, color: '#F4F1E8');
   final _theirGoal = _Marker(radius: 7, color: _amber, stroke: 2);
+  final _boardAt = _Marker(radius: 7, color: '#F4F1E8');
   List<Circle> _places = const [];
+
+  /// The picked bus's road: one line, under the stops and markers.
+  static const _routeSource = 'hopin-route';
+  static const _routeLayer = 'hopin-route-line';
+  bool _routeAdded = false;
+  List<GeoPoint>? _drawnRoute;
   List<SavedPlace>? _drawnPlaces;
 
   /// The stops' source and layer: every stop at once, drawn by the map
@@ -120,13 +133,22 @@ class _BoardMapState extends State<BoardMap> {
     if (old.props.dark != widget.props.dark) {
       // A new style drops the markers; they come back once it has loaded.
       _styled = false;
-      for (final marker in [_halo, _me, _destination, _them, _theirGoal]) {
+      for (final marker in [
+        _halo,
+        _me,
+        _destination,
+        _them,
+        _theirGoal,
+        _boardAt,
+      ]) {
         marker.forget();
       }
       _places = const [];
       _drawnPlaces = null;
       _stopsAdded = false;
       _drawnStops = null;
+      _routeAdded = false;
+      _drawnRoute = null;
     } else {
       _redraw();
     }
@@ -193,12 +215,60 @@ class _BoardMapState extends State<BoardMap> {
           ),
       ];
     }
+    await _drawRoute(controller, props.route);
     await _drawStops(controller, props.stops);
+    await _boardAt.show(controller, props.boardAt);
     await _destination.show(controller, props.destination?.point);
     await _theirGoal.show(controller, props.watchedGoal);
     await _them.show(controller, props.watched);
     await _halo.show(controller, props.me);
     await _me.show(controller, props.me);
+  }
+
+  /// The picked bus's road as one GeoJSON line, under the stops (added before
+  /// them) and the markers.
+  Future<void> _drawRoute(
+    MapLibreMapController controller,
+    List<GeoPoint> route,
+  ) async {
+    if (identical(route, _drawnRoute)) return;
+    _drawnRoute = route;
+    final data = {
+      'type': 'FeatureCollection',
+      'features': [
+        if (route.length > 1)
+          {
+            'type': 'Feature',
+            'properties': <String, Object?>{},
+            'geometry': {
+              'type': 'LineString',
+              'coordinates': [
+                for (final point in route) [point.lng, point.lat],
+              ],
+            },
+          },
+      ],
+    };
+    if (_routeAdded) {
+      await controller.setGeoJsonSource(_routeSource, data);
+      return;
+    }
+    _routeAdded = true;
+    await controller.addGeoJsonSource(_routeSource, data);
+    await controller.addLineLayer(
+      _routeSource,
+      _routeLayer,
+      const LineLayerProperties(
+        lineColor: _amber,
+        lineWidth: 5,
+        lineOpacity: 0.85,
+        lineCap: 'round',
+        lineJoin: 'round',
+      ),
+      belowLayerId: _stopsAdded
+          ? _stopLayer
+          : controller.circleManager?.layerIds.firstOrNull,
+    );
   }
 
   /// All the stops as one GeoJSON source and one circle layer, under the

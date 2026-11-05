@@ -147,6 +147,22 @@ class StopNames extends Table {
   TextColumn get name => text()();
 }
 
+/// The route files from the `data` release (docs/ARCHITECTURE.md, Route
+/// data), one row per source, kept as they came.
+@DataClassName('RouteDataRow')
+class RouteData extends Table {
+  /// `osm`, `ntc` or `lmt`.
+  TextColumn get source => text()();
+  TextColumn get body => text()();
+  TextColumn get etag => text().nullable()();
+
+  /// When the file was last asked for, in microseconds since the epoch.
+  IntColumn get checkedAt => integer()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {source};
+}
+
 @DataClassName('SettingRow')
 class Settings extends Table {
   TextColumn get key => text()();
@@ -167,6 +183,7 @@ class Settings extends Table {
     OsmStops,
     StopTiles,
     StopNames,
+    RouteData,
     Settings,
   ],
 )
@@ -177,7 +194,7 @@ class HopinDatabase extends _$HopinDatabase {
       HopinDatabase(driftDatabase(name: 'hopin_$uid'));
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   // Places are a copy of Firestore, so a new schema rebuilds the tables and the
   // sync fills them again from the start; unsynced writes are read back from

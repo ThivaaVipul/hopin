@@ -479,4 +479,68 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get moreOptions => 'மேலும்';
+
+  @override
+  String get noBusKnown => 'தெரிந்த பஸ் இன்னும் இல்லை';
+
+  @override
+  String get showName => 'காட்டு';
+
+  @override
+  String boardAt(String stop) {
+    return '$stop இல் ஏறுங்கள்';
+  }
+
+  @override
+  String get boardOnRoad => 'இந்த வீதியில் ஏறுங்கள்';
+
+  @override
+  String get boardAtStand => 'பஸ் நிலையத்தில் ஏறுங்கள்';
+
+  @override
+  String walkM(String m) {
+    return '$m மீ நடை';
+  }
+
+  @override
+  String walkKm(String km) {
+    return '$km கி.மீ நடை';
+  }
+
+  @override
+  String get allTimes => 'எல்லா நேரங்களும்';
+
+  @override
+  String timesAt(String stop) {
+    return '$stop நேரங்கள்';
+  }
+
+  @override
+  String get tomorrow => 'நாளை';
+
+  @override
+  String get noneLeftToday => 'இன்று இனி இல்லை';
+
+  @override
+  String alsoNumbers(String numbers) {
+    return 'மேலும் $numbers';
+  }
+
+  @override
+  String get classNormal => 'சாதாரண';
+
+  @override
+  String get classSemiLuxury => 'அரை சொகுசு';
+
+  @override
+  String get classLuxury => 'சொகுசு';
+
+  @override
+  String get classAc => 'ஏசி';
+
+  @override
+  String get classExpressway => 'அதிவேக';
+
+  @override
+  String get routeCredits => 'வழிகள்: OpenStreetMap, NTC, LMT';
 }

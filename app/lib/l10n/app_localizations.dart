@@ -1049,7 +1049,7 @@ abstract class AppLocalizations {
   /// Where the bus routes and times come from, under the buses.
   ///
   /// In en, this message translates to:
-  /// **'Routes: OpenStreetMap, NTC, LMT'**
+  /// **'Routes: OpenStreetMap, OSRM, NTC, LMT'**
   String get routeCredits;
 }
 

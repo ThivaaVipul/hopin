@@ -430,6 +430,8 @@ class _HomeViewState extends State<_HomeView> {
                           ? state.other?.goal?.point
                           : null,
                       route: state.bus?.direction.path ?? const [],
+                      routeBefore: state.bus?.direction.before ?? const [],
+                      routeAfter: state.bus?.direction.after ?? const [],
                       boardAt: state.bus?.boardAt,
                     ),
                   ),

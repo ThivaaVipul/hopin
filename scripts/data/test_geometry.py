@@ -1,6 +1,15 @@
 import pytest
 
-from geometry import chain, decode_polyline, encode_polyline, length, metres, project, simplify
+from geometry import (
+    chain,
+    decode_polyline,
+    encode_polyline,
+    fraction_along,
+    length,
+    metres,
+    project,
+    simplify,
+)
 
 FORT = (6.9344, 79.8428)
 
@@ -30,6 +39,15 @@ def test_project_finds_the_nearest_point_along_the_path():
     assert away == pytest.approx(11, abs=1)
     along, _ = project(path, (6.911, 79.86))
     assert along == pytest.approx(length(path), rel=1e-3)
+
+
+def test_fraction_along_a_straight_way():
+    a, b = (6.90, 79.85), (7.00, 79.85)
+    assert fraction_along(a, b, (6.95, 79.86)) == pytest.approx(0.5)
+    # Before the start and past the end fall outside 0 to 1.
+    assert fraction_along(a, b, (6.89, 79.85)) == pytest.approx(-0.1)
+    assert fraction_along(a, b, (7.02, 79.85)) == pytest.approx(1.2)
+    assert fraction_along(a, a, b) == 0.0
 
 
 def test_chain_turns_lines_round_to_join_them():

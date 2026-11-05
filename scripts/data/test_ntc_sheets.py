@@ -7,12 +7,15 @@ from ntc_sheets import (
     SheetName,
     build,
     by_weekday,
+    corridor,
     directions,
     folder_entries,
     halves,
     join_continued,
+    kept,
     likeness,
     merge,
+    middle_towns,
     minutes,
     numbers_in_text,
     parse_name,
@@ -303,6 +306,126 @@ def test_build_keeps_a_sheet_of_several_routes_and_leaves_out_weekday_ones(monke
         "ntc 4 Colombo - Galle (SL).pdf: left out, no town found for Galle",
         "ntc 3 Colombo - Matara (SL).pdf: left out, times by day of the week",
     ]
+
+
+GALLE_SI = "ගාල්ල"
+GALLE_SHEET = "ගා(cid:7)ල"  # as a sheet's text might give it
+
+
+def test_a_half_keeps_each_timing_points_minutes_after_departing():
+    first, second = halves(join_continued([two_halves()])[0])
+    assert first.points == [("x", 95), (MATARA_SI, 195)]
+    assert second.points == [("x", 95), (COLOMBO_SHEET, 195)]
+
+
+def place(id_, name, lat, lng, si, kind="town"):
+    return {
+        "type": "node",
+        "id": id_,
+        "lat": lat,
+        "lon": lng,
+        "tags": {"place": kind, "name": name, "name:si": si},
+    }
+
+
+def colombo_matara(*middle):
+    return Towns.from_overpass(
+        {
+            "elements": [
+                place(1, "Colombo", 6.93, 79.85, COLOMBO_SI, "city"),
+                place(2, "Matara", 5.95, 80.54, MATARA_SI, "city"),
+                *middle,
+            ]
+        }
+    )
+
+
+def middle_towns_fixture():
+    return colombo_matara(
+        # Half way along: where a time half way through puts it.
+        place(3, "Galle", 6.44, 80.195, GALLE_SI),
+        # The same name near the start: too early for that time.
+        place(4, "Galle", 6.85, 79.91, GALLE_SI),
+        # Off the way altogether.
+        place(5, "Galle", 7.50, 81.20, GALLE_SI),
+    )
+
+
+def test_middle_timing_points_are_matched_to_towns_along_the_way():
+    towns = middle_towns_fixture()
+    colombo, matara = towns.named("Colombo"), towns.named("Matara")
+    half = Half(COLOMBO_SHEET, MATARA_SI, [435], [(GALLE_SHEET, 100), (MATARA_SI, 200)])
+    found = middle_towns(half, corridor(towns, colombo, matara), towns)
+    assert [(town.id, minute) for town, minute in found] == [("n3", 100)]
+    # A header no town along the way matches is left out.
+    half.points[0] = ("x", 100)
+    assert middle_towns(half, corridor(towns, colombo, matara), towns) == []
+
+
+def test_a_town_back_from_either_end_or_past_it_is_not_on_the_way():
+    towns = colombo_matara(
+        # A tenth of the way past Matara: little further to go round, but no
+        # bus to Matara gets there first.
+        place(3, "Galle", 5.852, 80.609, GALLE_SI),
+        # A tenth of the way back from Colombo.
+        place(4, "Galle", 7.028, 79.781, GALLE_SI),
+        place(5, "Galle", 6.44, 80.195, GALLE_SI),
+    )
+    along = corridor(towns, towns.named("Colombo"), towns.named("Matara"))
+    assert [(a.town.id, round(a.share, 2), round(a.detour, 2)) for a in along] == [("n5", 0.5, 1.0)]
+
+
+OTHER_SHEET = "මගලද"  # another place, sharing two of Galle's letters
+
+
+def test_a_header_keeps_its_letters_in_its_towns_name():
+    galle = {"si": GALLE_SI, "en": "Galle"}
+    assert kept(GALLE_SHEET, galle) == 1.0
+    assert kept("Gale", galle) == 1.0
+    # Alike, but half its letters aren't Galle's: not Galle.
+    assert likeness(OTHER_SHEET, galle) >= 0.6
+    assert kept(OTHER_SHEET, galle) == 0.5
+    towns = middle_towns_fixture()
+    half = Half(COLOMBO_SHEET, MATARA_SI, [435], [(OTHER_SHEET, 100), (MATARA_SI, 200)])
+    along = corridor(towns, towns.named("Colombo"), towns.named("Matara"))
+    assert middle_towns(half, along, towns) == []
+
+
+def test_of_two_alike_towns_the_one_on_the_way_wins():
+    towns = colombo_matara(
+        # On the straight way, a little short of where the time puts it.
+        place(3, "Galle", 6.5184, 80.1398, GALLE_SI),
+        # Just where the time puts it, but well out of the way.
+        place(4, "Galle", 6.7264, 80.6017, GALLE_SI),
+    )
+    half = Half(COLOMBO_SHEET, MATARA_SI, [435], [(GALLE_SHEET, 100), (MATARA_SI, 200)])
+    along = corridor(towns, towns.named("Colombo"), towns.named("Matara"))
+    found = middle_towns(half, along, towns)
+    assert [(town.id, minute) for town, minute in found] == [("n3", 100)]
+
+
+def test_build_gives_each_direction_its_middle_towns(monkeypatch):
+    towns = middle_towns_fixture()
+    table = [
+        [
+            "NTC",
+            COLOMBO_SHEET,
+            GALLE_SHEET,
+            MATARA_SI,
+            "",
+            "NTC",
+            MATARA_SI,
+            GALLE_SHEET,
+            COLOMBO_SHEET,
+        ],
+        ["T1", "7:00", "8:40", "10:20", "", "T2", "6:00", "7:40", "9:20"],
+    ]
+    monkeypatch.setattr(ntc_sheets, "read_pdf", lambda data: ("", [table]))
+    files = [DriveFile("a", "2 Colombo - Matara (N).pdf", "Normalway")]
+    (route,), _ = build(files, towns, lambda url: b"%PDF")
+    to_matara, to_colombo = route["directions"]
+    assert to_matara["stops"] == [[6.44, 80.195, "Galle", 100]]
+    assert to_colombo["stops"] == [[6.44, 80.195, "Galle", 100]]
 
 
 def test_the_same_sheet_in_two_folders_is_one_route(monkeypatch):

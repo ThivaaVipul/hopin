@@ -19,7 +19,8 @@ class BusOption extends Equatable {
 
   final RouteDirection direction;
 
-  /// Where to get on: a stop of the route, its bus stand, or the road.
+  /// Where to get on: a stop of the route, its bus stand, a town on its way,
+  /// or the road.
   final GeoPoint boardAt;
   final String? boardName;
 
@@ -48,6 +49,11 @@ class WhichBus {
   /// How far you may walk to the route's road, at each end.
   static const walk = 500.0;
 
+  /// On a trip this long, the bus may be this far from you (a walk or a tuk
+  /// to the main road), and from where you are going.
+  static const farTrip = 10000.0;
+  static const farWalk = 2000.0;
+
   /// Closer than this, walking beats any bus.
   static const shortest = 800.0;
 
@@ -55,12 +61,13 @@ class WhichBus {
   static const ride = 300.0;
 
   /// A long-distance route counts from this far around its towns, or a third
-  /// of the way between them on a shorter one.
+  /// of the way to the next of its towns.
   static const town = 10000.0;
 
-  /// A place this close to a route's end town is served by it even where the
-  /// mapped road stops short of the town (OpenStreetMap often maps only part
-  /// of a route); the same for getting on near its first town.
+  /// A place this close to a route's end town is served by it even where its
+  /// road stops short of the town (OpenStreetMap often maps only part of a
+  /// route, and a guess may be missing); the same for getting on near its
+  /// first town.
   static const endTown = 2000.0;
 
   List<BusOption> find(
@@ -69,12 +76,14 @@ class WhichBus {
     required GeoPoint to,
     required DateTime now,
   }) {
-    if (from.distanceTo(to) < shortest) return const [];
+    final trip = from.distanceTo(to);
+    if (trip < shortest) return const [];
+    final reach = trip >= farTrip ? farWalk : walk;
     final found = <String, BusOption>{};
     for (final direction in directions) {
       final option = direction.long
           ? _byTowns(direction, from, to, now)
-          : _byRoad(direction, from, to, now);
+          : _byRoad(direction, from, to, now, reach);
       if (option == null) continue;
       // The same bus from two sources (or two mappings) shows once.
       final board = direction.board;
@@ -103,35 +112,38 @@ class WhichBus {
     GeoPoint from,
     GeoPoint to,
     DateTime now,
+    double reach,
   ) {
-    final path = direction.path;
+    // The whole road, its guessed parts too.
+    final road = _roads[direction] ??= direction.road;
     // Getting on in the first town or off in the end town, past where the
-    // mapped road stops short of it.
-    final inStart = _pastRoad(direction.start, path.first, from);
-    final inEnd = _pastRoad(direction.end, path.last, to);
-    final box = _boxes[direction] ??= _Box.around(path);
-    if ((!inStart && !box.near(from)) || (!inEnd && !box.near(to))) {
+    // road stops short of it.
+    final inStart = _pastRoad(direction.start, road.first, from);
+    final inEnd = _pastRoad(direction.end, road.last, to);
+    final box = _boxes[direction] ??= _Box.around(road);
+    if ((!inStart && !box.near(from, reach)) ||
+        (!inEnd && !box.near(to, reach))) {
       return null;
     }
-    final on = roadSpot(path, from);
-    final off = roadSpot(path, to);
-    final boardsOnRoad = on.away <= walk;
-    final leavesOnRoad = off.away <= walk;
+    final on = roadSpot(road, from);
+    final off = roadSpot(road, to);
+    final boardsOnRoad = on.away <= reach;
+    final leavesOnRoad = off.away <= reach;
     if (!boardsOnRoad && !inStart) return null;
     if (!leavesOnRoad && !inEnd) return null;
     final onAlong = boardsOnRoad ? on.along : 0.0;
     final offAlong = leavesOnRoad
         ? off.along
-        : (_lengths[direction] ??= _length(path)) +
-              direction.end!.distanceTo(path.last);
+        : (_lengths[direction] ??= _length(road)) +
+              direction.end!.distanceTo(road.last);
     if (offAlong - onAlong < ride) return null;
     // Board at the route's stop nearest you, before where you get off.
     final alongs = _stopAlongs[direction] ??= [
-      for (final stop in direction.stops) roadSpot(path, stop.point).along,
+      for (final stop in direction.stops) roadSpot(road, stop.point).along,
     ];
     RouteStop? stop;
     if (boardsOnRoad) {
-      var best = walk;
+      var best = math.min(reach, on.away + walk);
       for (var i = 0; i < direction.stops.length; i++) {
         final candidate = direction.stops[i];
         final away = candidate.point.distanceTo(from);
@@ -157,8 +169,8 @@ class WhichBus {
     );
   }
 
-  /// Whether [point] is near a route's [town] while the mapped road ends
-  /// short of it, at [roadEnd].
+  /// Whether [point] is near a route's [town] while its road ends short of
+  /// it, at [roadEnd].
   static bool _pastRoad(GeoPoint? town, GeoPoint roadEnd, GeoPoint point) =>
       town != null &&
       point.distanceTo(town) <= endTown &&
@@ -194,6 +206,10 @@ class WhichBus {
     return nearest ?? 0;
   }
 
+  /// A long-distance route by its towns: its start, the towns on its way
+  /// (with their minutes) and its end. You get on at one of them and off at a
+  /// later one, each within [town], or a third of the way to its nearest
+  /// neighbour.
   BusOption? _byTowns(
     RouteDirection direction,
     GeoPoint from,
@@ -203,19 +219,45 @@ class WhichBus {
     final start = direction.start;
     final end = direction.end;
     if (start == null || end == null) return null;
-    final around = math.min(town, start.distanceTo(end) / 3);
-    if (from.distanceTo(start) > around || to.distanceTo(end) > around) {
-      return null;
+    final towns = [
+      (point: start, minutes: 0, name: null as String?),
+      for (final stop in direction.stops)
+        if (stop.minutes != null)
+          (point: stop.point, minutes: stop.minutes!, name: stop.name),
+      (point: end, minutes: -1, name: null as String?),
+    ];
+    double around(int i) {
+      var nearest = double.infinity;
+      if (i > 0) nearest = towns[i].point.distanceTo(towns[i - 1].point);
+      if (i + 1 < towns.length) {
+        nearest = math.min(
+          nearest,
+          towns[i].point.distanceTo(towns[i + 1].point),
+        );
+      }
+      return math.min(town, nearest / 3);
     }
-    final stand = direction.stand;
-    final boardAt = stand?.point ?? start;
-    final times = _timesAt(direction, 0, now);
+
+    final on = [
+      for (var i = 0; i + 1 < towns.length; i++)
+        if (from.distanceTo(towns[i].point) <= around(i)) i,
+    ].firstOrNull;
+    if (on == null) return null;
+    final off = [
+      for (var i = towns.length - 1; i > on; i--)
+        if (to.distanceTo(towns[i].point) <= around(i)) i,
+    ].firstOrNull;
+    if (off == null) return null;
+    // At its start, the bus leaves from its stand; on its way, from the town.
+    final stand = on == 0 ? direction.stand : null;
+    final boardAt = stand?.point ?? towns[on].point;
+    final times = _timesAt(direction, towns[on].minutes, now);
     return BusOption(
       direction: direction,
       boardAt: boardAt,
-      boardName: stand?.name,
+      boardName: stand?.name ?? towns[on].name,
       walkTo: from.distanceTo(boardAt),
-      walkFrom: to.distanceTo(end),
+      walkFrom: to.distanceTo(towns[off].point),
       next: times.next,
       today: times.today,
     );
@@ -250,33 +292,34 @@ class WhichBus {
   }
 }
 
-/// Worked out once per direction: its stops' metres along the road, and the
-/// box around its road.
+/// Worked out once per direction: its whole road, its stops' metres along
+/// it, the box around it, and its length.
+final _roads = Expando<List<GeoPoint>>('roads');
 final _stopAlongs = Expando<List<double>>('stop alongs');
 final _boxes = Expando<_Box>('road boxes');
 final _lengths = Expando<double>('road lengths');
 
-/// A road's bounding box, widened by a walk, for a quick no.
+/// A road's bounding box, for a quick no.
 class _Box {
   _Box.around(List<GeoPoint> path)
-    : south = path.map((p) => p.lat).reduce(math.min) - _margin,
-      north = path.map((p) => p.lat).reduce(math.max) + _margin,
-      west = path.map((p) => p.lng).reduce(math.min) - _margin,
-      east = path.map((p) => p.lng).reduce(math.max) + _margin;
-
-  /// About a walk (500 m) in degrees, a little over.
-  static const _margin = 0.006;
+    : south = path.map((p) => p.lat).reduce(math.min),
+      north = path.map((p) => p.lat).reduce(math.max),
+      west = path.map((p) => p.lng).reduce(math.min),
+      east = path.map((p) => p.lng).reduce(math.max);
 
   final double south;
   final double north;
   final double west;
   final double east;
 
-  bool near(GeoPoint point) =>
-      point.lat >= south &&
-      point.lat <= north &&
-      point.lng >= west &&
-      point.lng <= east;
+  /// Whether [point] is within [metres] of the box, a little over.
+  bool near(GeoPoint point, double metres) {
+    final margin = metres / 100000;
+    return point.lat >= south - margin &&
+        point.lat <= north + margin &&
+        point.lng >= west - margin &&
+        point.lng <= east + margin;
+  }
 }
 
 /// Where [point] falls on [path]: metres along it to the nearest spot, how far

@@ -37,6 +37,15 @@ def _xy(origin: Point, point: Point) -> tuple[float, float]:
     )
 
 
+def fraction_along(a: Point, b: Point, point: Point) -> float:
+    """Where point falls on the straight way from a to b: 0 at a, 1 at b,
+    below 0 back from a and above 1 past b."""
+    bx, by = _xy(a, b)
+    px, py = _xy(a, point)
+    span = bx * bx + by * by
+    return 0.0 if span == 0 else (px * bx + py * by) / span
+
+
 def _segment(p: tuple[float, float], a: tuple[float, float], b: tuple[float, float]):
     """Where p falls on segment a-b: (fraction along it, distance from it)."""
     dx, dy = b[0] - a[0], b[1] - a[1]

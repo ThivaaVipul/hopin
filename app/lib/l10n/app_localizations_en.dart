@@ -538,5 +538,5 @@ class AppLocalizationsEn extends AppLocalizations {
   String get classExpressway => 'Expressway';
 
   @override
-  String get routeCredits => 'Routes: OpenStreetMap, NTC, LMT';
+  String get routeCredits => 'Routes: OpenStreetMap, OSRM, NTC, LMT';
 }

@@ -156,6 +156,55 @@ void main() {
     );
   });
 
+  test('a route mapped only part of the way still goes to its end town', () {
+    // Mapped for about 5.5 km; its end town 3.3 km past where that stops.
+    const short = RouteDirection(
+      routeId: 'osm:9',
+      source: RouteSource.osm,
+      number: '9',
+      board: PlaceNames(en: 'North'),
+      origin: PlaceNames(en: 'South'),
+      path: [GeoPoint(6.90, 79.85), GeoPoint(6.95, 79.85)],
+      start: GeoPoint(6.90, 79.85),
+      end: GeoPoint(6.98, 79.85),
+    );
+    final found = bus.find(
+      [short],
+      from: home,
+      to: const GeoPoint(6.985, 79.851),
+      now: now,
+    );
+    expect(found.single.walkFrom, closeTo(567, 20));
+    // Not a place off the road and well away from the town.
+    expect(
+      bus.find([short], from: home, to: const GeoPoint(6.97, 79.88), now: now),
+      isEmpty,
+    );
+  });
+
+  test('a route mapped from part way can be caught in its first town', () {
+    const late = RouteDirection(
+      routeId: 'osm:9',
+      source: RouteSource.osm,
+      number: '9',
+      board: PlaceNames(en: 'North'),
+      origin: PlaceNames(en: 'South'),
+      path: [GeoPoint(6.92, 79.85), GeoPoint(6.97, 79.85)],
+      start: GeoPoint(6.90, 79.85),
+      end: GeoPoint(6.97, 79.85),
+    );
+    final option = bus
+        .find(
+          [late],
+          from: const GeoPoint(6.901, 79.851),
+          to: const GeoPoint(6.95, 79.8505),
+          now: now,
+        )
+        .single;
+    expect(option.boardAt, const GeoPoint(6.90, 79.85));
+    expect(option.boardName, 'South');
+  });
+
   test('nothing for a walk', () {
     expect(
       bus.find(

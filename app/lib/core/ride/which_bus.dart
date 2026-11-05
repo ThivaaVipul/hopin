@@ -58,6 +58,11 @@ class WhichBus {
   /// of the way between them on a shorter one.
   static const town = 10000.0;
 
+  /// A place this close to a route's end town is served by it even where the
+  /// mapped road stops short of the town (OpenStreetMap often maps only part
+  /// of a route); the same for getting on near its first town.
+  static const endTown = 2000.0;
+
   List<BusOption> find(
     Iterable<RouteDirection> directions, {
     required GeoPoint from,
@@ -100,38 +105,71 @@ class WhichBus {
     DateTime now,
   ) {
     final path = direction.path;
+    // Getting on in the first town or off in the end town, past where the
+    // mapped road stops short of it.
+    final inStart = _pastRoad(direction.start, path.first, from);
+    final inEnd = _pastRoad(direction.end, path.last, to);
     final box = _boxes[direction] ??= _Box.around(path);
-    if (!box.near(from) || !box.near(to)) return null;
+    if ((!inStart && !box.near(from)) || (!inEnd && !box.near(to))) {
+      return null;
+    }
     final on = roadSpot(path, from);
-    if (on.away > walk) return null;
     final off = roadSpot(path, to);
-    if (off.away > walk || off.along - on.along < ride) return null;
+    final boardsOnRoad = on.away <= walk;
+    final leavesOnRoad = off.away <= walk;
+    if (!boardsOnRoad && !inStart) return null;
+    if (!leavesOnRoad && !inEnd) return null;
+    final onAlong = boardsOnRoad ? on.along : 0.0;
+    final offAlong = leavesOnRoad
+        ? off.along
+        : (_lengths[direction] ??= _length(path)) +
+              direction.end!.distanceTo(path.last);
+    if (offAlong - onAlong < ride) return null;
     // Board at the route's stop nearest you, before where you get off.
     final alongs = _stopAlongs[direction] ??= [
       for (final stop in direction.stops) roadSpot(path, stop.point).along,
     ];
     RouteStop? stop;
-    var best = walk;
-    for (var i = 0; i < direction.stops.length; i++) {
-      final candidate = direction.stops[i];
-      final away = candidate.point.distanceTo(from);
-      if (away <= best && alongs[i] < off.along - ride / 2) {
-        best = away;
-        stop = candidate;
+    if (boardsOnRoad) {
+      var best = walk;
+      for (var i = 0; i < direction.stops.length; i++) {
+        final candidate = direction.stops[i];
+        final away = candidate.point.distanceTo(from);
+        if (away <= best && alongs[i] < offAlong - ride / 2) {
+          best = away;
+          stop = candidate;
+        }
       }
     }
-    final boardAt = stop?.point ?? on.point;
+    final boardAt = stop?.point ?? (boardsOnRoad ? on.point : direction.start!);
     final minutes = _minutesAt(direction, alongs, stop, on);
     final times = _timesAt(direction, minutes, now);
+    final origin = direction.origin;
     return BusOption(
       direction: direction,
       boardAt: boardAt,
-      boardName: stop?.name,
+      // In its first town: board there, wherever in town it stops.
+      boardName: stop?.name ?? (boardsOnRoad ? null : origin.en ?? origin.ta),
       walkTo: from.distanceTo(boardAt),
-      walkFrom: off.away,
+      walkFrom: leavesOnRoad ? off.away : to.distanceTo(direction.end!),
       next: times.next,
       today: times.today,
     );
+  }
+
+  /// Whether [point] is near a route's [town] while the mapped road ends
+  /// short of it, at [roadEnd].
+  static bool _pastRoad(GeoPoint? town, GeoPoint roadEnd, GeoPoint point) =>
+      town != null &&
+      point.distanceTo(town) <= endTown &&
+      roadEnd.distanceTo(town) > walk;
+
+  static double _length(List<GeoPoint> path) {
+    var total = 0.0;
+    for (var i = 0; i + 1 < path.length; i++) {
+      total += path[i].distanceTo(path[i + 1]);
+    }
+    return total;
   }
 
   /// Minutes from the first stop to where you board: that stop's, or the
@@ -216,6 +254,7 @@ class WhichBus {
 /// box around its road.
 final _stopAlongs = Expando<List<double>>('stop alongs');
 final _boxes = Expando<_Box>('road boxes');
+final _lengths = Expando<double>('road lengths');
 
 /// A road's bounding box, widened by a walk, for a quick no.
 class _Box {

@@ -190,12 +190,20 @@ def _directions_to(
             continue
         _, road, origin = max(roads, key=lambda item: item[0])
         road = simplify(road, 10.0)
+        # The two towns themselves: a route mapped only part of the way still
+        # goes to its end town, past where its road stops.
+        start = origin.town.point if origin.town else road[0]
+        end = destination.town.point if destination.town else road[-1]
         directions.append(
             {
                 "board": destination.names,
                 "origin": origin.names,
                 "path": encode_polyline(road),
                 "stops": _stops(relation, road),
+                "ends": [
+                    [round(start[0], 5), round(start[1], 5)],
+                    [round(end[0], 5), round(end[1], 5)],
+                ],
             }
         )
     return directions

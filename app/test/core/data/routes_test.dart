@@ -72,18 +72,26 @@ void main() {
     now = now.add(const Duration(hours: 12));
     await routes.refresh(files);
     expect(asked, hasLength(3));
-    // A day on: only the file the release didn't have.
+    // A day on: all of them, each with what the phone has.
     now = now.add(const Duration(hours: 12));
     await routes.refresh(files);
-    expect(asked.skip(3).map((r) => r.url.pathSegments.last), [
-      'ntc-routes.json',
-    ]);
-    // A week on: all of them, each with what the phone has.
-    now = now.add(const Duration(days: 7));
-    await routes.refresh(files);
-    expect(asked, hasLength(7));
-    expect(asked[4].headers['If-None-Match'], '"osm-1"');
-    expect(asked[5].headers.containsKey('If-None-Match'), isFalse);
+    expect(asked, hasLength(6));
+    expect(asked[3].headers['If-None-Match'], '"osm-1"');
+    // The file the release didn't have is asked for without one.
+    expect(asked[4].headers.containsKey('If-None-Match'), isFalse);
+  });
+
+  test('an app update asks for every file at once', () async {
+    final asked = <http.Request>[];
+    final files = routeFilesWith({
+      'osm': routeFile('osm', '101'),
+    }, asked: asked);
+    await RoutesRepository(db, clock: () => now, build: 10001).refresh(files);
+    expect(asked, hasLength(3));
+    await RoutesRepository(db, clock: () => now, build: 10001).refresh(files);
+    expect(asked, hasLength(3));
+    await RoutesRepository(db, clock: () => now, build: 10002).refresh(files);
+    expect(asked, hasLength(6));
   });
 
   test('an unchanged file keeps what the phone has', () async {

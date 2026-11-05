@@ -4213,6 +4213,600 @@ class RouteDataCompanion extends UpdateCompanion<RouteDataRow> {
   }
 }
 
+class $RouteNotesTable extends RouteNotes
+    with TableInfo<$RouteNotesTable, RouteNoteRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RouteNotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _routeMeta = const VerificationMeta('route');
+  @override
+  late final GeneratedColumn<String> route = GeneratedColumn<String>(
+    'route',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _directionMeta = const VerificationMeta(
+    'direction',
+  );
+  @override
+  late final GeneratedColumn<String> direction = GeneratedColumn<String>(
+    'direction',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _taMeta = const VerificationMeta('ta');
+  @override
+  late final GeneratedColumn<String> ta = GeneratedColumn<String>(
+    'ta',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _siMeta = const VerificationMeta('si');
+  @override
+  late final GeneratedColumn<String> si = GeneratedColumn<String>(
+    'si',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _enMeta = const VerificationMeta('en');
+  @override
+  late final GeneratedColumn<String> en = GeneratedColumn<String>(
+    'en',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _removedMeta = const VerificationMeta(
+    'removed',
+  );
+  @override
+  late final GeneratedColumn<bool> removed = GeneratedColumn<bool>(
+    'removed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("removed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _byMeta = const VerificationMeta('by');
+  @override
+  late final GeneratedColumn<String> by = GeneratedColumn<String>(
+    'by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pendingSinceMeta = const VerificationMeta(
+    'pendingSince',
+  );
+  @override
+  late final GeneratedColumn<int> pendingSince = GeneratedColumn<int>(
+    'pending_since',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    route,
+    direction,
+    ta,
+    si,
+    en,
+    removed,
+    by,
+    updatedAt,
+    pendingSince,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'route_notes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RouteNoteRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('route')) {
+      context.handle(
+        _routeMeta,
+        route.isAcceptableOrUnknown(data['route']!, _routeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_routeMeta);
+    }
+    if (data.containsKey('direction')) {
+      context.handle(
+        _directionMeta,
+        direction.isAcceptableOrUnknown(data['direction']!, _directionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_directionMeta);
+    }
+    if (data.containsKey('ta')) {
+      context.handle(_taMeta, ta.isAcceptableOrUnknown(data['ta']!, _taMeta));
+    }
+    if (data.containsKey('si')) {
+      context.handle(_siMeta, si.isAcceptableOrUnknown(data['si']!, _siMeta));
+    }
+    if (data.containsKey('en')) {
+      context.handle(_enMeta, en.isAcceptableOrUnknown(data['en']!, _enMeta));
+    }
+    if (data.containsKey('removed')) {
+      context.handle(
+        _removedMeta,
+        removed.isAcceptableOrUnknown(data['removed']!, _removedMeta),
+      );
+    }
+    if (data.containsKey('by')) {
+      context.handle(_byMeta, by.isAcceptableOrUnknown(data['by']!, _byMeta));
+    } else if (isInserting) {
+      context.missing(_byMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('pending_since')) {
+      context.handle(
+        _pendingSinceMeta,
+        pendingSince.isAcceptableOrUnknown(
+          data['pending_since']!,
+          _pendingSinceMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RouteNoteRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RouteNoteRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      route: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}route'],
+      )!,
+      direction: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}direction'],
+      )!,
+      ta: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ta'],
+      ),
+      si: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}si'],
+      ),
+      en: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}en'],
+      ),
+      removed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}removed'],
+      )!,
+      by: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}by'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      pendingSince: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pending_since'],
+      ),
+    );
+  }
+
+  @override
+  $RouteNotesTable createAlias(String alias) {
+    return $RouteNotesTable(attachedDatabase, alias);
+  }
+}
+
+class RouteNoteRow extends DataClass implements Insertable<RouteNoteRow> {
+  final String id;
+
+  /// The route's id and the direction's key (RouteDirection.noteKey).
+  final String route;
+  final String direction;
+
+  /// Board lines in place of the file's; null keeps the file's.
+  final String? ta;
+  final String? si;
+  final String? en;
+  final bool removed;
+  final String by;
+  final int updatedAt;
+  final int? pendingSince;
+  const RouteNoteRow({
+    required this.id,
+    required this.route,
+    required this.direction,
+    this.ta,
+    this.si,
+    this.en,
+    required this.removed,
+    required this.by,
+    required this.updatedAt,
+    this.pendingSince,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['route'] = Variable<String>(route);
+    map['direction'] = Variable<String>(direction);
+    if (!nullToAbsent || ta != null) {
+      map['ta'] = Variable<String>(ta);
+    }
+    if (!nullToAbsent || si != null) {
+      map['si'] = Variable<String>(si);
+    }
+    if (!nullToAbsent || en != null) {
+      map['en'] = Variable<String>(en);
+    }
+    map['removed'] = Variable<bool>(removed);
+    map['by'] = Variable<String>(by);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || pendingSince != null) {
+      map['pending_since'] = Variable<int>(pendingSince);
+    }
+    return map;
+  }
+
+  RouteNotesCompanion toCompanion(bool nullToAbsent) {
+    return RouteNotesCompanion(
+      id: Value(id),
+      route: Value(route),
+      direction: Value(direction),
+      ta: ta == null && nullToAbsent ? const Value.absent() : Value(ta),
+      si: si == null && nullToAbsent ? const Value.absent() : Value(si),
+      en: en == null && nullToAbsent ? const Value.absent() : Value(en),
+      removed: Value(removed),
+      by: Value(by),
+      updatedAt: Value(updatedAt),
+      pendingSince: pendingSince == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pendingSince),
+    );
+  }
+
+  factory RouteNoteRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RouteNoteRow(
+      id: serializer.fromJson<String>(json['id']),
+      route: serializer.fromJson<String>(json['route']),
+      direction: serializer.fromJson<String>(json['direction']),
+      ta: serializer.fromJson<String?>(json['ta']),
+      si: serializer.fromJson<String?>(json['si']),
+      en: serializer.fromJson<String?>(json['en']),
+      removed: serializer.fromJson<bool>(json['removed']),
+      by: serializer.fromJson<String>(json['by']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      pendingSince: serializer.fromJson<int?>(json['pendingSince']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'route': serializer.toJson<String>(route),
+      'direction': serializer.toJson<String>(direction),
+      'ta': serializer.toJson<String?>(ta),
+      'si': serializer.toJson<String?>(si),
+      'en': serializer.toJson<String?>(en),
+      'removed': serializer.toJson<bool>(removed),
+      'by': serializer.toJson<String>(by),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'pendingSince': serializer.toJson<int?>(pendingSince),
+    };
+  }
+
+  RouteNoteRow copyWith({
+    String? id,
+    String? route,
+    String? direction,
+    Value<String?> ta = const Value.absent(),
+    Value<String?> si = const Value.absent(),
+    Value<String?> en = const Value.absent(),
+    bool? removed,
+    String? by,
+    int? updatedAt,
+    Value<int?> pendingSince = const Value.absent(),
+  }) => RouteNoteRow(
+    id: id ?? this.id,
+    route: route ?? this.route,
+    direction: direction ?? this.direction,
+    ta: ta.present ? ta.value : this.ta,
+    si: si.present ? si.value : this.si,
+    en: en.present ? en.value : this.en,
+    removed: removed ?? this.removed,
+    by: by ?? this.by,
+    updatedAt: updatedAt ?? this.updatedAt,
+    pendingSince: pendingSince.present ? pendingSince.value : this.pendingSince,
+  );
+  RouteNoteRow copyWithCompanion(RouteNotesCompanion data) {
+    return RouteNoteRow(
+      id: data.id.present ? data.id.value : this.id,
+      route: data.route.present ? data.route.value : this.route,
+      direction: data.direction.present ? data.direction.value : this.direction,
+      ta: data.ta.present ? data.ta.value : this.ta,
+      si: data.si.present ? data.si.value : this.si,
+      en: data.en.present ? data.en.value : this.en,
+      removed: data.removed.present ? data.removed.value : this.removed,
+      by: data.by.present ? data.by.value : this.by,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      pendingSince: data.pendingSince.present
+          ? data.pendingSince.value
+          : this.pendingSince,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RouteNoteRow(')
+          ..write('id: $id, ')
+          ..write('route: $route, ')
+          ..write('direction: $direction, ')
+          ..write('ta: $ta, ')
+          ..write('si: $si, ')
+          ..write('en: $en, ')
+          ..write('removed: $removed, ')
+          ..write('by: $by, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('pendingSince: $pendingSince')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    route,
+    direction,
+    ta,
+    si,
+    en,
+    removed,
+    by,
+    updatedAt,
+    pendingSince,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RouteNoteRow &&
+          other.id == this.id &&
+          other.route == this.route &&
+          other.direction == this.direction &&
+          other.ta == this.ta &&
+          other.si == this.si &&
+          other.en == this.en &&
+          other.removed == this.removed &&
+          other.by == this.by &&
+          other.updatedAt == this.updatedAt &&
+          other.pendingSince == this.pendingSince);
+}
+
+class RouteNotesCompanion extends UpdateCompanion<RouteNoteRow> {
+  final Value<String> id;
+  final Value<String> route;
+  final Value<String> direction;
+  final Value<String?> ta;
+  final Value<String?> si;
+  final Value<String?> en;
+  final Value<bool> removed;
+  final Value<String> by;
+  final Value<int> updatedAt;
+  final Value<int?> pendingSince;
+  final Value<int> rowid;
+  const RouteNotesCompanion({
+    this.id = const Value.absent(),
+    this.route = const Value.absent(),
+    this.direction = const Value.absent(),
+    this.ta = const Value.absent(),
+    this.si = const Value.absent(),
+    this.en = const Value.absent(),
+    this.removed = const Value.absent(),
+    this.by = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.pendingSince = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RouteNotesCompanion.insert({
+    required String id,
+    required String route,
+    required String direction,
+    this.ta = const Value.absent(),
+    this.si = const Value.absent(),
+    this.en = const Value.absent(),
+    this.removed = const Value.absent(),
+    required String by,
+    required int updatedAt,
+    this.pendingSince = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       route = Value(route),
+       direction = Value(direction),
+       by = Value(by),
+       updatedAt = Value(updatedAt);
+  static Insertable<RouteNoteRow> custom({
+    Expression<String>? id,
+    Expression<String>? route,
+    Expression<String>? direction,
+    Expression<String>? ta,
+    Expression<String>? si,
+    Expression<String>? en,
+    Expression<bool>? removed,
+    Expression<String>? by,
+    Expression<int>? updatedAt,
+    Expression<int>? pendingSince,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (route != null) 'route': route,
+      if (direction != null) 'direction': direction,
+      if (ta != null) 'ta': ta,
+      if (si != null) 'si': si,
+      if (en != null) 'en': en,
+      if (removed != null) 'removed': removed,
+      if (by != null) 'by': by,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (pendingSince != null) 'pending_since': pendingSince,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RouteNotesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? route,
+    Value<String>? direction,
+    Value<String?>? ta,
+    Value<String?>? si,
+    Value<String?>? en,
+    Value<bool>? removed,
+    Value<String>? by,
+    Value<int>? updatedAt,
+    Value<int?>? pendingSince,
+    Value<int>? rowid,
+  }) {
+    return RouteNotesCompanion(
+      id: id ?? this.id,
+      route: route ?? this.route,
+      direction: direction ?? this.direction,
+      ta: ta ?? this.ta,
+      si: si ?? this.si,
+      en: en ?? this.en,
+      removed: removed ?? this.removed,
+      by: by ?? this.by,
+      updatedAt: updatedAt ?? this.updatedAt,
+      pendingSince: pendingSince ?? this.pendingSince,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (route.present) {
+      map['route'] = Variable<String>(route.value);
+    }
+    if (direction.present) {
+      map['direction'] = Variable<String>(direction.value);
+    }
+    if (ta.present) {
+      map['ta'] = Variable<String>(ta.value);
+    }
+    if (si.present) {
+      map['si'] = Variable<String>(si.value);
+    }
+    if (en.present) {
+      map['en'] = Variable<String>(en.value);
+    }
+    if (removed.present) {
+      map['removed'] = Variable<bool>(removed.value);
+    }
+    if (by.present) {
+      map['by'] = Variable<String>(by.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (pendingSince.present) {
+      map['pending_since'] = Variable<int>(pendingSince.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RouteNotesCompanion(')
+          ..write('id: $id, ')
+          ..write('route: $route, ')
+          ..write('direction: $direction, ')
+          ..write('ta: $ta, ')
+          ..write('si: $si, ')
+          ..write('en: $en, ')
+          ..write('removed: $removed, ')
+          ..write('by: $by, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('pendingSince: $pendingSince, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SettingsTable extends Settings
     with TableInfo<$SettingsTable, SettingRow> {
   @override
@@ -4432,6 +5026,7 @@ abstract class _$HopinDatabase extends GeneratedDatabase {
   late final $StopTilesTable stopTiles = $StopTilesTable(this);
   late final $StopNamesTable stopNames = $StopNamesTable(this);
   late final $RouteDataTable routeData = $RouteDataTable(this);
+  late final $RouteNotesTable routeNotes = $RouteNotesTable(this);
   late final $SettingsTable settings = $SettingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -4447,6 +5042,7 @@ abstract class _$HopinDatabase extends GeneratedDatabase {
     stopTiles,
     stopNames,
     routeData,
+    routeNotes,
     settings,
   ];
 }

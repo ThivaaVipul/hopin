@@ -2,8 +2,11 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hopin/core/data/local/database.dart';
+import 'package:hopin/core/data/pooled_sync.dart';
+import 'package:hopin/core/data/remote/remote.dart';
 import 'package:hopin/core/data/routes_repository.dart';
 import 'package:hopin/core/geo/geo.dart';
+import 'package:hopin/core/places/place.dart';
 import 'package:hopin/core/ride/polyline.dart';
 import 'package:hopin/core/ride/routes.dart';
 import 'package:hopin/core/search/route_files.dart';
@@ -47,7 +50,7 @@ void main() {
   setUp(() {
     db = memoryDatabase();
     now = DateTime.utc(2026, 11, 5, 8);
-    routes = RoutesRepository(db, clock: () => now);
+    routes = RoutesRepository(db, uid: 'r1', clock: () => now);
   });
 
   tearDown(() => db.close());
@@ -86,11 +89,26 @@ void main() {
     final files = routeFilesWith({
       'osm': routeFile('osm', '101'),
     }, asked: asked);
-    await RoutesRepository(db, clock: () => now, build: 10001).refresh(files);
+    await RoutesRepository(
+      db,
+      uid: 'r1',
+      clock: () => now,
+      build: 10001,
+    ).refresh(files);
     expect(asked, hasLength(3));
-    await RoutesRepository(db, clock: () => now, build: 10001).refresh(files);
+    await RoutesRepository(
+      db,
+      uid: 'r1',
+      clock: () => now,
+      build: 10001,
+    ).refresh(files);
     expect(asked, hasLength(3));
-    await RoutesRepository(db, clock: () => now, build: 10002).refresh(files);
+    await RoutesRepository(
+      db,
+      uid: 'r1',
+      clock: () => now,
+      build: 10002,
+    ).refresh(files);
     expect(asked, hasLength(6));
   });
 
@@ -131,5 +149,68 @@ void main() {
           RouteDataCompanion.insert(source: 'osm', body: '{', checkedAt: 0),
         );
     expect(await numbers(), isEmpty);
+  });
+
+  group("the riders' notes", () {
+    late FakeRemote remote;
+    late RouteNotesSync sync;
+
+    setUp(() async {
+      remote = FakeRemote();
+      sync = RouteNotesSync(db, remote);
+      routes.onChange = sync.push;
+      await routes.refresh(routeFilesWith({'osm': routeFile('osm', '9')}));
+      await sync.start();
+    });
+
+    tearDown(() => sync.stop());
+
+    test('board lines and a removal are shared notes', () async {
+      final noted = (await routes.watchNoted().first).single;
+      // The file's own English line is no change; Tamil is.
+      await routes.setBoard(noted, const PlaceNames(en: 'North', ta: 'வடக்கு'));
+      await pumpEventQueue();
+      expect(
+        (await routes.watch().first).single.board,
+        const PlaceNames(en: 'North', ta: 'வடக்கு'),
+      );
+      final edit = remote.puts.last;
+      expect(edit.$1, startsWith('routeNotes/'));
+      expect(edit.$2, {
+        'route': 'osm:9',
+        'direction': '>North',
+        'ta': 'வடக்கு',
+        'si': null,
+        'en': null,
+        'removed': false,
+        'by': 'r1',
+      });
+
+      now = now.add(const Duration(minutes: 1));
+      await routes.setRemoved([
+        (await routes.watchNoted().first).single,
+      ], removed: true);
+      await pumpEventQueue();
+      expect(await routes.watch().first, isEmpty);
+      final removed = (await routes.watchNoted().first).single;
+      expect(removed.removed, isTrue);
+      // Removing keeps the riders' lines, for when it's put back.
+      expect(removed.direction.board.ta, 'வடக்கு');
+      expect(remote.puts.last.$2['removed'], isTrue);
+    });
+
+    test("takes the other rider's notes", () async {
+      remote.push('routeNotes', [
+        RemoteDoc('n1', {
+          'route': 'osm:9',
+          'direction': '>North',
+          'ta': 'வடக்கு',
+          'removed': false,
+          'by': 'r2',
+        }, 5000000000),
+      ]);
+      await pumpEventQueue();
+      expect((await routes.watch().first).single.board.ta, 'வடக்கு');
+    });
   });
 }

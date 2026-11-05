@@ -172,4 +172,87 @@ void main() {
     expect(plainNumber('cm03'), 'CM03');
     expect(plainNumber('138/2'), isNot(plainNumber('138')));
   });
+
+  group("the riders' notes", () {
+    const north = RouteDirection(
+      routeId: 'osm:9',
+      source: RouteSource.osm,
+      number: '9',
+      board: PlaceNames(en: 'North', si: 'උතුර'),
+      origin: PlaceNames(en: 'South'),
+    );
+    const south = RouteDirection(
+      routeId: 'osm:9',
+      source: RouteSource.osm,
+      number: '9',
+      board: PlaceNames(en: 'South'),
+      origin: PlaceNames(en: 'North'),
+    );
+    final at = DateTime.utc(2026, 11, 5, 9);
+
+    test('a direction is known to notes by its ends as the file has them', () {
+      expect(north.noteKey, 'South>North');
+      expect(
+        const RouteDirection(
+          routeId: 'ntc:1:N',
+          source: RouteSource.ntc,
+          number: '1',
+          board: PlaceNames(ta: 'கண்டி'),
+        ).noteKey,
+        '>கண்டி',
+      );
+      // A rider's own board lines don't change it.
+      expect(
+        north.withBoard(const PlaceNames(en: 'Up')).noteKey,
+        north.noteKey,
+      );
+    });
+
+    test(
+      'the newest note gives a direction its board lines, or removes it',
+      () {
+        final noted = withNotes(
+          [north, south],
+          [
+            RouteNote(
+              route: 'osm:9',
+              direction: 'South>North',
+              at: at,
+              board: const PlaceNames(ta: 'வடக்கு'),
+            ),
+            RouteNote(
+              route: 'osm:9',
+              direction: 'South>North',
+              at: at.subtract(const Duration(days: 1)),
+              board: const PlaceNames(ta: 'old'),
+              removed: true,
+            ),
+            RouteNote(
+              route: 'osm:9',
+              direction: 'North>South',
+              at: at,
+              removed: true,
+            ),
+            // Another route's.
+            RouteNote(
+              route: 'osm:10',
+              direction: 'South>North',
+              at: at,
+              removed: true,
+            ),
+          ],
+        );
+        final [toNorth, toSouth] = noted;
+        // The note's lines stand in for the file's; the others stay.
+        expect(
+          toNorth.direction.board,
+          const PlaceNames(en: 'North', ta: 'வடக்கு', si: 'උතුර'),
+        );
+        expect((toNorth.edited, toNorth.removed), (true, false));
+        expect(toNorth.file, north);
+        expect((toSouth.edited, toSouth.removed), (false, true));
+        expect(toSouth.direction, south);
+      },
+    );
+  });
 }

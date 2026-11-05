@@ -22,6 +22,7 @@ import 'package:hopin/core/update/updates.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
 import 'package:hopin/features/home/widgets/share_parts.dart';
 import 'package:hopin/features/rides/widgets/ride_map.dart';
+import 'package:hopin/features/routes/widgets/route_map.dart';
 import 'package:hopin/features/update/cubit/update_cubit.dart';
 import 'package:hopin/l10n/app_localizations.dart';
 
@@ -44,6 +45,7 @@ class HopinApp extends StatefulWidget {
     required this.routeFiles,
     required this.mapBuilder,
     required this.rideMapBuilder,
+    required this.routeMapBuilder,
     required this.guide,
     required this.shares,
     required this.shareSheet,
@@ -61,6 +63,7 @@ class HopinApp extends StatefulWidget {
   final RouteFiles routeFiles;
   final MapBuilder mapBuilder;
   final RideMapBuilder rideMapBuilder;
+  final RouteMapBuilder routeMapBuilder;
   final GuideService guide;
   final Shares shares;
   final ShareSheet shareSheet;
@@ -109,6 +112,7 @@ class _HopinAppState extends State<HopinApp> {
       RepositoryProvider<RouteFiles>.value(value: widget.routeFiles),
       RepositoryProvider<MapBuilder>.value(value: widget.mapBuilder),
       RepositoryProvider<RideMapBuilder>.value(value: widget.rideMapBuilder),
+      RepositoryProvider<RouteMapBuilder>.value(value: widget.routeMapBuilder),
       RepositoryProvider<GuideService>.value(value: widget.guide),
       RepositoryProvider<Shares>.value(value: widget.shares),
       RepositoryProvider<ShareSheet>.value(value: widget.shareSheet),

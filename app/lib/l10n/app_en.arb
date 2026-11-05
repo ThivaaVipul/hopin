@@ -791,5 +791,103 @@
   "routeCredits": "Routes: OpenStreetMap, OSRM, NTC, LMT",
   "@routeCredits": {
     "description": "Where the bus routes and times come from, under the buses."
+  },
+  "routes": "Routes",
+  "@routes": {
+    "description": "Settings: the bus routes' section, and the Routes page's title."
+  },
+  "allRoutes": "All routes",
+  "@allRoutes": {
+    "description": "Settings: opens the list of bus routes."
+  },
+  "routeNumberHint": "Route number",
+  "@routeNumberHint": {
+    "description": "The search field on the Routes page."
+  },
+  "noRoutes": "No routes yet",
+  "@noRoutes": {
+    "description": "The Routes page before any route file has come."
+  },
+  "noRouteNumbered": "No route numbered {number}",
+  "@noRouteNumbered": {
+    "description": "The Routes page when no route has the number searched for.",
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "routeEnds": "{from} to {to}",
+  "@routeEnds": {
+    "description": "A route's two end towns.",
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "routeVia": "Via {towns}",
+  "@routeVia": {
+    "description": "The towns a long-distance route passes, in order.",
+    "placeholders": {
+      "towns": {
+        "type": "String"
+      }
+    }
+  },
+  "routeRemoved": "Removed",
+  "@routeRemoved": {
+    "description": "A route a rider removed, in the list of routes."
+  },
+  "removeRoute": "Remove",
+  "@removeRoute": {
+    "description": "Hides a route's buses for both riders."
+  },
+  "removeRouteQuestion": "Remove this route for both of you?",
+  "@removeRouteQuestion": {
+    "description": "Asked before a route is removed."
+  },
+  "putBackRoute": "Put back",
+  "@putBackRoute": {
+    "description": "Shows a removed route's buses again."
+  },
+  "editBoard": "Edit board",
+  "@editBoard": {
+    "description": "Opens one direction's board lines for editing."
+  },
+  "boardEdited": "Edited",
+  "@boardEdited": {
+    "description": "A board whose lines a rider changed."
+  },
+  "lineTamil": "Tamil",
+  "@lineTamil": {
+    "description": "The board's Tamil line, when editing it."
+  },
+  "lineSinhala": "Sinhala",
+  "@lineSinhala": {
+    "description": "The board's Sinhala line, when editing it."
+  },
+  "lineEnglish": "English",
+  "@lineEnglish": {
+    "description": "The board's English line, when editing it."
+  },
+  "routeSourceOsm": "OpenStreetMap",
+  "@routeSourceOsm": {
+    "description": "Where a route comes from: OpenStreetMap."
+  },
+  "routeSourceNtc": "NTC timetable",
+  "@routeSourceNtc": {
+    "description": "Where a route comes from: NTC's timetables."
+  },
+  "routeSourceLmt": "LMT Metro",
+  "@routeSourceLmt": {
+    "description": "Where a route comes from: LMT's Metro buses."
+  },
+  "guessedDashed": "Dashed: guessed road",
+  "@guessedDashed": {
+    "description": "Under a route's map when part of its road is guessed."
   }
 }

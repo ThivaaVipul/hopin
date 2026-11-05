@@ -7,6 +7,7 @@ import 'package:hopin/core/data/app_settings.dart';
 import 'package:hopin/core/data/local/database.dart';
 import 'package:hopin/core/data/places_repository.dart';
 import 'package:hopin/core/data/places_sync.dart';
+import 'package:hopin/core/data/pooled_sync.dart';
 import 'package:hopin/core/data/recents_repository.dart';
 import 'package:hopin/core/data/remote/remote.dart';
 import 'package:hopin/core/data/ride_namer.dart';
@@ -14,7 +15,6 @@ import 'package:hopin/core/data/rides_repository.dart';
 import 'package:hopin/core/data/routes_repository.dart';
 import 'package:hopin/core/data/settings_sync.dart';
 import 'package:hopin/core/data/stops_repository.dart';
-import 'package:hopin/core/data/stops_sync.dart';
 import 'package:hopin/core/search/nominatim.dart';
 
 typedef DatabaseOpener = HopinDatabase Function(String uid);
@@ -29,11 +29,12 @@ class Workspace {
       settings = SettingsStore(db),
       rides = RidesRepository(db, uid: uid),
       stops = StopsRepository(db, uid: uid),
-      routes = RoutesRepository(db),
+      routes = RoutesRepository(db, uid: uid),
       _sync = PlacesSync(db, remote, uid),
       _ridesSync = RidesSync(db, remote, uid),
       _haltsSync = HaltsSync(db, remote),
-      _notesSync = StopNotesSync(db, remote) {
+      _notesSync = StopNotesSync(db, remote),
+      _routeNotesSync = RouteNotesSync(db, remote) {
     appSettings = AppSettings(settings);
     _settingsSync = SettingsSync(appSettings, settings, remote, uid);
     places.onChange = () => unawaited(_sync.push());
@@ -43,6 +44,7 @@ class Workspace {
       unawaited(_haltsSync.push());
     };
     stops.onChange = () => unawaited(_notesSync.push());
+    routes.onChange = () => unawaited(_routeNotesSync.push());
   }
 
   final String uid;
@@ -57,7 +59,8 @@ class Workspace {
   /// OSM's and the learned bus stops (docs/PLAN.md, Sharing and stops).
   final StopsRepository stops;
 
-  /// The bus routes from the route files (docs/PLAN.md, Which bus).
+  /// The bus routes from the route files, with the riders' notes on them
+  /// (docs/PLAN.md, Which bus).
   final RoutesRepository routes;
 
   /// The language and alert stages, which follow the account.
@@ -67,6 +70,7 @@ class Workspace {
   final RidesSync _ridesSync;
   final HaltsSync _haltsSync;
   final StopNotesSync _notesSync;
+  final RouteNotesSync _routeNotesSync;
   RideNamer? _namer;
 
   /// Names the rides' ends; one for the workspace, so Home and the Rides page
@@ -86,6 +90,7 @@ class Workspace {
         _ridesSync.start(),
         _haltsSync.start(),
         _notesSync.start(),
+        _routeNotesSync.start(),
       ]);
     } else {
       await Future.wait([
@@ -94,6 +99,7 @@ class Workspace {
         _ridesSync.stop(),
         _haltsSync.stop(),
         _notesSync.stop(),
+        _routeNotesSync.stop(),
       ]);
     }
   }
@@ -105,6 +111,7 @@ class Workspace {
       _ridesSync.stop(),
       _haltsSync.stop(),
       _notesSync.stop(),
+      _routeNotesSync.stop(),
     ]);
     await _db.close();
   }

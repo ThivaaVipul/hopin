@@ -14,6 +14,7 @@ import 'package:hopin/core/share/shares.dart';
 import 'package:hopin/core/update/updates.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
 import 'package:hopin/features/rides/widgets/ride_map.dart';
+import 'package:hopin/features/routes/widgets/route_map.dart';
 import 'package:hopin/firebase_options.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -40,6 +41,7 @@ Future<void> main() async {
       routeFiles: RouteFiles(),
       mapBuilder: boardMap,
       rideMapBuilder: boardRideMap,
+      routeMapBuilder: boardRouteMap,
       guide: ForegroundGuideService(),
       shares: FirestoreShares(),
       shareSheet: (text) async =>

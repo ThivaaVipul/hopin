@@ -223,5 +223,33 @@ service cloud.firestore {
       allow create, update: if isRider() && validNote();
       allow delete: if false;
     }
+
+    // A change to one direction of a route from the route files (docs/PLAN.md,
+    // Which bus): its board lines (none keeps the file's) and whether it is
+    // removed, shared by both riders; the newest note for a direction wins.
+    // Either rider writes one; none is deleted.
+    match /routeNotes/{noteId} {
+      function optionalLine(data, key) {
+        return !(key in data) || data[key] == null || isString(data[key], 1, 120);
+      }
+
+      function validRouteNote() {
+        let data = request.resource.data;
+        return data.keys().hasOnly(['route', 'direction', 'ta', 'si', 'en', 'removed', 'by', 'updatedAt'])
+          && data.keys().hasAll(['route', 'direction', 'removed', 'by', 'updatedAt'])
+          && isString(data.route, 1, 120)
+          && isString(data.direction, 1, 200)
+          && optionalLine(data, 'ta')
+          && optionalLine(data, 'si')
+          && optionalLine(data, 'en')
+          && data.removed is bool
+          && data.by == request.auth.uid
+          && data.updatedAt == request.time;
+      }
+
+      allow read: if isRider();
+      allow create, update: if isRider() && validRouteNote();
+      allow delete: if false;
+    }
   }
 }

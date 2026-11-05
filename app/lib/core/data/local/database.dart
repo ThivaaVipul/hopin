@@ -163,6 +163,30 @@ class RouteData extends Table {
   Set<Column<Object>> get primaryKey => {source};
 }
 
+/// The riders' changes to the route files' directions (`routeNotes/{id}`,
+/// docs/PLAN.md, Which bus): board lines and removals, shared by both
+/// riders; the newest note on a direction wins.
+@DataClassName('RouteNoteRow')
+class RouteNotes extends Table {
+  TextColumn get id => text()();
+
+  /// The route's id and the direction's key (RouteDirection.noteKey).
+  TextColumn get route => text()();
+  TextColumn get direction => text()();
+
+  /// Board lines in place of the file's; null keeps the file's.
+  TextColumn get ta => text().nullable()();
+  TextColumn get si => text().nullable()();
+  TextColumn get en => text().nullable()();
+  BoolColumn get removed => boolean().withDefault(const Constant(false))();
+  TextColumn get by => text()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get pendingSince => integer().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 @DataClassName('SettingRow')
 class Settings extends Table {
   TextColumn get key => text()();
@@ -184,6 +208,7 @@ class Settings extends Table {
     StopTiles,
     StopNames,
     RouteData,
+    RouteNotes,
     Settings,
   ],
 )
@@ -194,7 +219,7 @@ class HopinDatabase extends _$HopinDatabase {
       HopinDatabase(driftDatabase(name: 'hopin_$uid'));
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   // Places are a copy of Firestore, so a new schema rebuilds the tables and the
   // sync fills them again from the start; unsynced writes are read back from

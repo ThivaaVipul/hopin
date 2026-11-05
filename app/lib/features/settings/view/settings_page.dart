@@ -182,6 +182,17 @@ class _SettingsViewState extends State<_SettingsView> {
               ),
             ),
             _Section(
+              title: l.routes,
+              child: _Line(
+                text: l.allRoutes,
+                onTap: () => unawaited(context.push<void>(Routes.routes)),
+                action: Icon(
+                  Icons.chevron_right,
+                  color: context.colors.onBoardMuted,
+                ),
+              ),
+            ),
+            _Section(
               title: l.alerts,
               child: Column(
                 children: [

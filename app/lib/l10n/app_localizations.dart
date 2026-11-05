@@ -1171,6 +1171,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dashed: guessed road'**
   String get guessedDashed;
+
+  /// Where a route comes from: one of the riders added it.
+  ///
+  /// In en, this message translates to:
+  /// **'Added in Hopin'**
+  String get routeSourceHand;
+
+  /// Settings > Routes: adds a route by hand; also that page's title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a route'**
+  String get addRoute;
+
+  /// The title of the page that changes a route added by hand.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit route'**
+  String get editRoute;
+
+  /// A route's number as on the bus, when adding one.
+  ///
+  /// In en, this message translates to:
+  /// **'Number'**
+  String get routeNumberLabel;
+
+  /// Where a route added by hand starts.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get routeFrom;
+
+  /// Where a route added by hand ends.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get routeTo;
+
+  /// An end town not picked yet, when adding a route.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a town'**
+  String get pickTown;
+
+  /// The towns a route added by hand passes, in order.
+  ///
+  /// In en, this message translates to:
+  /// **'Towns on the way'**
+  String get townsOnTheWay;
+
+  /// Adds a town a route added by hand passes.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a town'**
+  String get addTown;
+
+  /// Tooltip: takes a town off a route's way.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove town'**
+  String get removeTown;
+
+  /// The search's hint when picking a route's town.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for a town'**
+  String get searchTown;
+
+  /// While OSRM draws the road of a route being added.
+  ///
+  /// In en, this message translates to:
+  /// **'Drawing the road'**
+  String get drawingRoad;
+
+  /// When OSRM couldn't draw a route's road.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t draw the road. Check your internet and try again.'**
+  String get roadFailed;
+
+  /// Draws a route's road again after it failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgain;
+
+  /// Opens a route added by hand to change its towns.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit towns'**
+  String get editTowns;
+
+  /// Asked before a route added by hand is deleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this route for both of you?'**
+  String get deleteRouteQuestion;
 }
 
 class _AppLocalizationsDelegate

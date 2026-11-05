@@ -30,6 +30,7 @@ void main() {
   late FakeGuide guide;
   late FakeUpdates updates;
   late FakeShares shares;
+  late FakeRoads roads;
   late List<String> sent;
 
   setUp(() {
@@ -39,6 +40,7 @@ void main() {
     guide = FakeGuide();
     updates = FakeUpdates();
     shares = FakeShares();
+    roads = FakeRoads();
     sent = [];
   });
 
@@ -62,6 +64,7 @@ void main() {
                   http.Response.bytes(utf8.encode(jsonEncode([uniJson])), 200),
         ),
         overpass: emptyOverpass(),
+        osrm: roads.osrm,
         routeFiles: routeFiles ?? emptyRouteFiles(),
         mapBuilder: fakeMap,
         rideMapBuilder: fakeRideMap,
@@ -740,8 +743,14 @@ void main() {
     Future<void> openRoutes(
       WidgetTester tester, {
       Locale locale = const Locale('en'),
+      Future<http.Response> Function(http.Request request)? nominatim,
     }) async {
-      await start(tester, locale: locale, routeFiles: routeFilesWith(files));
+      await start(
+        tester,
+        locale: locale,
+        nominatim: nominatim,
+        routeFiles: routeFilesWith(files),
+      );
       auth.emit(rider);
       await tester.pumpAndSettle();
       await settle(tester);
@@ -868,6 +877,204 @@ void main() {
       expect(tester.takeException(), isNull);
       await tester.tap(find.text('ரத்து'));
       await tester.pumpAndSettle();
+      await finish(tester);
+    });
+
+    /// Search finds these made-up towns by a word of their names.
+    Map<String, Object?> town(String name, String ta, double lat, double lng) =>
+        {
+          'lat': '$lat',
+          'lon': '$lng',
+          'name': name,
+          'namedetails': {'name': name, 'name:en': name, 'name:ta': ta},
+          'address': {'city': 'Colombo'},
+        };
+    Future<http.Response> towns(http.Request request) async {
+      final query = request.url.queryParameters['q'] ?? '';
+      return json([
+        if (query.contains('fort')) uniJson,
+        if (query.contains('hall'))
+          town('Town Hall', 'நகர மண்டபம்', 6.9150, 79.8600),
+        if (query.contains('lake'))
+          town('Lake Town', 'ஏரி நகர்', 6.9000, 79.8700),
+      ]);
+    }
+
+    /// Picks a town from search through [tap], by [query].
+    Future<void> pickTown(
+      WidgetTester tester,
+      Finder tap,
+      String query,
+      String name,
+    ) async {
+      await tester.tap(tap);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), query);
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(name));
+      await tester.pumpAndSettle();
+      await settle(tester);
+    }
+
+    testWidgets('adds a route by hand: towns from search, the road drawn', (
+      tester,
+    ) async {
+      await openRoutes(tester, nominatim: towns);
+      await tester.tap(find.text('Add a route'));
+      await tester.pumpAndSettle();
+      expect(find.text('Save'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), '138');
+      await tester.pumpAndSettle();
+
+      // Search says what it's for.
+      await tester.tap(find.text('Pick a town').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Search for a town'), findsOneWidget);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await pickTown(
+        tester,
+        find.text('Pick a town').first,
+        'fort',
+        'Colombo Fort',
+      );
+      await pickTown(tester, find.text('Add a town'), 'hall', 'Town Hall');
+      expect(roads.asked, isEmpty);
+      await pickTown(tester, find.text('Pick a town'), 'lake', 'Lake Town');
+      // Drawn through all three, in order.
+      expect(
+        find.text('route map: 1 roads, 0 guessed, 3 marks'),
+        findsOneWidget,
+      );
+      expect(
+        roads.asked.single.url.path,
+        '/route/v1/driving/79.85010,6.93440;79.86000,6.91500;79.87000,6.90000',
+      );
+
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      await settle(tester);
+      // Back on the list, for both riders.
+      expect(find.text('Colombo Fort to Lake Town'), findsOneWidget);
+      expect(find.text('Added in Hopin'), findsOneWidget);
+      final put = remote.puts.lastWhere((p) => p.$1.startsWith('routes/'));
+      expect(put.$2['number'], '138');
+      expect(put.$2['toTa'], 'ஏரி நகர்');
+      await finish(tester);
+    });
+
+    testWidgets("a hand route's page: its towns changed, then deleted", (
+      tester,
+    ) async {
+      await openRoutes(tester, nominatim: towns);
+      await tester.tap(find.text('Add a route'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '177');
+      await pickTown(
+        tester,
+        find.text('Pick a town').first,
+        'fort',
+        'Colombo Fort',
+      );
+      await pickTown(tester, find.text('Pick a town'), 'lake', 'Lake Town');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      await settle(tester);
+
+      await tester.tap(find.text('177'));
+      await tester.pumpAndSettle();
+      await settle(tester);
+      expect(
+        find.text('route map: 2 roads, 0 guessed, 2 marks'),
+        findsOneWidget,
+      );
+      expect(find.text('Added in Hopin'), findsOneWidget);
+      // Its boards are the end towns' names, Tamil first.
+      expect(find.text('ஏரி நகர்'), findsOneWidget);
+
+      await reach(tester, find.text('Edit towns'));
+      await tester.tap(find.text('Edit towns'));
+      await tester.pumpAndSettle();
+      await settle(tester);
+      expect(find.text('Edit route'), findsOneWidget);
+      await pickTown(tester, find.text('Add a town'), 'hall', 'Town Hall');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      await settle(tester);
+      expect(find.text('Via Town Hall'), findsOneWidget);
+
+      await reach(tester, find.text('Delete'));
+      await tester.tap(find.text('Delete'));
+      await tester.pumpAndSettle();
+      expect(find.text('Delete this route for both of you?'), findsOneWidget);
+      await tester.tap(find.text('Delete').last);
+      await tester.pumpAndSettle();
+      await settle(tester);
+      // Gone from the list, for both.
+      expect(find.text('177'), findsNothing);
+      expect(find.text('Routes'), findsOneWidget);
+      expect(remote.puts.last.$3, isTrue);
+      await finish(tester);
+    });
+
+    testWidgets('no network: the road waits, and Save with it', (tester) async {
+      roads.offline = true;
+      await openRoutes(tester, nominatim: towns);
+      await tester.tap(find.text('Add a route'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '9');
+      await pickTown(
+        tester,
+        find.text('Pick a town').first,
+        'fort',
+        'Colombo Fort',
+      );
+      await pickTown(tester, find.text('Pick a town'), 'lake', 'Lake Town');
+      expect(
+        find.text("Couldn't draw the road. Check your internet and try again."),
+        findsOneWidget,
+      );
+      expect(
+        tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+        isNull,
+      );
+      roads.offline = false;
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+      await settle(tester);
+      expect(find.textContaining('route map:'), findsOneWidget);
+      expect(
+        tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+        isNotNull,
+      );
+      await finish(tester);
+    });
+
+    testWidgets('adding a route fits a small phone in Tamil with large text', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1080, 2160)
+        ..devicePixelRatio = 3;
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await openRoutes(tester, locale: const Locale('ta'), nominatim: towns);
+      await tester.tap(find.text('வழியைச் சேர்'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '138');
+      await pickTown(
+        tester,
+        find.text('ஊரைத் தேர்ந்தெடு').first,
+        'fort',
+        'கொழும்பு கோட்டை',
+      );
+      await pickTown(tester, find.text('ஊரைச் சேர்'), 'hall', 'நகர மண்டபம்');
+      await pickTown(tester, find.text('ஊரைத் தேர்ந்தெடு'), 'lake', 'ஏரி நகர்');
+      expect(find.text('வழியிலுள்ள ஊர்கள்'), findsOneWidget);
+      expect(find.textContaining('route map:'), findsOneWidget);
+      expect(tester.takeException(), isNull);
       await finish(tester);
     });
   });

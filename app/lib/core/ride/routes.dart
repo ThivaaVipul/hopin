@@ -5,8 +5,17 @@ import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/core/places/place.dart';
 import 'package:hopin/core/ride/polyline.dart';
 
-/// Where a route's data comes from (docs/ARCHITECTURE.md, Route data).
-enum RouteSource { osm, ntc, lmt }
+/// Where a route's data comes from (docs/ARCHITECTURE.md, Route data): a
+/// route file the weekly job builds, or the riders, by hand.
+enum RouteSource {
+  osm,
+  ntc,
+  lmt,
+  hand;
+
+  /// The route file sources, each a file on the `data` release.
+  static const files = [osm, ntc, lmt];
+}
 
 /// A route's departures on some days of the week.
 class Departures extends Equatable {
@@ -140,6 +149,77 @@ class RouteDirection extends Equatable {
   List<Object?> get props => [routeId, number, board, origin, path.length];
 }
 
+/// A town a route added by hand names: where it is, and its names.
+class RouteTown extends Equatable {
+  const RouteTown(this.point, [this.names = const PlaceNames()]);
+
+  final GeoPoint point;
+  final PlaceNames names;
+
+  @override
+  List<Object?> get props => [point, names];
+}
+
+/// A route the riders added by hand (docs/PLAN.md, Which bus), shared by
+/// both: its number, its two end towns, the towns it passes on the way, and
+/// the road OSRM drew through them. It runs both ways.
+class HandRoute extends Equatable {
+  const HandRoute({
+    required this.id,
+    required this.number,
+    required this.from,
+    required this.to,
+    this.via = const [],
+    this.road = const [],
+  });
+
+  /// The id of a hand route's directions, for one made by [id].
+  static String routeIdOf(String id) => 'hand:$id';
+
+  /// The hand route's own id in a direction's [routeId], or null for a
+  /// route from the route files.
+  static String? idIn(String routeId) =>
+      routeId.startsWith('hand:') ? routeId.substring(5) : null;
+
+  final String id;
+  final String number;
+  final RouteTown from;
+  final RouteTown to;
+  final List<RouteTown> via;
+
+  /// From [from] to [to] through [via], along real roads.
+  final List<GeoPoint> road;
+
+  String get routeId => routeIdOf(id);
+
+  /// There and back, each with its far end town on the board.
+  List<RouteDirection> get directions => [
+    RouteDirection(
+      routeId: routeId,
+      source: RouteSource.hand,
+      number: number,
+      board: to.names,
+      origin: from.names,
+      path: road,
+      start: from.point,
+      end: to.point,
+    ),
+    RouteDirection(
+      routeId: routeId,
+      source: RouteSource.hand,
+      number: number,
+      board: from.names,
+      origin: to.names,
+      path: road.reversed.toList(growable: false),
+      start: to.point,
+      end: from.point,
+    ),
+  ];
+
+  @override
+  List<Object?> get props => [id, number, from, to, via, road];
+}
+
 /// A rider's change to one direction of a route from the route files
 /// (docs/PLAN.md, Which bus), shared by both riders: board lines that stand
 /// in for the file's (a line left out keeps the file's), and whether the
@@ -230,7 +310,7 @@ List<RouteDirection> parseRouteFile(String body) {
       decoded['format'] != routeFileFormat) {
     throw const FormatException('not a route file');
   }
-  final source = RouteSource.values
+  final source = RouteSource.files
       .where((s) => s.name == decoded['source'])
       .firstOrNull;
   final routes = decoded['routes'];

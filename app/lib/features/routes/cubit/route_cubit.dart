@@ -8,40 +8,55 @@ import 'package:hopin/core/ride/routes.dart';
 import 'package:hopin/features/routes/cubit/routes_cubit.dart';
 
 class RouteState extends Equatable {
-  const RouteState({this.route, this.loaded = false});
+  const RouteState({this.route, this.hand, this.loaded = false});
 
-  /// Null once loaded: the route files no longer have it.
+  /// Null once loaded: the route files no longer have it, or it was a hand
+  /// route and was deleted.
   final KnownRoute? route;
+
+  /// The route as added by hand, for one that was.
+  final HandRoute? hand;
   final bool loaded;
 
   @override
-  List<Object?> get props => [route, loaded];
+  List<Object?> get props => [route, hand, loaded];
 }
 
 /// A route's page (docs/PLAN.md, Which bus): its road, its towns and each
 /// direction's board, with the riders' board lines and Remove shared as
-/// notes.
+/// notes; a route added by hand is changed or deleted instead.
 class RouteCubit extends Cubit<RouteState> {
   RouteCubit(this._routes, this.id) : super(const RouteState());
 
   final RoutesRepository _routes;
   final String id;
   StreamSubscription<List<NotedDirection>>? _watch;
+  StreamSubscription<HandRoute?>? _watchHand;
+  KnownRoute? _route;
+  HandRoute? _hand;
+  var _routeIn = false;
 
   void start() {
     _watch = _routes.watchNoted().listen((all) {
-      if (isClosed) return;
       final directions = [
         for (final noted in all)
           if (noted.file.routeId == id) noted,
       ];
-      emit(
-        RouteState(
-          route: directions.isEmpty ? null : KnownRoute(directions),
-          loaded: true,
-        ),
-      );
+      _route = directions.isEmpty ? null : KnownRoute(directions);
+      _routeIn = true;
+      _show();
     });
+    if (HandRoute.idIn(id) != null) {
+      _watchHand = _routes.watchHand(id).listen((hand) {
+        _hand = hand;
+        _show();
+      });
+    }
+  }
+
+  void _show() {
+    if (isClosed || !_routeIn) return;
+    emit(RouteState(route: _route, hand: _hand, loaded: true));
   }
 
   /// Board lines of the riders' own for one direction; an empty line keeps
@@ -57,9 +72,16 @@ class RouteCubit extends Cubit<RouteState> {
     }
   }
 
+  /// Deletes a route added by hand, for both riders.
+  Future<void> delete() async {
+    final hand = state.hand;
+    if (hand != null) await _routes.deleteHand(hand.id);
+  }
+
   @override
   Future<void> close() async {
     await _watch?.cancel();
+    await _watchHand?.cancel();
     return super.close();
   }
 }

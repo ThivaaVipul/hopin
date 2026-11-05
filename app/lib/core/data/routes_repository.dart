@@ -1,16 +1,20 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:drift/drift.dart';
 import 'package:hopin/core/data/local/database.dart';
+import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/core/places/place.dart';
+import 'package:hopin/core/ride/polyline.dart';
 import 'package:hopin/core/ride/routes.dart';
 import 'package:hopin/core/search/route_files.dart';
 import 'package:hopin/core/update/updates.dart' show installedBuild;
 
 /// The bus routes (docs/PLAN.md, Which bus): the route files the weekly job
 /// publishes, kept on the phone as they came, so the buses show offline,
-/// with the riders' shared notes on them (board lines, removals).
+/// with the riders' shared notes on them (board lines, removals), and the
+/// routes the riders added by hand.
 class RoutesRepository {
   RoutesRepository(
     this._db, {
@@ -38,7 +42,11 @@ class RoutesRepository {
   var _lastStamp = 0;
   Future<void>? _refreshing;
 
-  /// Called after a note (the sync sends it).
+  /// A road goes up as an encoded polyline of at most this many letters
+  /// (the rules' limit); a longer one is thinned until it fits.
+  static const roadLetters = 20000;
+
+  /// Called after a note or a hand route changes (the syncs send it).
   void Function()? onChange;
 
   /// The route directions the buses are found among: the riders' board
@@ -51,20 +59,27 @@ class RoutesRepository {
   );
 
   /// Every route direction on the phone with the newest note on it, again
-  /// whenever a file or a note changes. A file this app can't read is left
-  /// out. (Its query is its own: drift shares watched queries by their SQL
+  /// whenever a file, a note or a hand route changes: the route files' (a
+  /// file this app can't read is left out), then the hand routes' both
+  /// ways. (Its query is its own: drift shares watched queries by their SQL
   /// alone, so a second "SELECT 1" beside the stops' would follow the stops'
   /// tables instead.)
   Stream<List<NotedDirection>> watchNoted() => _db
       .customSelect(
         'SELECT body FROM route_data',
-        readsFrom: {_db.routeData, _db.routeNotes},
+        readsFrom: {_db.routeData, _db.routeNotes, _db.handRoutes},
       )
       .watch()
       .asyncMap((rows) async {
         final notes = await _db.select(_db.routeNotes).get();
+        final hand = await (_db.select(
+          _db.handRoutes,
+        )..where((r) => r.deletedAt.isNull())).get();
         return withNotes(
-          [for (final row in rows) ...?_parse(row.read<String>('body'))],
+          [
+            for (final row in rows) ...?_parse(row.read<String>('body')),
+            for (final row in hand) ..._handRoute(row).directions,
+          ],
           [
             for (final note in notes)
               RouteNote(
@@ -141,6 +156,144 @@ class RoutesRepository {
     if (tell) onChange?.call();
   }
 
+  /// A hand route by its directions' [routeId], again whenever it changes;
+  /// null for none, or a deleted one.
+  Stream<HandRoute?> watchHand(String routeId) {
+    final id = HandRoute.idIn(routeId);
+    if (id == null) return Stream.value(null);
+    return (_db.select(
+      _db.handRoutes,
+    )..where((r) => r.id.equals(id))).watchSingleOrNull().map(
+      (row) => row == null || row.deletedAt != null ? null : _handRoute(row),
+    );
+  }
+
+  /// Adds a route by hand, or changes one (by its [HandRoute.id]), for both
+  /// riders. A new one's id is made here; returns the route as kept.
+  Future<HandRoute> saveHand(HandRoute route) async {
+    final kept = HandRoute(
+      id: route.id.isEmpty ? _newId() : route.id,
+      number: route.number.trim(),
+      from: route.from,
+      to: route.to,
+      via: route.via,
+      road: route.road,
+    );
+    final now = _stamp();
+    await _db
+        .into(_db.handRoutes)
+        .insertOnConflictUpdate(
+          HandRoutesCompanion.insert(
+            id: kept.id,
+            number: kept.number,
+            fromLat: kept.from.point.lat,
+            fromLng: kept.from.point.lng,
+            fromEn: Value(_line(kept.from.names.en)),
+            fromTa: Value(_line(kept.from.names.ta)),
+            fromSi: Value(_line(kept.from.names.si)),
+            toLat: kept.to.point.lat,
+            toLng: kept.to.point.lng,
+            toEn: Value(_line(kept.to.names.en)),
+            toTa: Value(_line(kept.to.names.ta)),
+            toSi: Value(_line(kept.to.names.si)),
+            via: _viaText(kept.via),
+            road: _roadText(kept.road),
+            by: uid,
+            updatedAt: now,
+            deletedAt: const Value(null),
+            pendingSince: Value(now),
+          ),
+        );
+    onChange?.call();
+    return kept;
+  }
+
+  /// Deletes a route added by hand, for both riders.
+  Future<void> deleteHand(String id) async {
+    final now = _stamp();
+    await (_db.update(_db.handRoutes)..where((r) => r.id.equals(id))).write(
+      HandRoutesCompanion(
+        by: Value(uid),
+        updatedAt: Value(now),
+        deletedAt: Value(now),
+        pendingSince: Value(now),
+      ),
+    );
+    onChange?.call();
+  }
+
+  static HandRoute _handRoute(HandRouteRow row) => HandRoute(
+    id: row.id,
+    number: row.number,
+    from: RouteTown(
+      GeoPoint(row.fromLat, row.fromLng),
+      PlaceNames(en: row.fromEn, ta: row.fromTa, si: row.fromSi),
+    ),
+    to: RouteTown(
+      GeoPoint(row.toLat, row.toLng),
+      PlaceNames(en: row.toEn, ta: row.toTa, si: row.toSi),
+    ),
+    via: _via(row.via),
+    road: _road(row.road),
+  );
+
+  static List<RouteTown> _via(String text) {
+    try {
+      return [
+        for (final town
+            in (jsonDecode(text) as List).whereType<Map<String, Object?>>())
+          if (town case {'lat': final num lat, 'lng': final num lng})
+            RouteTown(
+              GeoPoint(lat.toDouble(), lng.toDouble()),
+              PlaceNames(
+                en: town['en'] as String?,
+                ta: town['ta'] as String?,
+                si: town['si'] as String?,
+              ),
+            ),
+      ];
+    } on Object {
+      return const [];
+    }
+  }
+
+  static String _viaText(List<RouteTown> via) => jsonEncode([
+    for (final town in via)
+      {
+        'lat': double.parse(town.point.lat.toStringAsFixed(6)),
+        'lng': double.parse(town.point.lng.toStringAsFixed(6)),
+        'en': ?_line(town.names.en),
+        'ta': ?_line(town.names.ta),
+        'si': ?_line(town.names.si),
+      },
+  ]);
+
+  static List<GeoPoint> _road(String text) {
+    if (text.isEmpty) return const [];
+    try {
+      return decodePolyline(text);
+    } on Object {
+      return const [];
+    }
+  }
+
+  /// The road as an encoded polyline the rules take, thinned harder until
+  /// it fits.
+  static String _roadText(List<GeoPoint> road) {
+    var text = encodePolyline(road);
+    for (var tolerance = 20.0; text.length > roadLetters; tolerance *= 2) {
+      text = encodePolyline(thinLine(road, toleranceM: tolerance));
+    }
+    return text;
+  }
+
+  /// A name as the rules take it: trimmed, at most 120 letters, or none.
+  static String? _line(String? name) {
+    final text = name?.trim() ?? '';
+    if (text.isEmpty) return null;
+    return text.length > 120 ? text.substring(0, 120) : text;
+  }
+
   /// Every change gets a later stamp than the one before.
   int _stamp() {
     final now = _clock().microsecondsSinceEpoch;
@@ -177,7 +330,7 @@ class RoutesRepository {
       _db.settings,
     )..where((s) => s.key.equals(_askedBy))).getSingleOrNull();
     final updated = askedBy?.value != '$build';
-    for (final source in RouteSource.values) {
+    for (final source in RouteSource.files) {
       // A row with no body stands for a file the release didn't have.
       final row = await (_db.select(
         _db.routeData,

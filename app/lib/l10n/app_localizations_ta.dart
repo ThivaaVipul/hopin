@@ -609,4 +609,53 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get guessedDashed => 'இடைவிட்ட கோடு: ஊகித்த வீதி';
+
+  @override
+  String get routeSourceHand => 'Hopin இல் சேர்த்தது';
+
+  @override
+  String get addRoute => 'வழியைச் சேர்';
+
+  @override
+  String get editRoute => 'வழியைத் திருத்து';
+
+  @override
+  String get routeNumberLabel => 'எண்';
+
+  @override
+  String get routeFrom => 'தொடக்கம்';
+
+  @override
+  String get routeTo => 'முடிவு';
+
+  @override
+  String get pickTown => 'ஊரைத் தேர்ந்தெடு';
+
+  @override
+  String get townsOnTheWay => 'வழியிலுள்ள ஊர்கள்';
+
+  @override
+  String get addTown => 'ஊரைச் சேர்';
+
+  @override
+  String get removeTown => 'ஊரை நீக்கு';
+
+  @override
+  String get searchTown => 'ஊரைத் தேடு';
+
+  @override
+  String get drawingRoad => 'வீதியை வரைகிறது';
+
+  @override
+  String get roadFailed =>
+      'வீதியை வரைய முடியவில்லை. இணையத்தைச் சரிபார்த்து மீண்டும் முயலவும்.';
+
+  @override
+  String get tryAgain => 'மீண்டும் முயல்';
+
+  @override
+  String get editTowns => 'ஊர்களைத் திருத்து';
+
+  @override
+  String get deleteRouteQuestion => 'இந்த வழியை இருவருக்கும் நீக்கவா?';
 }

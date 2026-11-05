@@ -251,5 +251,49 @@ service cloud.firestore {
       allow create, update: if isRider() && validRouteNote();
       allow delete: if false;
     }
+
+    // A route the riders added by hand (docs/PLAN.md, Which bus): its number,
+    // its two end towns, the towns along the way (as JSON text) and the road
+    // OSRM drew (an encoded polyline). Shared: either rider adds, changes or
+    // deletes one (marking it with deletedAt); none is deleted for real.
+    match /routes/{routeId} {
+      function optionalName(data, key) {
+        return !(key in data) || data[key] == null || isString(data[key], 1, 120);
+      }
+
+      function isLat(value) {
+        return value is number && value >= -90 && value <= 90;
+      }
+
+      function isLng(value) {
+        return value is number && value >= -180 && value <= 180;
+      }
+
+      function validHandRoute() {
+        let data = request.resource.data;
+        let before = resource == null ? null : resource.data.get('deletedAt', null);
+        return data.keys().hasOnly(['number', 'fromLat', 'fromLng', 'fromEn', 'fromTa', 'fromSi', 'toLat', 'toLng', 'toEn', 'toTa', 'toSi', 'via', 'road', 'by', 'updatedAt', 'deletedAt'])
+          && data.keys().hasAll(['number', 'fromLat', 'fromLng', 'toLat', 'toLng', 'via', 'road', 'by', 'updatedAt'])
+          && isString(data.number, 1, 12)
+          && isLat(data.fromLat) && isLng(data.fromLng)
+          && isLat(data.toLat) && isLng(data.toLng)
+          && optionalName(data, 'fromEn')
+          && optionalName(data, 'fromTa')
+          && optionalName(data, 'fromSi')
+          && optionalName(data, 'toEn')
+          && optionalName(data, 'toTa')
+          && optionalName(data, 'toSi')
+          && isString(data.via, 0, 4000)
+          && isString(data.road, 0, 20000)
+          && data.by == request.auth.uid
+          && data.updatedAt == request.time
+          && (!('deletedAt' in data) || data.deletedAt == null || data.deletedAt == request.time || data.deletedAt == before);
+      }
+
+      allow read: if isRider();
+      allow create: if isRider() && routeId.matches('^[A-Za-z0-9]{20}$') && validHandRoute();
+      allow update: if isRider() && validHandRoute();
+      allow delete: if false;
+    }
   }
 }

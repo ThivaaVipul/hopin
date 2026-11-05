@@ -12,9 +12,12 @@ import 'package:hopin/l10n/app_localizations.dart';
 /// Where to: recents until you search, then results. The page is a board, so
 /// each place's Sinhala name shows in amber, as on the bus.
 class SearchPage extends StatelessWidget {
-  const SearchPage({super.key, this.near});
+  const SearchPage({super.key, this.near, this.hint});
 
   final GeoPoint? near;
+
+  /// In the empty field: "Where to?" unless what's searched for is named.
+  final String? hint;
 
   @override
   Widget build(BuildContext context) {
@@ -23,13 +26,15 @@ class SearchPage extends StatelessWidget {
     return BlocProvider(
       create: (context) =>
           SearchCubit(context.read<Nominatim>(), workspace.recents, near: near),
-      child: const _SearchView(),
+      child: _SearchView(hint: hint),
     );
   }
 }
 
 class _SearchView extends StatefulWidget {
-  const _SearchView();
+  const _SearchView({this.hint});
+
+  final String? hint;
 
   @override
   State<_SearchView> createState() => _SearchViewState();
@@ -75,7 +80,7 @@ class _SearchViewState extends State<_SearchView> {
                       ),
                       cursorColor: colors.amber,
                       decoration: InputDecoration(
-                        hintText: l.whereTo,
+                        hintText: widget.hint ?? l.whereTo,
                         hintStyle: TextStyle(color: colors.onBoardMuted),
                         border: InputBorder.none,
                       ),

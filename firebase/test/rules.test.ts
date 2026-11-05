@@ -676,3 +676,82 @@ describe('route notes', () => {
     await assertSucceeds(setDoc(doc(db, 'routeNotes/n1'), plain));
   });
 });
+
+const routeId = 'Hq3vT9xLmP2wZr7NbY4c';
+
+// A route the riders added by hand (docs/PLAN.md, Which bus): its number,
+// its two end towns, the towns along the way and the road OSRM drew, shared
+// by both riders; deleted by marking it.
+function handRoute(changes: Fields = {}): Fields {
+  return {
+    number: '138',
+    fromLat: 6.9344,
+    fromLng: 79.8428,
+    fromEn: 'Fort',
+    fromTa: 'கோட்டை',
+    fromSi: null,
+    toLat: 6.8510,
+    toLng: 79.926,
+    toEn: 'Maharagama',
+    via: '[{"lat":6.88,"lng":79.88,"en":"Town Hall"}]',
+    road: '_p~iF~ps|U_ulLnnqC',
+    by: 'r1',
+    updatedAt: serverTimestamp(),
+    ...changes,
+  };
+}
+
+describe('routes added by hand', () => {
+  it('lets either rider add, change and delete one for both', async () => {
+    await assertSucceeds(setDoc(doc(rider('r1'), `routes/${routeId}`), handRoute()));
+    await assertSucceeds(getDoc(doc(rider('r2'), `routes/${routeId}`)));
+    await assertSucceeds(
+      setDoc(doc(rider('r2'), `routes/${routeId}`), handRoute({ by: 'r2', number: '138/2' })),
+    );
+    await assertSucceeds(
+      setDoc(
+        doc(rider('r1'), `routes/${routeId}`),
+        handRoute({ deletedAt: serverTimestamp() }),
+      ),
+    );
+    const since = where('updatedAt', '>', Timestamp.fromMillis(0));
+    await assertSucceeds(getDocs(query(collection(rider('r2'), 'routes'), since)));
+  });
+
+  it('keeps everyone else out, and is never deleted', async () => {
+    await seed(`routes/${routeId}`, handRoute({ updatedAt: Timestamp.now() }));
+    await assertFails(getDoc(doc(signedOut(), `routes/${routeId}`)));
+    await assertFails(getDoc(doc(stranger('s1'), `routes/${routeId}`)));
+    await assertFails(
+      setDoc(doc(stranger('s1'), 'routes/Zq3vT9xLmP2wZr7NbY4c'), handRoute({ by: 's1' })),
+    );
+    await assertFails(deleteDoc(doc(rider('r1'), `routes/${routeId}`)));
+  });
+
+  it('checks every field and a new one\'s id', async () => {
+    const db = rider('r1');
+    const bad: Fields[] = [
+      { by: 'r2' },
+      { number: '' },
+      { number: 'x'.repeat(13) },
+      { fromLat: 91 },
+      { toLng: '79.9' },
+      { fromEn: '' },
+      { toSi: 'x'.repeat(121) },
+      { via: 7 },
+      { via: 'x'.repeat(4001) },
+      { road: 'x'.repeat(20001) },
+      { colour: 'amber' },
+      { updatedAt: Timestamp.now() },
+      { deletedAt: Timestamp.now() },
+    ];
+    for (const changes of bad) {
+      await assertFails(setDoc(doc(db, `routes/${routeId}`), handRoute(changes)));
+    }
+    for (const key of ['number', 'fromLat', 'fromLng', 'toLat', 'toLng', 'via', 'road', 'by']) {
+      const { [key]: _gone, ...missing } = handRoute();
+      await assertFails(setDoc(doc(db, `routes/${routeId}`), missing));
+    }
+    await assertFails(setDoc(doc(db, 'routes/short'), handRoute()));
+  });
+});

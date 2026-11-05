@@ -47,9 +47,18 @@ class _RoutesView extends StatelessWidget {
           if (!state.loaded) return const SizedBox.shrink();
           if (state.routes.isEmpty) {
             return Center(
-              child: Text(
-                l.noRoutes,
-                style: context.text.bodyLarge?.copyWith(color: colors.inkMuted),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l.noRoutes,
+                    style: context.text.bodyLarge?.copyWith(
+                      color: colors.inkMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const _AddRoute(),
+                ],
               ),
             );
           }
@@ -58,7 +67,11 @@ class _RoutesView extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
               const _NumberSearch(),
-              const SizedBox(height: 16),
+              const Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: _AddRoute(),
+              ),
+              const SizedBox(height: 4),
               if (shown.isEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 24),
@@ -98,6 +111,22 @@ class _RoutesView extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Add a route, by hand.
+class _AddRoute extends StatelessWidget {
+  const _AddRoute();
+
+  @override
+  Widget build(BuildContext context) => TextButton.icon(
+    onPressed: () => unawaited(context.push<void>(Routes.addRoute)),
+    icon: const Icon(Icons.add),
+    label: Text(AppLocalizations.of(context).addRoute),
+    style: TextButton.styleFrom(
+      foregroundColor: context.colors.amber,
+      minimumSize: const Size(0, 48),
+    ),
+  );
 }
 
 /// The number to look for, on a board like the search's.

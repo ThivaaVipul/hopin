@@ -7,6 +7,7 @@ import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/features/home/view/home_page.dart';
 import 'package:hopin/features/rides/view/ride_page.dart';
 import 'package:hopin/features/rides/view/rides_page.dart';
+import 'package:hopin/features/routes/view/route_editor_page.dart';
 import 'package:hopin/features/routes/view/route_page.dart';
 import 'package:hopin/features/routes/view/routes_page.dart';
 import 'package:hopin/features/search/view/search_page.dart';
@@ -23,10 +24,17 @@ abstract final class Routes {
   static const rides = '/rides';
   static String ride(String id) => '/rides/$id';
   static const routes = '/routes';
+  static const addRoute = '/routes/add';
 
   /// A route's page; its id ("ntc:15-87:SL") goes in as one path segment.
   static String route(String id) => '/routes/${Uri.encodeComponent(id)}';
+
+  /// A route added by hand, to change its towns.
+  static String editRoute(String id) => '${route(id)}/edit';
 }
+
+/// What the search looks for when it isn't a place to go: a route's town.
+typedef SearchFor = ({GeoPoint? near, String hint});
 
 /// Where the session says you belong: the start screen until it knows, then
 /// sign-in or home.
@@ -65,13 +73,30 @@ GoRouter buildRouter(SessionCubit session, Listenable refresh) => GoRouter(
       path: Routes.routes,
       builder: (context, state) => const RoutesPage(),
     ),
+    // Before the route's own page, which would take "add" for an id.
+    GoRoute(
+      path: Routes.addRoute,
+      builder: (context, state) => const RouteEditorPage(),
+    ),
     GoRoute(
       path: '/routes/:id',
       builder: (context, state) => RoutePage(id: state.pathParameters['id']!),
     ),
     GoRoute(
+      path: '/routes/:id/edit',
+      builder: (context, state) =>
+          RouteEditorPage(routeId: state.pathParameters['id']),
+    ),
+    GoRoute(
       path: Routes.search,
-      builder: (context, state) => SearchPage(near: state.extra as GeoPoint?),
+      builder: (context, state) => switch (state.extra) {
+        (:final GeoPoint? near, :final String hint) => SearchPage(
+          near: near,
+          hint: hint,
+        ),
+        final GeoPoint near => SearchPage(near: near),
+        _ => const SearchPage(),
+      },
     ),
   ],
 );

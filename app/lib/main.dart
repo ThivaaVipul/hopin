@@ -8,6 +8,7 @@ import 'package:hopin/core/guide/foreground_guide.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/profile/profile_repository.dart';
 import 'package:hopin/core/search/nominatim.dart';
+import 'package:hopin/core/search/osrm.dart';
 import 'package:hopin/core/search/overpass.dart';
 import 'package:hopin/core/search/route_files.dart';
 import 'package:hopin/core/share/shares.dart';
@@ -38,6 +39,7 @@ Future<void> main() async {
       location: GeolocatorLocation(),
       nominatim: Nominatim(),
       overpass: Overpass(),
+      osrm: Osrm(),
       routeFiles: RouteFiles(),
       mapBuilder: boardMap,
       rideMapBuilder: boardRideMap,

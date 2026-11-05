@@ -63,6 +63,30 @@ void main() {
     expect(direction.times.single.runsOn(DateTime(2026, 11, 7)), isFalse);
   });
 
+  test('reads the guessed rest of a partly mapped road', () {
+    const c = GeoPoint(6.96, 79.85);
+    final direction = parseRouteFile(
+      file('osm', [
+        {
+          'id': 'osm:9',
+          'number': '9',
+          'directions': [
+            {
+              'board': {'en': 'North'},
+              'path': encodePolyline([a, b]),
+              'after': encodePolyline([b, c]),
+            },
+          ],
+        },
+      ]),
+    ).single;
+    expect(direction.path, [a, b]);
+    expect(direction.after, [b, c]);
+    expect(direction.before, isEmpty);
+    // The whole road, joined once.
+    expect(direction.road, [a, b, c]);
+  });
+
   test('reads a long-distance route by its towns', () {
     final directions = parseRouteFile(
       file('ntc', [

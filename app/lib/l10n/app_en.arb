@@ -788,7 +788,7 @@
   "@classExpressway": {
     "description": "A bus class: runs on the expressway."
   },
-  "routeCredits": "Routes: OpenStreetMap, NTC, LMT",
+  "routeCredits": "Routes: OpenStreetMap, OSRM, NTC, LMT",
   "@routeCredits": {
     "description": "Where the bus routes and times come from, under the buses."
   }

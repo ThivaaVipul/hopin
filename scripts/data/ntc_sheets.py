@@ -18,9 +18,11 @@ from __future__ import annotations
 import difflib
 import html
 import re
+import statistics
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
+from geometry import fraction_along, metres
 from towns import Town, Towns, names_of, spelling
 
 FOLDERS = {
@@ -37,6 +39,19 @@ EVERY_DAY = 0b1111111
 # of a half's end headers must match its town.
 MARGIN = 0.4
 MATCH = 0.6
+
+# A middle timing point is a city or town along the way: between the ends,
+# and going through it at most DETOUR times as far as straight from end to
+# end (a bus's road bends inland). Its header matches the town's names
+# MIDDLE_MATCH alike and keeps MIDDLE_KEPT of its letters in the name, in
+# order (a sheet's text drops letters, seldom adds one). Of the towns that do,
+# the one nearest where the point's time puts it (within MIDDLE_OFF of the
+# way) and least out of the way wins.
+DETOUR = 1.4
+MIDDLE_KINDS = ("city", "town")
+MIDDLE_MATCH = 0.6
+MIDDLE_KEPT = 0.8
+MIDDLE_OFF = 0.2
 
 _ENTRY = re.compile(
     r'<div class="flip-entry" id="entry-([A-Za-z0-9_-]+)".*?'
@@ -222,13 +237,42 @@ def likeness(header: str, names: dict[str, str]) -> float:
     return max(scores)
 
 
+def _in_order(text: str, name: str) -> int:
+    """How many of text's letters name has in the same order (their longest common subsequence)."""
+    above = [0] * (len(name) + 1)
+    for letter in text:
+        row = [0]
+        for j, other in enumerate(name, 1):
+            row.append(above[j - 1] + 1 if letter == other else max(above[j], row[-1]))
+        above = row
+    return above[-1]
+
+
+def kept(header: str, names: dict[str, str]) -> float:
+    """The share of a header's letters that a town's name has, in the same order.
+
+    By its Sinhala consonants or its English letters, whichever keeps more.
+    """
+    plain = _CID.sub("", header)
+    scores = [0.0]
+    for text, name in (
+        (skeleton(plain), skeleton(names.get("si", ""))),
+        (spelling(plain), spelling(names.get("en", ""))),
+    ):
+        if text and name:
+            scores.append(_in_order(text, name) / len(text))
+    return max(scores)
+
+
 @dataclass
 class Half:
-    """One direction of a sheet: its first and last headers and its departures."""
+    """One direction of a sheet: its first and last headers, its departures,
+    and each later timing point's header with its minutes after departing."""
 
     first: str
     last: str
     departs: list[int] = field(default_factory=list)
+    points: list[tuple[str, int]] = field(default_factory=list)
 
 
 def _clean(table: list[list[str | None]]) -> list[list[str]]:
@@ -289,6 +333,16 @@ def halves(table: list[list[str]]) -> list[Half]:
         # sheet of several routes has trips that start or end part way.
         whole = [row for row in data if minutes(row[run[0]]) and minutes(row[run[-1]])]
         found_half.departs = sorted({m for row in whole for m in (minutes(row[depart]) or [])})
+        # Each later timing point: the usual minutes after departing (a bus
+        # that passes midnight counts on from the day before).
+        for column in run[run.index(depart) + 1 :]:
+            gaps = [
+                (times[0] - leaves[0]) % 1440
+                for row in whole
+                if (times := minutes(row[column])) and (leaves := minutes(row[depart]))
+            ]
+            if gaps:
+                found_half.points.append((heads[column], round(statistics.median(gaps))))
         if found_half.departs:
             found.append(found_half)
     return found
@@ -306,7 +360,7 @@ def merge(parts: list[Half]) -> list[Half]:
         if key in merged:
             merged[key].departs = sorted(set(merged[key].departs) | set(half.departs))
         else:
-            merged[key] = Half(half.first, half.last, list(half.departs))
+            merged[key] = Half(half.first, half.last, list(half.departs), list(half.points))
     return list(merged.values())
 
 
@@ -414,6 +468,71 @@ def by_weekday(text: str) -> bool:
     return sum(1 for day in _WEEKDAY_NAMES if any(day in word for word in words)) >= 2
 
 
+# Towns along the way ---------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Along:
+    """A town along the way: where it falls on the straight way from start to
+    end (its share, 0 to 1) and how much further going through it is (its
+    detour, 1 when right on the straight way)."""
+
+    share: float
+    detour: float
+    town: Town
+
+
+def corridor(towns: Towns, start: Town, end: Town) -> list[Along]:
+    """The cities and towns along the way from start to end.
+
+    Along the way: between the ends (not back from either or past it), and
+    going through the town is at most DETOUR times the straight way.
+    """
+    span = metres(start.point, end.point)
+    if span == 0:
+        return []
+    found = []
+    for town in towns.towns:
+        if town.kind not in MIDDLE_KINDS or town.id in (start.id, end.id):
+            continue
+        detour = (metres(start.point, town.point) + metres(town.point, end.point)) / span
+        share = fraction_along(start.point, end.point, town.point)
+        if detour <= DETOUR and 0.03 < share < 0.97:
+            found.append(Along(share, detour, town))
+    return found
+
+
+def middle_towns(half: Half, along_the_way: list[Along], towns: Towns) -> list[tuple[Town, int]]:
+    """A half's timing points between its ends, each as a town with its minutes.
+
+    A point's header is matched to the towns along the way, near where its
+    time puts it (its share of the whole trip's minutes), each one further on
+    than the last; a point no town matches well is left out.
+    """
+    total = half.points[-1][1] if half.points else 0
+    found: list[tuple[Town, int]] = []
+    passed = 0.0
+    for header, minute in half.points[:-1]:
+        if total <= 0:
+            break
+        expected = minute / total
+        best: tuple[float, Along] | None = None
+        for along in along_the_way:
+            off = abs(along.share - expected)
+            if along.share <= passed or off > MIDDLE_OFF:
+                continue
+            score = likeness(header, along.town.names)
+            if score < MIDDLE_MATCH or kept(header, along.town.names) < MIDDLE_KEPT:
+                continue
+            rank = score - 2 * off - (along.detour - 1)
+            if best is None or rank > best[0]:
+                best = (rank, along)
+        if best:
+            found.append((towns.use(best[1].town), minute))
+            passed = best[1].share
+    return found
+
+
 # Building the routes ------------------------------------------------------------
 
 
@@ -453,7 +572,11 @@ def build(
         if missing:
             notes.append(f"ntc {file.name}: left out, no town found for {missing[0]}")
         else:
-            chosen.append((sheet, file, [town for town in end_towns if town]))
+            found = [town for town in end_towns if town]
+            chosen.append((sheet, file, found))
+            # The towns along the way are read by their Sinhala names too.
+            for along in corridor(towns, found[0], found[1]):
+                towns.use(along.town)
     if before_reading:
         before_reading()
     routes = []
@@ -533,6 +656,21 @@ def _route(
                 round(stand.point[1], 5),
                 stand.name,
             ]
+        middle = middle_towns(
+            _likeliest(parts, end_names[origin], end_names[destination]),
+            corridor(towns, start, end),
+            towns,
+        )
+        if middle:
+            direction["stops"] = [
+                [
+                    round(town.point[0], 5),
+                    round(town.point[1], 5),
+                    town.names.get("en") or town.names.get("ta") or town.names.get("si"),
+                    minute,
+                ]
+                for town, minute in middle
+            ]
         result.append(direction)
     classes = "-".join(sheet.classes) or "x"
     route = {
@@ -545,6 +683,11 @@ def _route(
     if also:
         route["also"] = also
     return route
+
+
+def _likeliest(parts: list[Half], origin: dict[str, str], destination: dict[str, str]) -> Half:
+    """The half that reads most like the way from origin to destination."""
+    return max(parts, key=lambda h: likeness(h.first, origin) + likeness(h.last, destination))
 
 
 def _plain(number: str) -> str:

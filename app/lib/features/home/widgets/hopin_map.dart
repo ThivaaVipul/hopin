@@ -36,6 +36,8 @@ class MapProps {
     this.onStopTap,
     this.onCameraIdle,
     this.route = const [],
+    this.routeBefore = const [],
+    this.routeAfter = const [],
     this.boardAt,
   });
 
@@ -59,7 +61,10 @@ class MapProps {
   onCameraIdle;
 
   /// The picked bus's road (docs/PLAN.md, Which bus), and where to board it.
+  /// The parts guessed where OpenStreetMap stops are drawn dashed.
   final List<GeoPoint> route;
+  final List<GeoPoint> routeBefore;
+  final List<GeoPoint> routeAfter;
   final GeoPoint? boardAt;
 }
 
@@ -106,8 +111,11 @@ class _BoardMapState extends State<BoardMap> {
   /// The picked bus's road: one line, under the stops and markers.
   static const _routeSource = 'hopin-route';
   static const _routeLayer = 'hopin-route-line';
+  static const _guessLayer = 'hopin-route-guess';
   bool _routeAdded = false;
   List<GeoPoint>? _drawnRoute;
+  List<GeoPoint>? _drawnBefore;
+  List<GeoPoint>? _drawnAfter;
   List<SavedPlace>? _drawnPlaces;
 
   /// The stops' source and layer: every stop at once, drawn by the map
@@ -148,7 +156,7 @@ class _BoardMapState extends State<BoardMap> {
       _stopsAdded = false;
       _drawnStops = null;
       _routeAdded = false;
-      _drawnRoute = null;
+      _drawnRoute = _drawnBefore = _drawnAfter = null;
     } else {
       _redraw();
     }
@@ -215,7 +223,12 @@ class _BoardMapState extends State<BoardMap> {
           ),
       ];
     }
-    await _drawRoute(controller, props.route);
+    await _drawRoute(
+      controller,
+      props.route,
+      props.routeBefore,
+      props.routeAfter,
+    );
     await _drawStops(controller, props.stops);
     await _boardAt.show(controller, props.boardAt);
     await _destination.show(controller, props.destination?.point);
@@ -225,28 +238,39 @@ class _BoardMapState extends State<BoardMap> {
     await _me.show(controller, props.me);
   }
 
-  /// The picked bus's road as one GeoJSON line, under the stops (added before
-  /// them) and the markers.
+  /// The picked bus's road as GeoJSON lines under the stops (added before
+  /// them) and the markers: the mapped road solid, the guessed parts dashed.
   Future<void> _drawRoute(
     MapLibreMapController controller,
     List<GeoPoint> route,
+    List<GeoPoint> before,
+    List<GeoPoint> after,
   ) async {
-    if (identical(route, _drawnRoute)) return;
+    if (identical(route, _drawnRoute) &&
+        identical(before, _drawnBefore) &&
+        identical(after, _drawnAfter)) {
+      return;
+    }
     _drawnRoute = route;
+    _drawnBefore = before;
+    _drawnAfter = after;
+    Map<String, Object?> line(List<GeoPoint> points, {required bool guessed}) =>
+        {
+          'type': 'Feature',
+          'properties': {'guessed': guessed},
+          'geometry': {
+            'type': 'LineString',
+            'coordinates': [
+              for (final point in points) [point.lng, point.lat],
+            ],
+          },
+        };
     final data = {
       'type': 'FeatureCollection',
       'features': [
-        if (route.length > 1)
-          {
-            'type': 'Feature',
-            'properties': <String, Object?>{},
-            'geometry': {
-              'type': 'LineString',
-              'coordinates': [
-                for (final point in route) [point.lng, point.lat],
-              ],
-            },
-          },
+        if (route.length > 1) line(route, guessed: false),
+        if (before.length > 1) line(before, guessed: true),
+        if (after.length > 1) line(after, guessed: true),
       ],
     };
     if (_routeAdded) {
@@ -255,6 +279,9 @@ class _BoardMapState extends State<BoardMap> {
     }
     _routeAdded = true;
     await controller.addGeoJsonSource(_routeSource, data);
+    final below = _stopsAdded
+        ? _stopLayer
+        : controller.circleManager?.layerIds.firstOrNull;
     await controller.addLineLayer(
       _routeSource,
       _routeLayer,
@@ -265,9 +292,28 @@ class _BoardMapState extends State<BoardMap> {
         lineCap: 'round',
         lineJoin: 'round',
       ),
-      belowLayerId: _stopsAdded
-          ? _stopLayer
-          : controller.circleManager?.layerIds.firstOrNull,
+      belowLayerId: below,
+      filter: [
+        '==',
+        ['get', 'guessed'],
+        false,
+      ],
+    );
+    await controller.addLineLayer(
+      _routeSource,
+      _guessLayer,
+      const LineLayerProperties(
+        lineColor: _amber,
+        lineWidth: 4,
+        lineOpacity: 0.7,
+        lineDasharray: [1.2, 1.6],
+      ),
+      belowLayerId: below,
+      filter: [
+        '==',
+        ['get', 'guessed'],
+        true,
+      ],
     );
   }
 

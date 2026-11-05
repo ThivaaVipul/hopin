@@ -49,6 +49,8 @@ class RouteDirection extends Equatable {
     this.classes = const [],
     this.origin = const PlaceNames(),
     this.path = const [],
+    this.before = const [],
+    this.after = const [],
     this.stops = const [],
     this.start,
     this.end,
@@ -72,8 +74,17 @@ class RouteDirection extends Equatable {
   final PlaceNames board;
   final PlaceNames origin;
 
-  /// Its road; empty for an NTC route, which has only its two towns.
+  /// Its road as mapped; empty for an NTC route, which has its towns instead.
   final List<GeoPoint> path;
+
+  /// The rest of a partly mapped road, guessed along real roads: from its
+  /// first town to where the mapped road starts, and on from where it stops
+  /// to its end town.
+  final List<GeoPoint> before;
+  final List<GeoPoint> after;
+
+  /// Its stops; an NTC route's are the towns between its ends, with the
+  /// minutes after it leaves.
   final List<RouteStop> stops;
 
   /// An NTC route's two towns, and a bus stand at the start.
@@ -86,6 +97,14 @@ class RouteDirection extends Equatable {
 
   /// A long-distance route: matched by its towns, not its road.
   bool get long => path.isEmpty;
+
+  /// The whole road, guessed parts and all.
+  List<GeoPoint> get road => [
+    ...before,
+    // The joins are the same point.
+    ...(before.isNotEmpty && path.isNotEmpty ? path.skip(1) : path),
+    ...(after.isNotEmpty ? after.skip(1) : const <GeoPoint>[]),
+  ];
 
   @override
   List<Object?> get props => [routeId, number, board, origin, path.length];
@@ -134,10 +153,11 @@ RouteDirection? _direction(
   final number = route['number'];
   final board = _names(direction['board']);
   if (id is! String || number is! String || board.isEmpty) return null;
-  final path = switch (direction['path']) {
+  List<GeoPoint> line(String key) => switch (direction[key]) {
     final String encoded when encoded.isNotEmpty => _decode(encoded),
     _ => const <GeoPoint>[],
   };
+  final path = line('path');
   final ends = direction['ends'];
   final long = path.isEmpty;
   // A route with no road needs its two towns to be matched at all.
@@ -151,6 +171,8 @@ RouteDirection? _direction(
     board: board,
     origin: _names(direction['origin']),
     path: path,
+    before: path.isEmpty ? const [] : line('before'),
+    after: path.isEmpty ? const [] : line('after'),
     stops: [
       for (final stop in (direction['stops'] as List? ?? const []))
         ?_stop(stop),

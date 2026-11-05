@@ -205,6 +205,100 @@ void main() {
     expect(option.boardName, 'South');
   });
 
+  test('a place along the guessed rest of a road finds the bus', () {
+    // Mapped to 6.92, guessed on to its end town at 6.96.
+    const guessed = RouteDirection(
+      routeId: 'osm:9',
+      source: RouteSource.osm,
+      number: '9',
+      board: PlaceNames(en: 'North'),
+      path: [GeoPoint(6.90, 79.85), GeoPoint(6.92, 79.85)],
+      after: [GeoPoint(6.92, 79.85), GeoPoint(6.96, 79.85)],
+      start: GeoPoint(6.90, 79.85),
+      end: GeoPoint(6.96, 79.85),
+    );
+    // On the guessed part, 2.2 km short of the end town.
+    const along = GeoPoint(6.94, 79.8505);
+    expect(guessed.road, const [
+      GeoPoint(6.90, 79.85),
+      GeoPoint(6.92, 79.85),
+      GeoPoint(6.96, 79.85),
+    ]);
+    final found = bus.find([guessed], from: home, to: along, now: now);
+    expect(found.single.walkFrom, closeTo(55, 15));
+  });
+
+  test('on a far trip the bus may be a longer way off', () {
+    final long = local('15', path: road(20));
+    // 1.5 km east of the road.
+    const offRoad = GeoPoint(6.901, 79.8636);
+    final far = bus.find(
+      [long],
+      from: offRoad,
+      to: const GeoPoint(7.09, 79.85),
+      now: now,
+    );
+    expect(far.single.walkTo, closeTo(1500, 50));
+    // Not on a short one.
+    expect(
+      bus.find(
+        [long],
+        from: offRoad,
+        to: const GeoPoint(6.93, 79.85),
+        now: now,
+      ),
+      isEmpty,
+    );
+  });
+
+  test('a long-distance bus from and to the towns on its way', () {
+    const via = RouteDirection(
+      routeId: 'ntc:9:N',
+      source: RouteSource.ntc,
+      number: '9',
+      board: PlaceNames(en: 'Omega'),
+      start: GeoPoint(6.90, 79.85),
+      end: GeoPoint(8.00, 80.40),
+      stand: RouteStop(GeoPoint(6.901, 79.851), name: 'Alpha Stand'),
+      stops: [RouteStop(GeoPoint(7.40, 80.10), name: 'Middle', minutes: 90)],
+      times: [
+        Departures(0x7f, [480, 600]),
+      ],
+    );
+    // On at the town on its way: its time there is the departure plus 90.
+    final fromMiddle = bus
+        .find(
+          [via],
+          from: const GeoPoint(7.41, 80.11),
+          to: const GeoPoint(7.99, 80.39),
+          now: now,
+        )
+        .single;
+    expect(fromMiddle.boardName, 'Middle');
+    expect(fromMiddle.next.first, DateTime(2026, 11, 4, 9, 30));
+    // Off at it, from the start's stand.
+    final toMiddle = bus
+        .find(
+          [via],
+          from: const GeoPoint(6.90, 79.85),
+          to: const GeoPoint(7.40, 80.10),
+          now: now,
+        )
+        .single;
+    expect(toMiddle.boardName, 'Alpha Stand');
+    expect(toMiddle.walkFrom, lessThan(10));
+    // Not backwards.
+    expect(
+      bus.find(
+        [via],
+        from: const GeoPoint(7.40, 80.10),
+        to: const GeoPoint(6.90, 79.85),
+        now: now,
+      ),
+      isEmpty,
+    );
+  });
+
   test('nothing for a walk', () {
     expect(
       bus.find(

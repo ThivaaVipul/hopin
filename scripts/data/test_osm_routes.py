@@ -1,31 +1,32 @@
-from geometry import decode_polyline, metres
-from osm_routes import build, ends_from, routes_from
+import json
+
+from geometry import decode_polyline, encode_polyline, metres
+from osm_routes import build, ends_from, osrm_router, routes_from, vias_from
 from towns import Towns
 
 # Two made-up towns about 3.3 km apart, south of Colombo Fort.
 ALPHA = (6.900, 79.850)
 BETA = (6.930, 79.850)
 
-TOWNS = Towns.from_overpass(
-    {
-        "elements": [
-            {
-                "type": "node",
-                "id": 1,
-                "lat": ALPHA[0],
-                "lon": ALPHA[1],
-                "tags": {"place": "town", "name": "Alpha", "name:ta": "அ"},
-            },
-            {
-                "type": "node",
-                "id": 2,
-                "lat": BETA[0],
-                "lon": BETA[1],
-                "tags": {"place": "town", "name": "Beta"},
-            },
-        ]
-    }
-)
+TOWNS_JSON = {
+    "elements": [
+        {
+            "type": "node",
+            "id": 1,
+            "lat": ALPHA[0],
+            "lon": ALPHA[1],
+            "tags": {"place": "town", "name": "Alpha", "name:ta": "அ"},
+        },
+        {
+            "type": "node",
+            "id": 2,
+            "lat": BETA[0],
+            "lon": BETA[1],
+            "tags": {"place": "town", "name": "Beta"},
+        },
+    ]
+}
+TOWNS = Towns.from_overpass(TOWNS_JSON)
 
 
 def way(*points):
@@ -106,6 +107,91 @@ def test_an_end_that_is_no_town_ends_where_the_road_does():
     ends = routes[0]["directions"][0]["ends"]
     assert ends[0] == list(ALPHA)
     assert metres(tuple(ends[1]), BETA) < 10
+
+
+def test_via_towns_come_from_the_name():
+    assert vias_from({"name": "Alpha-Beta via Gamma"}) == ["Gamma"]
+    assert vias_from({"name": "Alpha - Beta via Gamma, Delta (night)"}) == ["Gamma", "Delta"]
+    assert vias_from({"name": "Alpha - Beta"}) == []
+
+
+def test_the_rest_of_a_partly_mapped_road_is_guessed_through_its_via_town():
+    gamma = (6.925, 79.862)  # off the mapped road, near Beta
+    towns = Towns.from_overpass(
+        {
+            "elements": [
+                *TOWNS_JSON["elements"],
+                {
+                    "type": "node",
+                    "id": 3,
+                    "lat": gamma[0],
+                    "lon": gamma[1],
+                    "tags": {"place": "village", "name": "Gamma"},
+                },
+            ]
+        }
+    )
+    asked = []
+
+    def router(points):
+        asked.append(points)
+        return list(points)
+
+    tags = {"ref": "9", "name": "Alpha - Beta via Gamma"}
+    routes = routes_from(relation(tags, WAYS[1:2] + WAYS[0:1]), towns, router)
+    to_beta, to_alpha = routes[0]["directions"]
+    # The mapped road stops at 6.92; Beta is at 6.93, through Gamma.
+    after = decode_polyline(to_beta["after"])
+    assert metres(after[0], (6.920, 79.850)) < 10 and after[-1] == BETA
+    assert gamma in asked[0]
+    assert "before" not in to_beta
+    # The other way: guessed from Beta to where the mapped road starts.
+    before = decode_polyline(to_alpha["before"])
+    assert before[0] == BETA and metres(before[-1], (6.920, 79.850)) < 10
+    assert "after" not in to_alpha
+
+
+def test_no_guess_without_a_router_or_an_answer():
+    partial = relation({"ref": "9", "name": "Alpha - Beta"}, WAYS[1:2] + WAYS[0:1])
+    (direction, _) = routes_from(partial, TOWNS)[0]["directions"]
+    assert "after" not in direction
+    (direction, _) = routes_from(partial, TOWNS, lambda points: None)[0]["directions"]
+    assert "after" not in direction
+    # A fully mapped road needs no guess.
+    (direction, _) = routes_from(
+        relation({"ref": "9", "name": "Alpha - Beta"}, WAYS), TOWNS, lambda p: list(p)
+    )[0]["directions"]
+    assert "after" not in direction and "before" not in direction
+
+
+def osrm_answer(road, *steps):
+    route = {"geometry": encode_polyline(road), "legs": [{"steps": list(steps)}]}
+    return json.dumps({"code": "Ok", "routes": [route]}).encode()
+
+
+def test_osrm_guesses_a_road_through_the_points():
+    asked = []
+
+    def fetch(url):
+        asked.append(url)
+        return osrm_answer([ALPHA, BETA], {"name": "Main Street", "ref": "A2"})
+
+    assert osrm_router(fetch, pause=0)([ALPHA, BETA]) == [ALPHA, BETA]
+    assert "/79.85000,6.90000;79.85000,6.93000?" in asked[0]
+    assert "steps=true" in asked[0]
+
+
+def test_no_osrm_guess_on_an_expressway_or_without_a_road():
+    # A bus (bar an expressway bus) keeps off expressways; OSRM can't be told to.
+    for step in ({"name": "Southern Expressway"}, {"name": "", "ref": "E01"}):
+        route = osrm_router(lambda url, step=step: osrm_answer([ALPHA, BETA], step), pause=0)
+        assert route([ALPHA, BETA]) is None
+    assert osrm_router(lambda url: b'{"code": "NoRoute"}', pause=0)([ALPHA, BETA]) is None
+
+    def offline(url):
+        raise OSError("no network")
+
+    assert osrm_router(offline, pause=0)([ALPHA, BETA]) is None
 
 
 def test_each_number_of_a_shared_relation_is_a_route():

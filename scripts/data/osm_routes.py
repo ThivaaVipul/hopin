@@ -7,29 +7,57 @@ direction is the shortest road through it between its two ends. The ends come
 from the from and to tags or the route's name ("A - B", "A/B/C - D"): each is
 the town of that name nearest the network, or, for a name that isn't a town
 ("Bakery Junction"), the network's far end from the other one. A partly mapped
-route keeps the part that is mapped, with its real boards. A name with several
-towns at one end ("A/B/C") gives a direction to each of them, since their
-buses show different boards.
+route keeps the part that is mapped, with its real boards, and the rest of its
+road to its towns is guessed along real roads by OSRM, through the "via" towns
+its name gives ("A - B via C"); the guessed parts ("before" and "after") are
+kept apart from the mapped road, so the app can tell them apart. A name with
+several towns at one end ("A/B/C") gives a direction to each of them, since
+their buses show different boards.
 """
 
 from __future__ import annotations
 
 import heapq
+import json
 import re
+import time
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from itertools import pairwise
 
-from geometry import Point, encode_polyline, length, metres, project, simplify
+from geometry import (
+    Point,
+    decode_polyline,
+    encode_polyline,
+    length,
+    metres,
+    project,
+    simplify,
+)
 from towns import Town, Towns, names_of
+
+# Guesses a road through points, or None (OSRM, or a fake in tests).
+Router = Callable[[list[Point]], list[Point] | None]
+
+OSRM = "https://router.project-osrm.org/route/v1/driving/"
+
+# A town further than this from where the mapped road stops gets the rest of
+# the road guessed; a via town this far off the mapped road is on that rest.
+FILL_M = 500
+VIA_OFF_M = 1000
+# A via town further than this from both of a route's towns is a namesake.
+VIA_WITHIN_M = 50_000
 
 QUERY = (
     '[out:json][timeout:300];area["ISO3166-1"="LK"][admin_level=2]->.lk;'
     "relation[type=route][route=bus](area.lk);out body geom;"
 )
 
-CREDIT = "Bus routes from OpenStreetMap, (c) OpenStreetMap contributors, ODbL"
+CREDIT = (
+    "Bus routes from OpenStreetMap, (c) OpenStreetMap contributors, ODbL; "
+    "the rest of a partly mapped road guessed with OSRM"
+)
 
 # A town further than this from the route's roads is a namesake elsewhere.
 TOWN_WITHIN_M = 15_000
@@ -63,6 +91,53 @@ def ends_from(tags: dict[str, str]) -> tuple[list[str], list[str]]:
         [n.strip() for n in start.split("/") if n.strip()],
         [n.strip() for n in end.split("/") if n.strip()],
     )
+
+
+_VIA_NAMES = re.compile(r"\bvia\s+(.+)$", re.I)
+_VIA_SPLIT = re.compile(r"\s*(?:,|&|/|\band\b)\s*", re.I)
+
+
+def vias_from(tags: dict[str, str]) -> list[str]:
+    """The towns a route's name says it goes through ("A - B via C, D")."""
+    name = _BRACKETS.sub("", tags.get("name", ""))
+    match = _VIA_NAMES.search(name)
+    if not match:
+        return []
+    return [part.strip() for part in _VIA_SPLIT.split(match[1]) if part.strip()]
+
+
+def osrm_router(fetch: Callable[[str], bytes], pause: float = 1.0) -> Router:
+    """Guesses roads with OSRM's public server: light use, a request a second.
+
+    A guess that runs on an expressway is no guess: a bus (bar an expressway
+    bus) keeps off them, and the public server can't be told to.
+    """
+
+    def route(points: list[Point]) -> list[Point] | None:
+        time.sleep(pause)
+        coords = ";".join(f"{lng:.5f},{lat:.5f}" for lat, lng in points)
+        url = f"{OSRM}{coords}?overview=full&geometries=polyline&steps=true"
+        try:
+            answer = json.loads(fetch(url))
+        except (OSError, ValueError):
+            return None
+        if answer.get("code") != "Ok" or not answer.get("routes"):
+            return None
+        best = answer["routes"][0]
+        steps = [step for leg in best.get("legs", []) for step in leg.get("steps", [])]
+        if any(_on_expressway(step) for step in steps):
+            return None
+        return decode_polyline(best["geometry"])
+
+    return route
+
+
+_EXPRESSWAY_REF = re.compile(r"(?:^|;)\s*E\d")
+
+
+def _on_expressway(step: dict) -> bool:
+    name = (step.get("name") or "").lower()
+    return "expressway" in name or bool(_EXPRESSWAY_REF.search(step.get("ref") or ""))
 
 
 def _key(point: Point) -> Key:
@@ -175,10 +250,29 @@ def _stops(relation: dict, road: list[Point]) -> list[list[float]]:
     return [[round(p[0], 5), round(p[1], 5)] for _, p in kept]
 
 
+def _guess(
+    router: Router | None, start: Point, vias: list[Point], end: Point
+) -> list[Point] | None:
+    """The road from start to end through vias, guessed, or None."""
+    if router is None:
+        return None
+    road = router([start, *vias, end])
+    return simplify(road, 10.0) if road and len(road) > 1 else None
+
+
 def _directions_to(
-    network: Network, relation: dict, origins: list[End], destinations: list[End]
+    network: Network,
+    relation: dict,
+    origins: list[End],
+    destinations: list[End],
+    router: Router | None = None,
+    vias: Sequence[Point] = (),
 ) -> list[dict]:
-    """A direction to each destination, from the origin furthest along the roads."""
+    """A direction to each destination, from the origin furthest along the roads.
+
+    Where the mapped road stops short of a town, the rest is guessed, through
+    the via towns that are off the mapped road, each on the side it is nearer.
+    """
     directions = []
     for destination in destinations:
         roads = []
@@ -194,23 +288,57 @@ def _directions_to(
         # goes to its end town, past where its road stops.
         start = origin.town.point if origin.town else road[0]
         end = destination.town.point if destination.town else road[-1]
-        directions.append(
-            {
-                "board": destination.names,
-                "origin": origin.names,
-                "path": encode_polyline(road),
-                "stops": _stops(relation, road),
-                "ends": [
-                    [round(start[0], 5), round(start[1], 5)],
-                    [round(end[0], 5), round(end[1], 5)],
-                ],
-            }
-        )
+        off = [via for via in vias if project(road, via)[1] > VIA_OFF_M]
+        direction = {
+            "board": destination.names,
+            "origin": origin.names,
+            "path": encode_polyline(road),
+            "stops": _stops(relation, road),
+            "ends": [
+                [round(start[0], 5), round(start[1], 5)],
+                [round(end[0], 5), round(end[1], 5)],
+            ],
+        }
+        if metres(road[0], start) > FILL_M:
+            near_start = sorted(
+                (v for v in off if metres(v, start) < metres(v, end)),
+                key=lambda v: metres(v, start),
+            )
+            before = _guess(router, start, near_start, road[0])
+            if before:
+                direction["before"] = encode_polyline(before)
+        if metres(road[-1], end) > FILL_M:
+            near_end = sorted(
+                (v for v in off if metres(v, end) <= metres(v, start)),
+                key=lambda v: metres(v, road[-1]),
+            )
+            after = _guess(router, road[-1], near_end, end)
+            if after:
+                direction["after"] = encode_polyline(after)
+        directions.append(direction)
     return directions
 
 
-def routes_from(relation: dict, towns: Towns) -> list[dict] | str:
-    """The route data for one relation (one route per number it carries), or why not."""
+def _via_points(towns: Towns, names: list[str], route_towns: list[Point]) -> list[Point]:
+    """The via towns' points: each the town of that name nearest the route's towns."""
+    points = []
+    for name in names:
+        best = None
+        for _, town in towns.matches(name):
+            away = min((metres(town.point, p) for p in route_towns), default=float("inf"))
+            if away <= VIA_WITHIN_M and (best is None or away < best[0]):
+                best = (away, town)
+        if best:
+            points.append(best[1].point)
+    return points
+
+
+def routes_from(relation: dict, towns: Towns, router: Router | None = None) -> list[dict] | str:
+    """The route data for one relation (one route per number it carries), or why not.
+
+    router guesses the rest of a partly mapped route's road; without one, a
+    route keeps only its mapped part.
+    """
     tags = relation.get("tags", {})
     numbers = [n for n in _NUMBERS.split(tags.get("ref", "").strip()) if n]
     if not numbers:
@@ -234,12 +362,14 @@ def routes_from(relation: dict, towns: Towns) -> list[dict] | str:
         start_ends = [End(starts[0], None, network.furthest(end_ends[0].key))]
     if not end_ends:
         end_ends = [End(ends[0], None, network.furthest(start_ends[0].key))]
-    directions = _directions_to(network, relation, start_ends, end_ends)
+    route_towns = [e.town.point for e in start_ends + end_ends if e.town]
+    vias = _via_points(towns, vias_from(tags), route_towns)
+    directions = _directions_to(network, relation, start_ends, end_ends, router, vias)
     one_way = tags.get("public_transport:version") == "2" or bool(
         tags.get("from") and tags.get("to")
     )
     if not one_way:
-        directions += _directions_to(network, relation, end_ends, start_ends)
+        directions += _directions_to(network, relation, end_ends, start_ends, router, vias)
     if not directions:
         return "no road between its ends"
     return [
@@ -252,14 +382,16 @@ def routes_from(relation: dict, towns: Towns) -> list[dict] | str:
     ]
 
 
-def build(payload: dict, towns: Towns) -> tuple[list[dict], list[str]]:
+def build(
+    payload: dict, towns: Towns, router: Router | None = None
+) -> tuple[list[dict], list[str]]:
     """All usable numbered routes in an Overpass answer, and a line for each one left out."""
     routes: list[dict] = []
     notes: list[str] = []
     for element in payload.get("elements", []):
         if element.get("type") != "relation":
             continue
-        built = routes_from(element, towns)
+        built = routes_from(element, towns, router)
         if isinstance(built, str):
             name = element.get("tags", {}).get("name", "?")
             notes.append(f"osm {element['id']} ({name}): left out, {built}")

@@ -158,5 +158,5 @@
   "classLuxury": "சொகுசு",
   "classAc": "ஏசி",
   "classExpressway": "அதிவேக",
-  "routeCredits": "வழிகள்: OpenStreetMap, NTC, LMT"
+  "routeCredits": "வழிகள்: OpenStreetMap, OSRM, NTC, LMT"
 }

@@ -14,6 +14,8 @@ Every file has the same shape: {"format", "source", "built", "credit",
 numbers its trips may carry). A direction has "board"
 (the end town's names: "ta", "si", "en", whichever are known) and "origin",
 and as its source allows: "path" (Google's encoded polyline, precision 5),
+"before" and "after" (an OpenStreetMap route's road guessed by OSRM where
+the mapped "path" stops short of its towns),
 "stops" ([lat, lng] or [lat, lng, name, minutes from the first stop]),
 "ends" (NTC: the two towns' points), "stand" (NTC: [lat, lng, name] of a bus
 stand at the start) and "times" ([{"days": a 7-bit mask with Monday as bit 0,
@@ -66,7 +68,9 @@ def _ntc(towns: Towns) -> tuple[list[dict], list[str]]:
 
 
 BUILDERS: dict[str, Callable[[Towns], tuple[list[dict], list[str]]]] = {
-    "osm": lambda towns: osm_routes.build(json.loads(net.overpass(osm_routes.QUERY)), towns),
+    "osm": lambda towns: osm_routes.build(
+        json.loads(net.overpass(osm_routes.QUERY)), towns, osm_routes.osrm_router(net.get)
+    ),
     "ntc": _ntc,
     "lmt": lambda towns: lmt_gtfs.build(net.get(lmt_gtfs.GTFS), towns),
 }

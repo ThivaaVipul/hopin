@@ -579,7 +579,10 @@ void main() {
       expect(find.text('CM9'), findsOneWidget);
       expect(find.textContaining('Board at Lake Road'), findsOneWidget);
       expect(find.textContaining('Board on this road'), findsOneWidget);
-      expect(find.text('Routes: OpenStreetMap, NTC, LMT'), findsOneWidget);
+      expect(
+        find.text('Routes: OpenStreetMap, OSRM, NTC, LMT'),
+        findsOneWidget,
+      );
       // The bus with times comes first.
       expect(
         tester.getTopLeft(find.text('CM9')).dy,

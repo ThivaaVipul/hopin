@@ -140,7 +140,7 @@ class RideTask extends TaskHandler {
       await FlutterForegroundTask.updateService(
         notificationTitle: _l!.checkingRide,
         notificationText: '',
-        notificationButtons: const [],
+        notificationButtons: [NotificationButton(id: endButton, text: _l!.end)],
       );
     }
     _follow();

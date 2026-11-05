@@ -8,11 +8,13 @@ import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import android.util.Log
 import com.pravera.flutter_foreground_task.service.ForegroundService
+import com.pravera.flutter_foreground_task.service.ForegroundServiceManager
 
 // "On a bus" in quick settings (docs/PLAN.md, Ride detection): one tap starts
-// watching the ride, for the rides Play services doesn't notice. With ride
-// detection off, or when Android won't let the service start from here, it
-// opens Hopin, which starts watching from the screen.
+// watching the ride, for the rides Play services doesn't notice, and a tap
+// while it's on ends the ride, as End does. With ride detection off, or when
+// Android won't let the service start from here, it opens Hopin, which starts
+// watching from the screen.
 class RideTileService : TileService() {
     override fun onStartListening() {
         super.onStartListening()
@@ -21,6 +23,10 @@ class RideTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
+        if (ForegroundService.isRunningServiceState.value) {
+            end()
+            return
+        }
         if (!RideDetection.isEnabled(this)) {
             open(watch = false)
             return
@@ -32,6 +38,17 @@ class RideTileService : TileService() {
             Log.w(TAG, "Could not start watching from the tile: ${e.message}")
             open(watch = true)
         }
+    }
+
+    // Stops the ride service the way the Dart task's own End does; the task
+    // keeps the ride and leaves its quiet mark.
+    private fun end() {
+        try {
+            ForegroundServiceManager().stop(this)
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not end the ride from the tile: ${e.message}")
+        }
+        show(watching = false)
     }
 
     private fun show(watching: Boolean = ForegroundService.isRunningServiceState.value) {

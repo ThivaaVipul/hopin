@@ -278,3 +278,88 @@ class RouteNotesSync extends _PooledSync {
         );
   }
 }
+
+/// The routes the riders added by hand (`routes/{id}`): either rider's go
+/// up, both riders' come down; a deleted one is marked.
+class HandRoutesSync extends _PooledSync {
+  HandRoutesSync(HopinDatabase db, Remote remote)
+    : super(db, remote, 'routes', 'cursor.routes');
+
+  @override
+  Future<List<(String, Map<String, Object?>, bool?, int)>> _pending() async => [
+    for (final row in await (_db.select(
+      _db.handRoutes,
+    )..where((r) => r.pendingSince.isNotNull())).get())
+      (
+        row.id,
+        {
+          'number': row.number,
+          'fromLat': row.fromLat,
+          'fromLng': row.fromLng,
+          'fromEn': row.fromEn,
+          'fromTa': row.fromTa,
+          'fromSi': row.fromSi,
+          'toLat': row.toLat,
+          'toLng': row.toLng,
+          'toEn': row.toEn,
+          'toTa': row.toTa,
+          'toSi': row.toSi,
+          'via': row.via,
+          'road': row.road,
+          'by': row.by,
+        },
+        row.deletedAt != null,
+        row.pendingSince!,
+      ),
+  ];
+
+  @override
+  Future<void> _sent(String id, int pendingSince) =>
+      (_db.update(_db.handRoutes)..where(
+            (r) => r.id.equals(id) & r.pendingSince.equals(pendingSince),
+          ))
+          .write(const HandRoutesCompanion(pendingSince: Value(null)));
+
+  @override
+  Future<void> _take(RemoteDoc doc) async {
+    final local = await (_db.select(
+      _db.handRoutes,
+    )..where((r) => r.id.equals(doc.id))).getSingleOrNull();
+    if (local?.pendingSince != null) return;
+    final d = doc.data;
+    final number = d['number'];
+    final by = d['by'];
+    final points = [d['fromLat'], d['fromLng'], d['toLat'], d['toLng']];
+    if (number is! String || by is! String || points.any((p) => p is! num)) {
+      return;
+    }
+    String? name(String key) => switch (d[key]) {
+      final String text when text.trim().isNotEmpty => text.trim(),
+      _ => null,
+    };
+    await _db
+        .into(_db.handRoutes)
+        .insertOnConflictUpdate(
+          HandRoutesCompanion.insert(
+            id: doc.id,
+            number: number,
+            fromLat: (points[0]! as num).toDouble(),
+            fromLng: (points[1]! as num).toDouble(),
+            fromEn: Value(name('fromEn')),
+            fromTa: Value(name('fromTa')),
+            fromSi: Value(name('fromSi')),
+            toLat: (points[2]! as num).toDouble(),
+            toLng: (points[3]! as num).toDouble(),
+            toEn: Value(name('toEn')),
+            toTa: Value(name('toTa')),
+            toSi: Value(name('toSi')),
+            via: d['via'] as String? ?? '[]',
+            road: d['road'] as String? ?? '',
+            by: by,
+            updatedAt: doc.updatedAt,
+            deletedAt: Value(d['deletedAt'] as int?),
+            pendingSince: const Value(null),
+          ),
+        );
+  }
+}

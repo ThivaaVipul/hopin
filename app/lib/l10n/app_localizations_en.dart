@@ -605,4 +605,53 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guessedDashed => 'Dashed: guessed road';
+
+  @override
+  String get routeSourceHand => 'Added in Hopin';
+
+  @override
+  String get addRoute => 'Add a route';
+
+  @override
+  String get editRoute => 'Edit route';
+
+  @override
+  String get routeNumberLabel => 'Number';
+
+  @override
+  String get routeFrom => 'From';
+
+  @override
+  String get routeTo => 'To';
+
+  @override
+  String get pickTown => 'Pick a town';
+
+  @override
+  String get townsOnTheWay => 'Towns on the way';
+
+  @override
+  String get addTown => 'Add a town';
+
+  @override
+  String get removeTown => 'Remove town';
+
+  @override
+  String get searchTown => 'Search for a town';
+
+  @override
+  String get drawingRoad => 'Drawing the road';
+
+  @override
+  String get roadFailed =>
+      'Couldn\'t draw the road. Check your internet and try again.';
+
+  @override
+  String get tryAgain => 'Try again';
+
+  @override
+  String get editTowns => 'Edit towns';
+
+  @override
+  String get deleteRouteQuestion => 'Delete this route for both of you?';
 }

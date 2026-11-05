@@ -187,6 +187,38 @@ class RouteNotes extends Table {
   Set<Column<Object>> get primaryKey => {id};
 }
 
+/// The routes the riders added by hand (`routes/{id}`, docs/PLAN.md, Which
+/// bus), shared by both riders; deleting one marks it.
+@DataClassName('HandRouteRow')
+class HandRoutes extends Table {
+  TextColumn get id => text()();
+  TextColumn get number => text()();
+  RealColumn get fromLat => real()();
+  RealColumn get fromLng => real()();
+  TextColumn get fromEn => text().nullable()();
+  TextColumn get fromTa => text().nullable()();
+  TextColumn get fromSi => text().nullable()();
+  RealColumn get toLat => real()();
+  RealColumn get toLng => real()();
+  TextColumn get toEn => text().nullable()();
+  TextColumn get toTa => text().nullable()();
+  TextColumn get toSi => text().nullable()();
+
+  /// The towns on the way, in order, as JSON: [{"lat", "lng", "en", "ta",
+  /// "si"}].
+  TextColumn get via => text()();
+
+  /// The road OSRM drew, as an encoded polyline.
+  TextColumn get road => text()();
+  TextColumn get by => text()();
+  IntColumn get updatedAt => integer()();
+  IntColumn get deletedAt => integer().nullable()();
+  IntColumn get pendingSince => integer().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
 @DataClassName('SettingRow')
 class Settings extends Table {
   TextColumn get key => text()();
@@ -209,6 +241,7 @@ class Settings extends Table {
     StopNames,
     RouteData,
     RouteNotes,
+    HandRoutes,
     Settings,
   ],
 )
@@ -219,7 +252,7 @@ class HopinDatabase extends _$HopinDatabase {
       HopinDatabase(driftDatabase(name: 'hopin_$uid'));
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   // Places are a copy of Firestore, so a new schema rebuilds the tables and the
   // sync fills them again from the start; unsynced writes are read back from

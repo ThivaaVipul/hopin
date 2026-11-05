@@ -15,6 +15,7 @@ import 'package:hopin/core/guide/guide_service.dart';
 import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/profile/profile_repository.dart';
 import 'package:hopin/core/search/nominatim.dart';
+import 'package:hopin/core/search/osrm.dart';
 import 'package:hopin/core/search/overpass.dart';
 import 'package:hopin/core/search/route_files.dart';
 import 'package:hopin/core/share/shares.dart';
@@ -42,6 +43,7 @@ class HopinApp extends StatefulWidget {
     required this.location,
     required this.nominatim,
     required this.overpass,
+    required this.osrm,
     required this.routeFiles,
     required this.mapBuilder,
     required this.rideMapBuilder,
@@ -60,6 +62,7 @@ class HopinApp extends StatefulWidget {
   final LocationService location;
   final Nominatim nominatim;
   final Overpass overpass;
+  final Osrm osrm;
   final RouteFiles routeFiles;
   final MapBuilder mapBuilder;
   final RideMapBuilder rideMapBuilder;
@@ -109,6 +112,7 @@ class _HopinAppState extends State<HopinApp> {
       RepositoryProvider<LocationService>.value(value: widget.location),
       RepositoryProvider<Nominatim>.value(value: widget.nominatim),
       RepositoryProvider<Overpass>.value(value: widget.overpass),
+      RepositoryProvider<Osrm>.value(value: widget.osrm),
       RepositoryProvider<RouteFiles>.value(value: widget.routeFiles),
       RepositoryProvider<MapBuilder>.value(value: widget.mapBuilder),
       RepositoryProvider<RideMapBuilder>.value(value: widget.rideMapBuilder),

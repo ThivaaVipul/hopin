@@ -889,5 +889,69 @@
   "guessedDashed": "Dashed: guessed road",
   "@guessedDashed": {
     "description": "Under a route's map when part of its road is guessed."
+  },
+  "routeSourceHand": "Added in Hopin",
+  "@routeSourceHand": {
+    "description": "Where a route comes from: one of the riders added it."
+  },
+  "addRoute": "Add a route",
+  "@addRoute": {
+    "description": "Settings > Routes: adds a route by hand; also that page's title."
+  },
+  "editRoute": "Edit route",
+  "@editRoute": {
+    "description": "The title of the page that changes a route added by hand."
+  },
+  "routeNumberLabel": "Number",
+  "@routeNumberLabel": {
+    "description": "A route's number as on the bus, when adding one."
+  },
+  "routeFrom": "From",
+  "@routeFrom": {
+    "description": "Where a route added by hand starts."
+  },
+  "routeTo": "To",
+  "@routeTo": {
+    "description": "Where a route added by hand ends."
+  },
+  "pickTown": "Pick a town",
+  "@pickTown": {
+    "description": "An end town not picked yet, when adding a route."
+  },
+  "townsOnTheWay": "Towns on the way",
+  "@townsOnTheWay": {
+    "description": "The towns a route added by hand passes, in order."
+  },
+  "addTown": "Add a town",
+  "@addTown": {
+    "description": "Adds a town a route added by hand passes."
+  },
+  "removeTown": "Remove town",
+  "@removeTown": {
+    "description": "Tooltip: takes a town off a route's way."
+  },
+  "searchTown": "Search for a town",
+  "@searchTown": {
+    "description": "The search's hint when picking a route's town."
+  },
+  "drawingRoad": "Drawing the road",
+  "@drawingRoad": {
+    "description": "While OSRM draws the road of a route being added."
+  },
+  "roadFailed": "Couldn't draw the road. Check your internet and try again.",
+  "@roadFailed": {
+    "description": "When OSRM couldn't draw a route's road."
+  },
+  "tryAgain": "Try again",
+  "@tryAgain": {
+    "description": "Draws a route's road again after it failed."
+  },
+  "editTowns": "Edit towns",
+  "@editTowns": {
+    "description": "Opens a route added by hand to change its towns."
+  },
+  "deleteRouteQuestion": "Delete this route for both of you?",
+  "@deleteRouteQuestion": {
+    "description": "Asked before a route added by hand is deleted."
   }
 }

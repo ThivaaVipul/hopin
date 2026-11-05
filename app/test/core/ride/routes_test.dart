@@ -173,6 +173,37 @@ void main() {
     expect(plainNumber('138/2'), isNot(plainNumber('138')));
   });
 
+  test('a route added by hand runs both ways along its road', () {
+    const fort = RouteTown(GeoPoint(6.93, 79.85), PlaceNames(en: 'Fort'));
+    const lake = RouteTown(GeoPoint(6.90, 79.87), PlaceNames(ta: 'ஏரி'));
+    const hand = HandRoute(
+      id: 'abc',
+      number: '138',
+      from: fort,
+      to: lake,
+      road: [
+        GeoPoint(6.93, 79.85),
+        GeoPoint(6.91, 79.86),
+        GeoPoint(6.90, 79.87),
+      ],
+    );
+    final [there, back] = hand.directions;
+    expect(there.routeId, 'hand:abc');
+    expect(HandRoute.idIn(there.routeId), 'abc');
+    expect(HandRoute.idIn('osm:1'), isNull);
+    expect((there.board, there.origin), (lake.names, fort.names));
+    expect((back.board, back.origin), (fort.names, lake.names));
+    expect(back.path, hand.road.reversed);
+    expect((there.start, there.end), (fort.point, lake.point));
+    expect(there.long, isFalse);
+    // Riders' notes know each way apart.
+    expect(there.noteKey, isNot(back.noteKey));
+  });
+
+  test("a file can't claim to be routes added by hand", () {
+    expect(() => parseRouteFile(file('hand', const [])), throwsFormatException);
+  });
+
   group("the riders' notes", () {
     const north = RouteDirection(
       routeId: 'osm:9',

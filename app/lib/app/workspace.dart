@@ -34,7 +34,8 @@ class Workspace {
       _ridesSync = RidesSync(db, remote, uid),
       _haltsSync = HaltsSync(db, remote),
       _notesSync = StopNotesSync(db, remote),
-      _routeNotesSync = RouteNotesSync(db, remote) {
+      _routeNotesSync = RouteNotesSync(db, remote),
+      _handRoutesSync = HandRoutesSync(db, remote) {
     appSettings = AppSettings(settings);
     _settingsSync = SettingsSync(appSettings, settings, remote, uid);
     places.onChange = () => unawaited(_sync.push());
@@ -44,7 +45,10 @@ class Workspace {
       unawaited(_haltsSync.push());
     };
     stops.onChange = () => unawaited(_notesSync.push());
-    routes.onChange = () => unawaited(_routeNotesSync.push());
+    routes.onChange = () {
+      unawaited(_routeNotesSync.push());
+      unawaited(_handRoutesSync.push());
+    };
   }
 
   final String uid;
@@ -59,8 +63,8 @@ class Workspace {
   /// OSM's and the learned bus stops (docs/PLAN.md, Sharing and stops).
   final StopsRepository stops;
 
-  /// The bus routes from the route files, with the riders' notes on them
-  /// (docs/PLAN.md, Which bus).
+  /// The bus routes from the route files, with the riders' notes on them,
+  /// and the routes they added by hand (docs/PLAN.md, Which bus).
   final RoutesRepository routes;
 
   /// The language and alert stages, which follow the account.
@@ -71,6 +75,7 @@ class Workspace {
   final HaltsSync _haltsSync;
   final StopNotesSync _notesSync;
   final RouteNotesSync _routeNotesSync;
+  final HandRoutesSync _handRoutesSync;
   RideNamer? _namer;
 
   /// Names the rides' ends; one for the workspace, so Home and the Rides page
@@ -91,6 +96,7 @@ class Workspace {
         _haltsSync.start(),
         _notesSync.start(),
         _routeNotesSync.start(),
+        _handRoutesSync.start(),
       ]);
     } else {
       await Future.wait([
@@ -100,6 +106,7 @@ class Workspace {
         _haltsSync.stop(),
         _notesSync.stop(),
         _routeNotesSync.stop(),
+        _handRoutesSync.stop(),
       ]);
     }
   }
@@ -112,6 +119,7 @@ class Workspace {
       _haltsSync.stop(),
       _notesSync.stop(),
       _routeNotesSync.stop(),
+      _handRoutesSync.stop(),
     ]);
     await _db.close();
   }

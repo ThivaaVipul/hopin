@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hopin/app/router.dart';
 import 'package:hopin/app/theme.dart';
 import 'package:hopin/app/widgets/board_names.dart';
 import 'package:hopin/app/widgets/number_chip.dart';
@@ -40,7 +42,11 @@ class _RouteView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return BlocBuilder<RouteCubit, RouteState>(
+    return BlocConsumer<RouteCubit, RouteState>(
+      listenWhen: (before, now) => before.route != null && now.route == null,
+      listener: (context, state) {
+        if (context.canPop()) context.pop();
+      },
       builder: (context, state) {
         final route = state.route;
         return Scaffold(
@@ -50,7 +56,9 @@ class _RouteView extends StatelessWidget {
             foregroundColor: colors.ink,
             surfaceTintColor: Colors.transparent,
           ),
-          body: route == null ? const SizedBox.shrink() : _Route(route: route),
+          body: route == null
+              ? const SizedBox.shrink()
+              : _Route(route: route, hand: state.hand),
         );
       },
     );
@@ -58,9 +66,12 @@ class _RouteView extends StatelessWidget {
 }
 
 class _Route extends StatelessWidget {
-  const _Route({required this.route});
+  const _Route({required this.route, required this.hand});
 
   final KnownRoute route;
+
+  /// The route as added by hand, for one that was.
+  final HandRoute? hand;
 
   @override
   Widget build(BuildContext context) {
@@ -83,34 +94,43 @@ class _Route extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
             children: [
-              _Summary(route: route, guessed: props.guessed.isNotEmpty),
+              _Summary(
+                route: route,
+                hand: hand,
+                guessed: props.guessed.isNotEmpty,
+              ),
               const SizedBox(height: 16),
               _Boards(route: route),
               const SizedBox(height: 12),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: route.removed
-                    ? TextButton.icon(
-                        onPressed: () => unawaited(
-                          context.read<RouteCubit>().setRemoved(removed: false),
+              if (hand case final hand?)
+                _HandActions(hand: hand)
+              else
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: route.removed
+                      ? TextButton.icon(
+                          onPressed: () => unawaited(
+                            context.read<RouteCubit>().setRemoved(
+                              removed: false,
+                            ),
+                          ),
+                          icon: const Icon(Icons.undo),
+                          label: Text(l.putBackRoute),
+                          style: TextButton.styleFrom(
+                            foregroundColor: colors.amber,
+                            minimumSize: const Size(0, 48),
+                          ),
+                        )
+                      : TextButton.icon(
+                          onPressed: () => unawaited(_remove(context)),
+                          icon: const Icon(Icons.remove_circle_outline),
+                          label: Text(l.removeRoute),
+                          style: TextButton.styleFrom(
+                            foregroundColor: colors.urgent,
+                            minimumSize: const Size(0, 48),
+                          ),
                         ),
-                        icon: const Icon(Icons.undo),
-                        label: Text(l.putBackRoute),
-                        style: TextButton.styleFrom(
-                          foregroundColor: colors.amber,
-                          minimumSize: const Size(0, 48),
-                        ),
-                      )
-                    : TextButton.icon(
-                        onPressed: () => unawaited(_remove(context)),
-                        icon: const Icon(Icons.remove_circle_outline),
-                        label: Text(l.removeRoute),
-                        style: TextButton.styleFrom(
-                          foregroundColor: colors.urgent,
-                          minimumSize: const Size(0, 48),
-                        ),
-                      ),
-              ),
+                ),
             ],
           ),
         ),
@@ -142,11 +162,76 @@ class _Route extends StatelessWidget {
   }
 }
 
+/// A route added by hand: Edit towns, and Delete for both riders.
+class _HandActions extends StatelessWidget {
+  const _HandActions({required this.hand});
+
+  final HandRoute hand;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final colors = context.colors;
+    return Wrap(
+      spacing: 8,
+      children: [
+        TextButton.icon(
+          onPressed: () =>
+              unawaited(context.push<void>(Routes.editRoute(hand.routeId))),
+          icon: const Icon(Icons.edit_road),
+          label: Text(l.editTowns),
+          style: TextButton.styleFrom(
+            foregroundColor: colors.amber,
+            minimumSize: const Size(0, 48),
+          ),
+        ),
+        TextButton.icon(
+          onPressed: () => unawaited(_delete(context)),
+          icon: const Icon(Icons.delete_outline),
+          label: Text(l.delete),
+          style: TextButton.styleFrom(
+            foregroundColor: colors.urgent,
+            minimumSize: const Size(0, 48),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Asked first: it goes for both riders.
+  Future<void> _delete(BuildContext context) async {
+    final l = AppLocalizations.of(context);
+    final cubit = context.read<RouteCubit>();
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Text(l.deleteRouteQuestion),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l.delete),
+          ),
+        ],
+      ),
+    );
+    if (sure ?? false) await cubit.delete();
+  }
+}
+
 /// The number, the ends, where it comes from and the towns between.
 class _Summary extends StatelessWidget {
-  const _Summary({required this.route, required this.guessed});
+  const _Summary({
+    required this.route,
+    required this.hand,
+    required this.guessed,
+  });
 
   final KnownRoute route;
+  final HandRoute? hand;
   final bool guessed;
 
   @override
@@ -155,7 +240,13 @@ class _Summary extends StatelessWidget {
     final colors = context.colors;
     final language = Localizations.localeOf(context).languageCode;
     final first = route.first;
-    final between = townsBetween(first);
+    final between = switch (hand) {
+      final hand? => [
+        for (final town in hand.via)
+          ?(town.names.inLanguage(language) ?? town.names.si),
+      ],
+      null => townsBetween(first),
+    };
     final muted = context.text.bodyMedium?.copyWith(color: colors.onBoardMuted);
     return Material(
       color: colors.board,

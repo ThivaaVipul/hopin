@@ -4807,6 +4807,983 @@ class RouteNotesCompanion extends UpdateCompanion<RouteNoteRow> {
   }
 }
 
+class $HandRoutesTable extends HandRoutes
+    with TableInfo<$HandRoutesTable, HandRouteRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $HandRoutesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _numberMeta = const VerificationMeta('number');
+  @override
+  late final GeneratedColumn<String> number = GeneratedColumn<String>(
+    'number',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fromLatMeta = const VerificationMeta(
+    'fromLat',
+  );
+  @override
+  late final GeneratedColumn<double> fromLat = GeneratedColumn<double>(
+    'from_lat',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fromLngMeta = const VerificationMeta(
+    'fromLng',
+  );
+  @override
+  late final GeneratedColumn<double> fromLng = GeneratedColumn<double>(
+    'from_lng',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _fromEnMeta = const VerificationMeta('fromEn');
+  @override
+  late final GeneratedColumn<String> fromEn = GeneratedColumn<String>(
+    'from_en',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fromTaMeta = const VerificationMeta('fromTa');
+  @override
+  late final GeneratedColumn<String> fromTa = GeneratedColumn<String>(
+    'from_ta',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fromSiMeta = const VerificationMeta('fromSi');
+  @override
+  late final GeneratedColumn<String> fromSi = GeneratedColumn<String>(
+    'from_si',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _toLatMeta = const VerificationMeta('toLat');
+  @override
+  late final GeneratedColumn<double> toLat = GeneratedColumn<double>(
+    'to_lat',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _toLngMeta = const VerificationMeta('toLng');
+  @override
+  late final GeneratedColumn<double> toLng = GeneratedColumn<double>(
+    'to_lng',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _toEnMeta = const VerificationMeta('toEn');
+  @override
+  late final GeneratedColumn<String> toEn = GeneratedColumn<String>(
+    'to_en',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _toTaMeta = const VerificationMeta('toTa');
+  @override
+  late final GeneratedColumn<String> toTa = GeneratedColumn<String>(
+    'to_ta',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _toSiMeta = const VerificationMeta('toSi');
+  @override
+  late final GeneratedColumn<String> toSi = GeneratedColumn<String>(
+    'to_si',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _viaMeta = const VerificationMeta('via');
+  @override
+  late final GeneratedColumn<String> via = GeneratedColumn<String>(
+    'via',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _roadMeta = const VerificationMeta('road');
+  @override
+  late final GeneratedColumn<String> road = GeneratedColumn<String>(
+    'road',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _byMeta = const VerificationMeta('by');
+  @override
+  late final GeneratedColumn<String> by = GeneratedColumn<String>(
+    'by',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _pendingSinceMeta = const VerificationMeta(
+    'pendingSince',
+  );
+  @override
+  late final GeneratedColumn<int> pendingSince = GeneratedColumn<int>(
+    'pending_since',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    number,
+    fromLat,
+    fromLng,
+    fromEn,
+    fromTa,
+    fromSi,
+    toLat,
+    toLng,
+    toEn,
+    toTa,
+    toSi,
+    via,
+    road,
+    by,
+    updatedAt,
+    deletedAt,
+    pendingSince,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'hand_routes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<HandRouteRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('number')) {
+      context.handle(
+        _numberMeta,
+        number.isAcceptableOrUnknown(data['number']!, _numberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_numberMeta);
+    }
+    if (data.containsKey('from_lat')) {
+      context.handle(
+        _fromLatMeta,
+        fromLat.isAcceptableOrUnknown(data['from_lat']!, _fromLatMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fromLatMeta);
+    }
+    if (data.containsKey('from_lng')) {
+      context.handle(
+        _fromLngMeta,
+        fromLng.isAcceptableOrUnknown(data['from_lng']!, _fromLngMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_fromLngMeta);
+    }
+    if (data.containsKey('from_en')) {
+      context.handle(
+        _fromEnMeta,
+        fromEn.isAcceptableOrUnknown(data['from_en']!, _fromEnMeta),
+      );
+    }
+    if (data.containsKey('from_ta')) {
+      context.handle(
+        _fromTaMeta,
+        fromTa.isAcceptableOrUnknown(data['from_ta']!, _fromTaMeta),
+      );
+    }
+    if (data.containsKey('from_si')) {
+      context.handle(
+        _fromSiMeta,
+        fromSi.isAcceptableOrUnknown(data['from_si']!, _fromSiMeta),
+      );
+    }
+    if (data.containsKey('to_lat')) {
+      context.handle(
+        _toLatMeta,
+        toLat.isAcceptableOrUnknown(data['to_lat']!, _toLatMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_toLatMeta);
+    }
+    if (data.containsKey('to_lng')) {
+      context.handle(
+        _toLngMeta,
+        toLng.isAcceptableOrUnknown(data['to_lng']!, _toLngMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_toLngMeta);
+    }
+    if (data.containsKey('to_en')) {
+      context.handle(
+        _toEnMeta,
+        toEn.isAcceptableOrUnknown(data['to_en']!, _toEnMeta),
+      );
+    }
+    if (data.containsKey('to_ta')) {
+      context.handle(
+        _toTaMeta,
+        toTa.isAcceptableOrUnknown(data['to_ta']!, _toTaMeta),
+      );
+    }
+    if (data.containsKey('to_si')) {
+      context.handle(
+        _toSiMeta,
+        toSi.isAcceptableOrUnknown(data['to_si']!, _toSiMeta),
+      );
+    }
+    if (data.containsKey('via')) {
+      context.handle(
+        _viaMeta,
+        via.isAcceptableOrUnknown(data['via']!, _viaMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_viaMeta);
+    }
+    if (data.containsKey('road')) {
+      context.handle(
+        _roadMeta,
+        road.isAcceptableOrUnknown(data['road']!, _roadMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_roadMeta);
+    }
+    if (data.containsKey('by')) {
+      context.handle(_byMeta, by.isAcceptableOrUnknown(data['by']!, _byMeta));
+    } else if (isInserting) {
+      context.missing(_byMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('pending_since')) {
+      context.handle(
+        _pendingSinceMeta,
+        pendingSince.isAcceptableOrUnknown(
+          data['pending_since']!,
+          _pendingSinceMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  HandRouteRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return HandRouteRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      number: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}number'],
+      )!,
+      fromLat: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}from_lat'],
+      )!,
+      fromLng: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}from_lng'],
+      )!,
+      fromEn: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}from_en'],
+      ),
+      fromTa: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}from_ta'],
+      ),
+      fromSi: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}from_si'],
+      ),
+      toLat: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}to_lat'],
+      )!,
+      toLng: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}to_lng'],
+      )!,
+      toEn: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}to_en'],
+      ),
+      toTa: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}to_ta'],
+      ),
+      toSi: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}to_si'],
+      ),
+      via: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}via'],
+      )!,
+      road: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}road'],
+      )!,
+      by: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}by'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      pendingSince: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pending_since'],
+      ),
+    );
+  }
+
+  @override
+  $HandRoutesTable createAlias(String alias) {
+    return $HandRoutesTable(attachedDatabase, alias);
+  }
+}
+
+class HandRouteRow extends DataClass implements Insertable<HandRouteRow> {
+  final String id;
+  final String number;
+  final double fromLat;
+  final double fromLng;
+  final String? fromEn;
+  final String? fromTa;
+  final String? fromSi;
+  final double toLat;
+  final double toLng;
+  final String? toEn;
+  final String? toTa;
+  final String? toSi;
+
+  /// The towns on the way, in order, as JSON: [{"lat", "lng", "en", "ta",
+  /// "si"}].
+  final String via;
+
+  /// The road OSRM drew, as an encoded polyline.
+  final String road;
+  final String by;
+  final int updatedAt;
+  final int? deletedAt;
+  final int? pendingSince;
+  const HandRouteRow({
+    required this.id,
+    required this.number,
+    required this.fromLat,
+    required this.fromLng,
+    this.fromEn,
+    this.fromTa,
+    this.fromSi,
+    required this.toLat,
+    required this.toLng,
+    this.toEn,
+    this.toTa,
+    this.toSi,
+    required this.via,
+    required this.road,
+    required this.by,
+    required this.updatedAt,
+    this.deletedAt,
+    this.pendingSince,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['number'] = Variable<String>(number);
+    map['from_lat'] = Variable<double>(fromLat);
+    map['from_lng'] = Variable<double>(fromLng);
+    if (!nullToAbsent || fromEn != null) {
+      map['from_en'] = Variable<String>(fromEn);
+    }
+    if (!nullToAbsent || fromTa != null) {
+      map['from_ta'] = Variable<String>(fromTa);
+    }
+    if (!nullToAbsent || fromSi != null) {
+      map['from_si'] = Variable<String>(fromSi);
+    }
+    map['to_lat'] = Variable<double>(toLat);
+    map['to_lng'] = Variable<double>(toLng);
+    if (!nullToAbsent || toEn != null) {
+      map['to_en'] = Variable<String>(toEn);
+    }
+    if (!nullToAbsent || toTa != null) {
+      map['to_ta'] = Variable<String>(toTa);
+    }
+    if (!nullToAbsent || toSi != null) {
+      map['to_si'] = Variable<String>(toSi);
+    }
+    map['via'] = Variable<String>(via);
+    map['road'] = Variable<String>(road);
+    map['by'] = Variable<String>(by);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    if (!nullToAbsent || pendingSince != null) {
+      map['pending_since'] = Variable<int>(pendingSince);
+    }
+    return map;
+  }
+
+  HandRoutesCompanion toCompanion(bool nullToAbsent) {
+    return HandRoutesCompanion(
+      id: Value(id),
+      number: Value(number),
+      fromLat: Value(fromLat),
+      fromLng: Value(fromLng),
+      fromEn: fromEn == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fromEn),
+      fromTa: fromTa == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fromTa),
+      fromSi: fromSi == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fromSi),
+      toLat: Value(toLat),
+      toLng: Value(toLng),
+      toEn: toEn == null && nullToAbsent ? const Value.absent() : Value(toEn),
+      toTa: toTa == null && nullToAbsent ? const Value.absent() : Value(toTa),
+      toSi: toSi == null && nullToAbsent ? const Value.absent() : Value(toSi),
+      via: Value(via),
+      road: Value(road),
+      by: Value(by),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      pendingSince: pendingSince == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pendingSince),
+    );
+  }
+
+  factory HandRouteRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return HandRouteRow(
+      id: serializer.fromJson<String>(json['id']),
+      number: serializer.fromJson<String>(json['number']),
+      fromLat: serializer.fromJson<double>(json['fromLat']),
+      fromLng: serializer.fromJson<double>(json['fromLng']),
+      fromEn: serializer.fromJson<String?>(json['fromEn']),
+      fromTa: serializer.fromJson<String?>(json['fromTa']),
+      fromSi: serializer.fromJson<String?>(json['fromSi']),
+      toLat: serializer.fromJson<double>(json['toLat']),
+      toLng: serializer.fromJson<double>(json['toLng']),
+      toEn: serializer.fromJson<String?>(json['toEn']),
+      toTa: serializer.fromJson<String?>(json['toTa']),
+      toSi: serializer.fromJson<String?>(json['toSi']),
+      via: serializer.fromJson<String>(json['via']),
+      road: serializer.fromJson<String>(json['road']),
+      by: serializer.fromJson<String>(json['by']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      pendingSince: serializer.fromJson<int?>(json['pendingSince']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'number': serializer.toJson<String>(number),
+      'fromLat': serializer.toJson<double>(fromLat),
+      'fromLng': serializer.toJson<double>(fromLng),
+      'fromEn': serializer.toJson<String?>(fromEn),
+      'fromTa': serializer.toJson<String?>(fromTa),
+      'fromSi': serializer.toJson<String?>(fromSi),
+      'toLat': serializer.toJson<double>(toLat),
+      'toLng': serializer.toJson<double>(toLng),
+      'toEn': serializer.toJson<String?>(toEn),
+      'toTa': serializer.toJson<String?>(toTa),
+      'toSi': serializer.toJson<String?>(toSi),
+      'via': serializer.toJson<String>(via),
+      'road': serializer.toJson<String>(road),
+      'by': serializer.toJson<String>(by),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'pendingSince': serializer.toJson<int?>(pendingSince),
+    };
+  }
+
+  HandRouteRow copyWith({
+    String? id,
+    String? number,
+    double? fromLat,
+    double? fromLng,
+    Value<String?> fromEn = const Value.absent(),
+    Value<String?> fromTa = const Value.absent(),
+    Value<String?> fromSi = const Value.absent(),
+    double? toLat,
+    double? toLng,
+    Value<String?> toEn = const Value.absent(),
+    Value<String?> toTa = const Value.absent(),
+    Value<String?> toSi = const Value.absent(),
+    String? via,
+    String? road,
+    String? by,
+    int? updatedAt,
+    Value<int?> deletedAt = const Value.absent(),
+    Value<int?> pendingSince = const Value.absent(),
+  }) => HandRouteRow(
+    id: id ?? this.id,
+    number: number ?? this.number,
+    fromLat: fromLat ?? this.fromLat,
+    fromLng: fromLng ?? this.fromLng,
+    fromEn: fromEn.present ? fromEn.value : this.fromEn,
+    fromTa: fromTa.present ? fromTa.value : this.fromTa,
+    fromSi: fromSi.present ? fromSi.value : this.fromSi,
+    toLat: toLat ?? this.toLat,
+    toLng: toLng ?? this.toLng,
+    toEn: toEn.present ? toEn.value : this.toEn,
+    toTa: toTa.present ? toTa.value : this.toTa,
+    toSi: toSi.present ? toSi.value : this.toSi,
+    via: via ?? this.via,
+    road: road ?? this.road,
+    by: by ?? this.by,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    pendingSince: pendingSince.present ? pendingSince.value : this.pendingSince,
+  );
+  HandRouteRow copyWithCompanion(HandRoutesCompanion data) {
+    return HandRouteRow(
+      id: data.id.present ? data.id.value : this.id,
+      number: data.number.present ? data.number.value : this.number,
+      fromLat: data.fromLat.present ? data.fromLat.value : this.fromLat,
+      fromLng: data.fromLng.present ? data.fromLng.value : this.fromLng,
+      fromEn: data.fromEn.present ? data.fromEn.value : this.fromEn,
+      fromTa: data.fromTa.present ? data.fromTa.value : this.fromTa,
+      fromSi: data.fromSi.present ? data.fromSi.value : this.fromSi,
+      toLat: data.toLat.present ? data.toLat.value : this.toLat,
+      toLng: data.toLng.present ? data.toLng.value : this.toLng,
+      toEn: data.toEn.present ? data.toEn.value : this.toEn,
+      toTa: data.toTa.present ? data.toTa.value : this.toTa,
+      toSi: data.toSi.present ? data.toSi.value : this.toSi,
+      via: data.via.present ? data.via.value : this.via,
+      road: data.road.present ? data.road.value : this.road,
+      by: data.by.present ? data.by.value : this.by,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      pendingSince: data.pendingSince.present
+          ? data.pendingSince.value
+          : this.pendingSince,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HandRouteRow(')
+          ..write('id: $id, ')
+          ..write('number: $number, ')
+          ..write('fromLat: $fromLat, ')
+          ..write('fromLng: $fromLng, ')
+          ..write('fromEn: $fromEn, ')
+          ..write('fromTa: $fromTa, ')
+          ..write('fromSi: $fromSi, ')
+          ..write('toLat: $toLat, ')
+          ..write('toLng: $toLng, ')
+          ..write('toEn: $toEn, ')
+          ..write('toTa: $toTa, ')
+          ..write('toSi: $toSi, ')
+          ..write('via: $via, ')
+          ..write('road: $road, ')
+          ..write('by: $by, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('pendingSince: $pendingSince')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    number,
+    fromLat,
+    fromLng,
+    fromEn,
+    fromTa,
+    fromSi,
+    toLat,
+    toLng,
+    toEn,
+    toTa,
+    toSi,
+    via,
+    road,
+    by,
+    updatedAt,
+    deletedAt,
+    pendingSince,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is HandRouteRow &&
+          other.id == this.id &&
+          other.number == this.number &&
+          other.fromLat == this.fromLat &&
+          other.fromLng == this.fromLng &&
+          other.fromEn == this.fromEn &&
+          other.fromTa == this.fromTa &&
+          other.fromSi == this.fromSi &&
+          other.toLat == this.toLat &&
+          other.toLng == this.toLng &&
+          other.toEn == this.toEn &&
+          other.toTa == this.toTa &&
+          other.toSi == this.toSi &&
+          other.via == this.via &&
+          other.road == this.road &&
+          other.by == this.by &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.pendingSince == this.pendingSince);
+}
+
+class HandRoutesCompanion extends UpdateCompanion<HandRouteRow> {
+  final Value<String> id;
+  final Value<String> number;
+  final Value<double> fromLat;
+  final Value<double> fromLng;
+  final Value<String?> fromEn;
+  final Value<String?> fromTa;
+  final Value<String?> fromSi;
+  final Value<double> toLat;
+  final Value<double> toLng;
+  final Value<String?> toEn;
+  final Value<String?> toTa;
+  final Value<String?> toSi;
+  final Value<String> via;
+  final Value<String> road;
+  final Value<String> by;
+  final Value<int> updatedAt;
+  final Value<int?> deletedAt;
+  final Value<int?> pendingSince;
+  final Value<int> rowid;
+  const HandRoutesCompanion({
+    this.id = const Value.absent(),
+    this.number = const Value.absent(),
+    this.fromLat = const Value.absent(),
+    this.fromLng = const Value.absent(),
+    this.fromEn = const Value.absent(),
+    this.fromTa = const Value.absent(),
+    this.fromSi = const Value.absent(),
+    this.toLat = const Value.absent(),
+    this.toLng = const Value.absent(),
+    this.toEn = const Value.absent(),
+    this.toTa = const Value.absent(),
+    this.toSi = const Value.absent(),
+    this.via = const Value.absent(),
+    this.road = const Value.absent(),
+    this.by = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.pendingSince = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  HandRoutesCompanion.insert({
+    required String id,
+    required String number,
+    required double fromLat,
+    required double fromLng,
+    this.fromEn = const Value.absent(),
+    this.fromTa = const Value.absent(),
+    this.fromSi = const Value.absent(),
+    required double toLat,
+    required double toLng,
+    this.toEn = const Value.absent(),
+    this.toTa = const Value.absent(),
+    this.toSi = const Value.absent(),
+    required String via,
+    required String road,
+    required String by,
+    required int updatedAt,
+    this.deletedAt = const Value.absent(),
+    this.pendingSince = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       number = Value(number),
+       fromLat = Value(fromLat),
+       fromLng = Value(fromLng),
+       toLat = Value(toLat),
+       toLng = Value(toLng),
+       via = Value(via),
+       road = Value(road),
+       by = Value(by),
+       updatedAt = Value(updatedAt);
+  static Insertable<HandRouteRow> custom({
+    Expression<String>? id,
+    Expression<String>? number,
+    Expression<double>? fromLat,
+    Expression<double>? fromLng,
+    Expression<String>? fromEn,
+    Expression<String>? fromTa,
+    Expression<String>? fromSi,
+    Expression<double>? toLat,
+    Expression<double>? toLng,
+    Expression<String>? toEn,
+    Expression<String>? toTa,
+    Expression<String>? toSi,
+    Expression<String>? via,
+    Expression<String>? road,
+    Expression<String>? by,
+    Expression<int>? updatedAt,
+    Expression<int>? deletedAt,
+    Expression<int>? pendingSince,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (number != null) 'number': number,
+      if (fromLat != null) 'from_lat': fromLat,
+      if (fromLng != null) 'from_lng': fromLng,
+      if (fromEn != null) 'from_en': fromEn,
+      if (fromTa != null) 'from_ta': fromTa,
+      if (fromSi != null) 'from_si': fromSi,
+      if (toLat != null) 'to_lat': toLat,
+      if (toLng != null) 'to_lng': toLng,
+      if (toEn != null) 'to_en': toEn,
+      if (toTa != null) 'to_ta': toTa,
+      if (toSi != null) 'to_si': toSi,
+      if (via != null) 'via': via,
+      if (road != null) 'road': road,
+      if (by != null) 'by': by,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (pendingSince != null) 'pending_since': pendingSince,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  HandRoutesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? number,
+    Value<double>? fromLat,
+    Value<double>? fromLng,
+    Value<String?>? fromEn,
+    Value<String?>? fromTa,
+    Value<String?>? fromSi,
+    Value<double>? toLat,
+    Value<double>? toLng,
+    Value<String?>? toEn,
+    Value<String?>? toTa,
+    Value<String?>? toSi,
+    Value<String>? via,
+    Value<String>? road,
+    Value<String>? by,
+    Value<int>? updatedAt,
+    Value<int?>? deletedAt,
+    Value<int?>? pendingSince,
+    Value<int>? rowid,
+  }) {
+    return HandRoutesCompanion(
+      id: id ?? this.id,
+      number: number ?? this.number,
+      fromLat: fromLat ?? this.fromLat,
+      fromLng: fromLng ?? this.fromLng,
+      fromEn: fromEn ?? this.fromEn,
+      fromTa: fromTa ?? this.fromTa,
+      fromSi: fromSi ?? this.fromSi,
+      toLat: toLat ?? this.toLat,
+      toLng: toLng ?? this.toLng,
+      toEn: toEn ?? this.toEn,
+      toTa: toTa ?? this.toTa,
+      toSi: toSi ?? this.toSi,
+      via: via ?? this.via,
+      road: road ?? this.road,
+      by: by ?? this.by,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      pendingSince: pendingSince ?? this.pendingSince,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (number.present) {
+      map['number'] = Variable<String>(number.value);
+    }
+    if (fromLat.present) {
+      map['from_lat'] = Variable<double>(fromLat.value);
+    }
+    if (fromLng.present) {
+      map['from_lng'] = Variable<double>(fromLng.value);
+    }
+    if (fromEn.present) {
+      map['from_en'] = Variable<String>(fromEn.value);
+    }
+    if (fromTa.present) {
+      map['from_ta'] = Variable<String>(fromTa.value);
+    }
+    if (fromSi.present) {
+      map['from_si'] = Variable<String>(fromSi.value);
+    }
+    if (toLat.present) {
+      map['to_lat'] = Variable<double>(toLat.value);
+    }
+    if (toLng.present) {
+      map['to_lng'] = Variable<double>(toLng.value);
+    }
+    if (toEn.present) {
+      map['to_en'] = Variable<String>(toEn.value);
+    }
+    if (toTa.present) {
+      map['to_ta'] = Variable<String>(toTa.value);
+    }
+    if (toSi.present) {
+      map['to_si'] = Variable<String>(toSi.value);
+    }
+    if (via.present) {
+      map['via'] = Variable<String>(via.value);
+    }
+    if (road.present) {
+      map['road'] = Variable<String>(road.value);
+    }
+    if (by.present) {
+      map['by'] = Variable<String>(by.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (pendingSince.present) {
+      map['pending_since'] = Variable<int>(pendingSince.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HandRoutesCompanion(')
+          ..write('id: $id, ')
+          ..write('number: $number, ')
+          ..write('fromLat: $fromLat, ')
+          ..write('fromLng: $fromLng, ')
+          ..write('fromEn: $fromEn, ')
+          ..write('fromTa: $fromTa, ')
+          ..write('fromSi: $fromSi, ')
+          ..write('toLat: $toLat, ')
+          ..write('toLng: $toLng, ')
+          ..write('toEn: $toEn, ')
+          ..write('toTa: $toTa, ')
+          ..write('toSi: $toSi, ')
+          ..write('via: $via, ')
+          ..write('road: $road, ')
+          ..write('by: $by, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('pendingSince: $pendingSince, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SettingsTable extends Settings
     with TableInfo<$SettingsTable, SettingRow> {
   @override
@@ -5027,6 +6004,7 @@ abstract class _$HopinDatabase extends GeneratedDatabase {
   late final $StopNamesTable stopNames = $StopNamesTable(this);
   late final $RouteDataTable routeData = $RouteDataTable(this);
   late final $RouteNotesTable routeNotes = $RouteNotesTable(this);
+  late final $HandRoutesTable handRoutes = $HandRoutesTable(this);
   late final $SettingsTable settings = $SettingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -5043,6 +6021,7 @@ abstract class _$HopinDatabase extends GeneratedDatabase {
     stopNames,
     routeData,
     routeNotes,
+    handRoutes,
     settings,
   ];
 }

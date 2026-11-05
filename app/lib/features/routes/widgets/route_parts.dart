@@ -21,6 +21,7 @@ String routeSource(AppLocalizations l, RouteSource source) => switch (source) {
   RouteSource.osm => l.routeSourceOsm,
   RouteSource.ntc => l.routeSourceNtc,
   RouteSource.lmt => l.routeSourceLmt,
+  RouteSource.hand => l.routeSourceHand,
 };
 
 /// The classes and other numbers, as under a bus's number.

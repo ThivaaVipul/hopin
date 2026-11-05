@@ -14,9 +14,11 @@ import 'package:hopin/core/location/location_service.dart';
 import 'package:hopin/core/profile/profile_repository.dart';
 import 'package:hopin/core/ride/guide.dart';
 import 'package:hopin/core/ride/patterns.dart';
+import 'package:hopin/core/ride/polyline.dart';
 import 'package:hopin/core/ride/ride_config.dart';
 import 'package:hopin/core/ride/ride_record.dart';
 import 'package:hopin/core/search/nominatim.dart';
+import 'package:hopin/core/search/osrm.dart';
 import 'package:hopin/core/search/overpass.dart';
 import 'package:hopin/core/search/route_files.dart';
 import 'package:hopin/core/share/share.dart';
@@ -428,6 +430,36 @@ class FakeShares implements Shares {
 
   @override
   Future<void> closeLeftOpen(String uid) async => closedFor.add(uid);
+}
+
+/// OSRM drawing each road straight through the towns asked for; it keeps
+/// every request, and fails them while [offline].
+class FakeRoads {
+  final asked = <http.Request>[];
+  bool offline = false;
+
+  late final osrm = Osrm(
+    client: MockClient((request) async {
+      asked.add(request);
+      if (offline) throw http.ClientException('offline');
+      final points = [
+        for (final pair in request.url.pathSegments.last.split(';'))
+          GeoPoint(
+            double.parse(pair.split(',')[1]),
+            double.parse(pair.split(',')[0]),
+          ),
+      ];
+      return http.Response(
+        jsonEncode({
+          'code': 'Ok',
+          'routes': [
+            {'geometry': encodePolyline(points)},
+          ],
+        }),
+        200,
+      );
+    }),
+  );
 }
 
 /// Overpass with no stops anywhere, and no waiting between requests.

@@ -543,4 +543,70 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get routeCredits => 'வழிகள்: OpenStreetMap, OSRM, NTC, LMT';
+
+  @override
+  String get routes => 'வழிகள்';
+
+  @override
+  String get allRoutes => 'எல்லா வழிகளும்';
+
+  @override
+  String get routeNumberHint => 'வழி எண்';
+
+  @override
+  String get noRoutes => 'இன்னும் வழிகள் இல்லை';
+
+  @override
+  String noRouteNumbered(String number) {
+    return '$number எண் வழி இல்லை';
+  }
+
+  @override
+  String routeEnds(String from, String to) {
+    return '$from முதல் $to வரை';
+  }
+
+  @override
+  String routeVia(String towns) {
+    return '$towns வழியாக';
+  }
+
+  @override
+  String get routeRemoved => 'நீக்கப்பட்டது';
+
+  @override
+  String get removeRoute => 'நீக்கு';
+
+  @override
+  String get removeRouteQuestion => 'இந்த வழியை இருவருக்கும் நீக்கவா?';
+
+  @override
+  String get putBackRoute => 'மீண்டும் சேர்';
+
+  @override
+  String get editBoard => 'பலகையைத் திருத்து';
+
+  @override
+  String get boardEdited => 'திருத்தப்பட்டது';
+
+  @override
+  String get lineTamil => 'தமிழ்';
+
+  @override
+  String get lineSinhala => 'சிங்களம்';
+
+  @override
+  String get lineEnglish => 'ஆங்கிலம்';
+
+  @override
+  String get routeSourceOsm => 'OpenStreetMap';
+
+  @override
+  String get routeSourceNtc => 'NTC நேர அட்டவணை';
+
+  @override
+  String get routeSourceLmt => 'LMT மெட்ரோ';
+
+  @override
+  String get guessedDashed => 'இடைவிட்ட கோடு: ஊகித்த வீதி';
 }

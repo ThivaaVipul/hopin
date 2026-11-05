@@ -25,4 +25,13 @@ void main() {
     expect(sessionRedirect(SessionStatus.signedIn, Routes.signIn), Routes.home);
     expect(sessionRedirect(SessionStatus.signedIn, Routes.home), isNull);
   });
+
+  test("a route's page link keeps its id one segment", () {
+    // NTC's numbers can carry a slash.
+    expect(Routes.route('ntc:2/1:N'), '/routes/ntc%3A2%2F1%3AN');
+    expect(Uri.parse(Routes.route('ntc:2/1:N')).pathSegments, [
+      'routes',
+      'ntc:2/1:N',
+    ]);
+  });
 }

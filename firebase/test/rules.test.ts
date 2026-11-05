@@ -610,3 +610,69 @@ describe('stop notes', () => {
   });
 });
 
+// A change to one direction of a route from the route files (docs/PLAN.md,
+// Which bus): its board lines and whether it is removed, shared by both
+// riders; the newest note for a direction wins.
+function routeNote(changes: Fields = {}): Fields {
+  return {
+    route: 'ntc:15-87:SL',
+    direction: 'Colombo>Kandy',
+    ta: 'கண்டி',
+    si: null,
+    en: 'Kandy',
+    removed: false,
+    by: 'r1',
+    updatedAt: serverTimestamp(),
+    ...changes,
+  };
+}
+
+describe('route notes', () => {
+  it('lets either rider change a route direction for both', async () => {
+    await assertSucceeds(setDoc(doc(rider('r1'), 'routeNotes/n1'), routeNote()));
+    await assertSucceeds(getDoc(doc(rider('r2'), 'routeNotes/n1')));
+    await assertSucceeds(
+      setDoc(
+        doc(rider('r2'), 'routeNotes/n2'),
+        routeNote({ by: 'r2', ta: null, en: null, removed: true }),
+      ),
+    );
+    const since = where('updatedAt', '>', Timestamp.fromMillis(0));
+    await assertSucceeds(getDocs(query(collection(rider('r1'), 'routeNotes'), since)));
+  });
+
+  it('keeps everyone else out, and is never deleted', async () => {
+    await seed('routeNotes/n1', routeNote({ updatedAt: Timestamp.now() }));
+    await assertFails(getDoc(doc(signedOut(), 'routeNotes/n1')));
+    await assertFails(getDoc(doc(stranger('s1'), 'routeNotes/n1')));
+    await assertFails(setDoc(doc(stranger('s1'), 'routeNotes/n2'), routeNote({ by: 's1' })));
+    await assertFails(deleteDoc(doc(rider('r1'), 'routeNotes/n1')));
+  });
+
+  it('checks every field', async () => {
+    const db = rider('r1');
+    const bad: Fields[] = [
+      { by: 'r2' },
+      { route: '' },
+      { route: 'x'.repeat(121) },
+      { direction: '' },
+      { direction: 'x'.repeat(201) },
+      { ta: '' },
+      { si: 'x'.repeat(121) },
+      { en: 7 },
+      { removed: 'yes' },
+      { colour: 'amber' },
+      { updatedAt: Timestamp.now() },
+    ];
+    for (const changes of bad) {
+      await assertFails(setDoc(doc(db, 'routeNotes/n1'), routeNote(changes)));
+    }
+    for (const key of ['route', 'direction', 'removed', 'by', 'updatedAt']) {
+      const { [key]: _gone, ...missing } = routeNote();
+      await assertFails(setDoc(doc(db, 'routeNotes/n1'), missing));
+    }
+    // The board lines may be left out: the route file's then stand.
+    const { ta: _ta, si: _si, en: _en, ...plain } = routeNote();
+    await assertSucceeds(setDoc(doc(db, 'routeNotes/n1'), plain));
+  });
+});

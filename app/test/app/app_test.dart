@@ -65,6 +65,7 @@ void main() {
         routeFiles: routeFiles ?? emptyRouteFiles(),
         mapBuilder: fakeMap,
         rideMapBuilder: fakeRideMap,
+        routeMapBuilder: fakeRouteMap,
         guide: guide,
         shares: shares,
         shareSheet: (text) async => sent.add(text),
@@ -647,6 +648,226 @@ void main() {
       expect(find.text('CM9'), findsOneWidget);
       expect(find.textContaining('Lake Road இல் ஏறுங்கள்'), findsOneWidget);
       expect(tester.takeException(), isNull);
+      await finish(tester);
+    });
+  });
+
+  group('routes', () {
+    String file(String source, List<Map<String, Object?>> routes) =>
+        jsonEncode({
+          'format': routeFileFormat,
+          'source': source,
+          'built': '2026-11-05T00:00:00Z',
+          'credit': 'x',
+          'routes': routes,
+        });
+    // A made-up road north from near Colombo Fort, mapped half the way.
+    const mapped = [GeoPoint(6.9150, 79.8552), GeoPoint(6.9344, 79.8505)];
+    const guessed = [GeoPoint(6.9344, 79.8505), GeoPoint(6.9500, 79.8500)];
+    const fort = {'ta': 'கோட்டை', 'si': 'කොටුව', 'en': 'Fort'};
+    final files = {
+      'osm': file('osm', [
+        {
+          'id': 'osm:1',
+          'number': '101',
+          'directions': [
+            {
+              'board': fort,
+              'origin': {'en': 'Lake'},
+              'path': encodePolyline(mapped),
+              'after': encodePolyline(guessed),
+            },
+            {
+              'board': {'en': 'Lake'},
+              'origin': fort,
+              'path': encodePolyline(mapped.reversed),
+              'before': encodePolyline(guessed.reversed),
+            },
+          ],
+        },
+      ]),
+      'ntc': file('ntc', [
+        {
+          'id': 'ntc:15-87:SL',
+          'number': '15-87',
+          'classes': ['SL'],
+          'long': true,
+          'directions': [
+            {
+              'board': {'en': 'North'},
+              'origin': {'en': 'South'},
+              'ends': [
+                [6.93, 79.85],
+                [7.50, 80.00],
+              ],
+              'stops': [
+                [7.20, 79.90, 'Middle', 120],
+              ],
+              'times': [
+                {
+                  'days': 127,
+                  'departs': [360],
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+    };
+
+    /// The route files, and each note, reach the phone's database on
+    /// drift's real loop, one step at a time between the test's own.
+    Future<void> settle(WidgetTester tester) async {
+      for (var i = 0; i < 12; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 20)),
+        );
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+    }
+
+    /// Scrolls the open page until [finder] shows.
+    Future<void> reach(WidgetTester tester, Finder finder) async {
+      await tester.scrollUntilVisible(
+        finder,
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> openRoutes(
+      WidgetTester tester, {
+      Locale locale = const Locale('en'),
+    }) async {
+      await start(tester, locale: locale, routeFiles: routeFilesWith(files));
+      auth.emit(rider);
+      await tester.pumpAndSettle();
+      await settle(tester);
+      final tamil = locale.languageCode == 'ta';
+      await tester.tap(find.byTooltip(tamil ? 'அமைப்புகள்' : 'Settings'));
+      await tester.pumpAndSettle();
+      final all = find.text(tamil ? 'எல்லா வழிகளும்' : 'All routes');
+      await showInSettings(tester, all);
+      await tester.tap(all);
+      await tester.pumpAndSettle();
+      await settle(tester);
+    }
+
+    testWidgets('lists the routes in number order and finds one by number', (
+      tester,
+    ) async {
+      await openRoutes(tester);
+      expect(find.text('Lake to Fort'), findsOneWidget);
+      expect(find.text('OpenStreetMap'), findsOneWidget);
+      expect(find.text('South to North'), findsOneWidget);
+      expect(find.text('NTC timetable'), findsOneWidget);
+      expect(find.text('Semi luxury'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('15-87')).dy,
+        lessThan(tester.getTopLeft(find.text('101')).dy),
+      );
+
+      await tester.enterText(find.byType(TextField), '15');
+      await tester.pumpAndSettle();
+      expect(find.text('15-87'), findsOneWidget);
+      expect(find.text('101'), findsNothing);
+      await tester.enterText(find.byType(TextField), '9');
+      await tester.pumpAndSettle();
+      expect(find.text('No route numbered 9'), findsOneWidget);
+      await finish(tester);
+    });
+
+    testWidgets("a route's page: its road, a board edited, removed for both", (
+      tester,
+    ) async {
+      await openRoutes(tester);
+      await tester.tap(find.text('101'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('route map: 2 roads, 2 guessed, 2 marks'),
+        findsOneWidget,
+      );
+      expect(find.text('Dashed: guessed road'), findsOneWidget);
+      expect(find.text('கோட்டை'), findsOneWidget);
+      expect(find.text('Lake'), findsOneWidget);
+
+      // A board line of your own, for both of you.
+      await tester.tap(find.byTooltip('Edit board').first);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Tamil'),
+        'கோட்டை நிலையம்',
+      );
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      await settle(tester);
+      expect(find.text('கோட்டை நிலையம்'), findsOneWidget);
+      expect(find.text('Edited'), findsOneWidget);
+      final note = remote.puts.last;
+      expect(note.$1, startsWith('routeNotes/'));
+      expect(note.$2['ta'], 'கோட்டை நிலையம்');
+      expect(note.$2['removed'], isFalse);
+
+      // Removed for both of you: asked first; put back from the same page.
+      await reach(tester, find.text('Remove'));
+      await tester.tap(find.text('Remove'));
+      await tester.pumpAndSettle();
+      expect(find.text('Remove this route for both of you?'), findsOneWidget);
+      await tester.tap(find.text('Remove').last);
+      await tester.pumpAndSettle();
+      await settle(tester);
+      expect(find.text('OpenStreetMap, Removed'), findsOneWidget);
+      expect(remote.puts.last.$2['removed'], isTrue);
+      // The board line stays.
+      expect(find.text('கோட்டை நிலையம்'), findsOneWidget);
+      await reach(tester, find.text('Put back'));
+      await tester.tap(find.text('Put back'));
+      await tester.pumpAndSettle();
+      await settle(tester);
+      expect(find.text('OpenStreetMap'), findsOneWidget);
+      expect(find.text('Remove'), findsOneWidget);
+      await finish(tester);
+    });
+
+    testWidgets("a long-distance route's page shows its towns", (tester) async {
+      await openRoutes(tester);
+      await tester.tap(find.text('15-87'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('route map: 0 roads, 0 guessed, 3 marks'),
+        findsOneWidget,
+      );
+      expect(find.text('Via Middle'), findsOneWidget);
+      expect(find.text('Semi luxury'), findsOneWidget);
+      expect(find.text('Dashed: guessed road'), findsNothing);
+      await finish(tester);
+    });
+
+    testWidgets('the routes pages fit a small phone in Tamil with large text', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1080, 2160)
+        ..devicePixelRatio = 3;
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await openRoutes(tester, locale: const Locale('ta'));
+      expect(find.text('NTC நேர அட்டவணை'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.text('101'));
+      await tester.pumpAndSettle();
+      expect(find.text('இடைவிட்ட கோடு: ஊகித்த வீதி'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.byTooltip('பலகையைத் திருத்து').first);
+      await tester.pumpAndSettle();
+      expect(find.text('சிங்களம்'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.text('ரத்து'));
+      await tester.pumpAndSettle();
       await finish(tester);
     });
   });

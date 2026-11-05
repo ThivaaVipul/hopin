@@ -56,6 +56,7 @@ class RouteDirection extends Equatable {
     this.end,
     this.stand,
     this.times = const [],
+    this._noteKey,
   });
 
   final String routeId;
@@ -95,6 +96,35 @@ class RouteDirection extends Equatable {
   /// Departures from the first stop (LMT) or the start town (NTC).
   final List<Departures> times;
 
+  /// What the riders' notes know this direction by: its ends as the route
+  /// file names them, so a note's own board lines don't change it.
+  String get noteKey =>
+      _noteKey ?? '${_firstName(origin)}>${_firstName(board)}';
+  final String? _noteKey;
+
+  static String _firstName(PlaceNames names) =>
+      names.en ?? names.ta ?? names.si ?? '';
+
+  /// The same direction under other board lines (a rider's).
+  RouteDirection withBoard(PlaceNames board) => RouteDirection(
+    routeId: routeId,
+    source: source,
+    number: number,
+    board: board,
+    also: also,
+    classes: classes,
+    origin: origin,
+    path: path,
+    before: before,
+    after: after,
+    stops: stops,
+    start: start,
+    end: end,
+    stand: stand,
+    times: times,
+    noteKey: noteKey,
+  );
+
   /// A long-distance route: matched by its towns, not its road.
   bool get long => path.isEmpty;
 
@@ -108,6 +138,78 @@ class RouteDirection extends Equatable {
 
   @override
   List<Object?> get props => [routeId, number, board, origin, path.length];
+}
+
+/// A rider's change to one direction of a route from the route files
+/// (docs/PLAN.md, Which bus), shared by both riders: board lines that stand
+/// in for the file's (a line left out keeps the file's), and whether the
+/// direction is removed. The newest note on a direction wins.
+class RouteNote extends Equatable {
+  const RouteNote({
+    required this.route,
+    required this.direction,
+    required this.at,
+    this.board = const PlaceNames(),
+    this.removed = false,
+  });
+
+  /// The route's id and the direction's [RouteDirection.noteKey].
+  final String route;
+  final String direction;
+  final DateTime at;
+  final PlaceNames board;
+  final bool removed;
+
+  @override
+  List<Object?> get props => [route, direction, at, board, removed];
+}
+
+/// A direction from the route files with the newest note on it, if any.
+class NotedDirection extends Equatable {
+  const NotedDirection(this.file, [this.note]);
+
+  /// As the route file has it.
+  final RouteDirection file;
+  final RouteNote? note;
+
+  /// With the note's board lines in place of the file's.
+  RouteDirection get direction {
+    final lines = note?.board;
+    if (lines == null || lines.isEmpty) return file;
+    final board = file.board;
+    return file.withBoard(
+      PlaceNames(
+        en: lines.en ?? board.en,
+        ta: lines.ta ?? board.ta,
+        si: lines.si ?? board.si,
+      ),
+    );
+  }
+
+  /// Whether a rider gave it board lines of their own.
+  bool get edited => !(note?.board.isEmpty ?? true);
+
+  bool get removed => note?.removed ?? false;
+
+  @override
+  List<Object?> get props => [file, note];
+}
+
+/// Each direction with the newest of [notes] on it.
+List<NotedDirection> withNotes(
+  List<RouteDirection> directions,
+  Iterable<RouteNote> notes,
+) {
+  final newest = <(String, String), RouteNote>{};
+  for (final note in notes) {
+    final key = (note.route, note.direction);
+    final known = newest[key];
+    if (known == null || note.at.isAfter(known.at)) newest[key] = note;
+  }
+  return [
+    for (final direction in directions)
+      NotedDirection(direction, newest[(direction.routeId, direction.noteKey)]),
+  ];
 }
 
 /// The route data format the job writes (scripts/data/build_data.py).

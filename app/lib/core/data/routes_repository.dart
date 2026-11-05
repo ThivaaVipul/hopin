@@ -1,16 +1,20 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:drift/drift.dart';
 import 'package:hopin/core/data/local/database.dart';
+import 'package:hopin/core/places/place.dart';
 import 'package:hopin/core/ride/routes.dart';
 import 'package:hopin/core/search/route_files.dart';
 import 'package:hopin/core/update/updates.dart' show installedBuild;
 
 /// The bus routes (docs/PLAN.md, Which bus): the route files the weekly job
-/// publishes, kept on the phone as they came, so the buses show offline.
+/// publishes, kept on the phone as they came, so the buses show offline,
+/// with the riders' shared notes on them (board lines, removals).
 class RoutesRepository {
   RoutesRepository(
     this._db, {
+    required this.uid,
     DateTime Function()? clock,
     this.build = installedBuild,
   }) : _clock = clock ?? DateTime.now;
@@ -28,17 +32,131 @@ class RoutesRepository {
   static const _askedBy = 'routes.build';
 
   final HopinDatabase _db;
+  final String uid;
   final DateTime Function() _clock;
+  final _random = Random();
+  var _lastStamp = 0;
   Future<void>? _refreshing;
 
-  /// Every route direction on the phone, again whenever a file changes. A
-  /// file this app can't read is left out. (It watches its own table's rows:
-  /// drift shares watched queries by their SQL alone, so a second
-  /// "SELECT 1" beside the stops' would follow the stops' tables instead.)
-  Stream<List<RouteDirection>> watch() => _db
-      .select(_db.routeData)
+  /// Called after a note (the sync sends it).
+  void Function()? onChange;
+
+  /// The route directions the buses are found among: the riders' board
+  /// lines on them, the removed ones left out.
+  Stream<List<RouteDirection>> watch() => watchNoted().map(
+    (all) => [
+      for (final noted in all)
+        if (!noted.removed) noted.direction,
+    ],
+  );
+
+  /// Every route direction on the phone with the newest note on it, again
+  /// whenever a file or a note changes. A file this app can't read is left
+  /// out. (Its query is its own: drift shares watched queries by their SQL
+  /// alone, so a second "SELECT 1" beside the stops' would follow the stops'
+  /// tables instead.)
+  Stream<List<NotedDirection>> watchNoted() => _db
+      .customSelect(
+        'SELECT body FROM route_data',
+        readsFrom: {_db.routeData, _db.routeNotes},
+      )
       .watch()
-      .map((rows) => [for (final row in rows) ...?_parse(row.body)]);
+      .asyncMap((rows) async {
+        final notes = await _db.select(_db.routeNotes).get();
+        return withNotes(
+          [for (final row in rows) ...?_parse(row.read<String>('body'))],
+          [
+            for (final note in notes)
+              RouteNote(
+                route: note.route,
+                direction: note.direction,
+                at: DateTime.fromMicrosecondsSinceEpoch(note.updatedAt),
+                board: PlaceNames(en: note.en, ta: note.ta, si: note.si),
+                removed: note.removed,
+              ),
+          ],
+        );
+      });
+
+  /// Gives a direction board lines of the riders' own, for both riders: a
+  /// line left empty, or the same as the file's, keeps the file's.
+  Future<void> setBoard(NotedDirection noted, PlaceNames lines) {
+    final file = noted.file.board;
+    String? own(String? line, String? fileLine) {
+      final text = line?.trim() ?? '';
+      return text.isEmpty || text == fileLine ? null : text;
+    }
+
+    return _note(
+      noted.file,
+      PlaceNames(
+        en: own(lines.en, file.en),
+        ta: own(lines.ta, file.ta),
+        si: own(lines.si, file.si),
+      ),
+      removed: noted.removed,
+    );
+  }
+
+  /// Removes directions for both riders, or puts them back; their board
+  /// lines stay as they are.
+  Future<void> setRemoved(
+    Iterable<NotedDirection> directions, {
+    required bool removed,
+  }) async {
+    for (final noted in directions) {
+      await _note(
+        noted.file,
+        noted.note?.board ?? const PlaceNames(),
+        removed: removed,
+        tell: false,
+      );
+    }
+    onChange?.call();
+  }
+
+  Future<void> _note(
+    RouteDirection file,
+    PlaceNames board, {
+    required bool removed,
+    bool tell = true,
+  }) async {
+    final now = _stamp();
+    await _db
+        .into(_db.routeNotes)
+        .insert(
+          RouteNotesCompanion.insert(
+            id: _newId(),
+            route: file.routeId,
+            direction: file.noteKey,
+            ta: Value(board.ta),
+            si: Value(board.si),
+            en: Value(board.en),
+            removed: Value(removed),
+            by: uid,
+            updatedAt: now,
+            pendingSince: Value(now),
+          ),
+        );
+    if (tell) onChange?.call();
+  }
+
+  /// Every change gets a later stamp than the one before.
+  int _stamp() {
+    final now = _clock().microsecondsSinceEpoch;
+    return _lastStamp = now > _lastStamp ? now : _lastStamp + 1;
+  }
+
+  String _newId() {
+    const chars =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    return String.fromCharCodes(
+      Iterable.generate(
+        20,
+        (_) => chars.codeUnitAt(_random.nextInt(chars.length)),
+      ),
+    );
+  }
 
   static List<RouteDirection>? _parse(String body) {
     try {

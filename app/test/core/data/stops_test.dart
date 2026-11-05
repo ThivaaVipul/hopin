@@ -2,10 +2,10 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hopin/core/data/local/database.dart';
+import 'package:hopin/core/data/pooled_sync.dart';
 import 'package:hopin/core/data/remote/remote.dart';
 import 'package:hopin/core/data/rides_repository.dart';
 import 'package:hopin/core/data/stops_repository.dart';
-import 'package:hopin/core/data/stops_sync.dart';
 import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/core/ride/bus_logic.dart';
 import 'package:hopin/core/ride/ride_record.dart';

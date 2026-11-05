@@ -24,6 +24,7 @@ import 'package:hopin/core/share/shares.dart';
 import 'package:hopin/core/update/updates.dart';
 import 'package:hopin/features/home/widgets/hopin_map.dart';
 import 'package:hopin/features/rides/widgets/ride_map.dart';
+import 'package:hopin/features/routes/widgets/route_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
@@ -199,6 +200,21 @@ Widget fakeRideMap(RideMapProps props) => ColoredBox(
     alignment: Alignment.center,
     child: Text(
       'ride map: ${props.path.length} points, ${props.halts.length} halts',
+      textDirection: TextDirection.ltr,
+    ),
+  ),
+);
+
+/// The route map as text: how much road and guessed road it draws, and how
+/// many points it marks.
+Widget fakeRouteMap(RouteMapProps props) => ColoredBox(
+  key: const ValueKey('route map'),
+  color: const Color(0xFFECEFEA),
+  child: Align(
+    alignment: Alignment.center,
+    child: Text(
+      'route map: ${props.roads.length} roads, '
+      '${props.guessed.length} guessed, ${props.marks.length} marks',
       textDirection: TextDirection.ltr,
     ),
   ),

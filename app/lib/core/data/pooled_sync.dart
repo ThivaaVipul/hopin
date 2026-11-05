@@ -210,3 +210,71 @@ class StopNotesSync extends _PooledSync {
         );
   }
 }
+
+/// The riders' changes to the route files' directions (`routeNotes/{id}`):
+/// board lines and removals.
+class RouteNotesSync extends _PooledSync {
+  RouteNotesSync(HopinDatabase db, Remote remote)
+    : super(db, remote, 'routeNotes', 'cursor.routeNotes');
+
+  @override
+  Future<List<(String, Map<String, Object?>, bool?, int)>> _pending() async => [
+    for (final row in await (_db.select(
+      _db.routeNotes,
+    )..where((r) => r.pendingSince.isNotNull())).get())
+      (
+        row.id,
+        {
+          'route': row.route,
+          'direction': row.direction,
+          'ta': row.ta,
+          'si': row.si,
+          'en': row.en,
+          'removed': row.removed,
+          'by': row.by,
+        },
+        null,
+        row.pendingSince!,
+      ),
+  ];
+
+  @override
+  Future<void> _sent(String id, int pendingSince) =>
+      (_db.update(_db.routeNotes)..where(
+            (r) => r.id.equals(id) & r.pendingSince.equals(pendingSince),
+          ))
+          .write(const RouteNotesCompanion(pendingSince: Value(null)));
+
+  @override
+  Future<void> _take(RemoteDoc doc) async {
+    final local = await (_db.select(
+      _db.routeNotes,
+    )..where((r) => r.id.equals(doc.id))).getSingleOrNull();
+    if (local?.pendingSince != null) return;
+    final d = doc.data;
+    final route = d['route'];
+    final direction = d['direction'];
+    final by = d['by'];
+    if (route is! String || direction is! String || by is! String) return;
+    String? line(String key) => switch (d[key]) {
+      final String text when text.trim().isNotEmpty => text.trim(),
+      _ => null,
+    };
+    await _db
+        .into(_db.routeNotes)
+        .insertOnConflictUpdate(
+          RouteNotesCompanion.insert(
+            id: doc.id,
+            route: route,
+            direction: direction,
+            ta: Value(line('ta')),
+            si: Value(line('si')),
+            en: Value(line('en')),
+            removed: Value(d['removed'] == true),
+            by: by,
+            updatedAt: doc.updatedAt,
+            pendingSince: const Value(null),
+          ),
+        );
+  }
+}

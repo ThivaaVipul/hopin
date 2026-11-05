@@ -1051,6 +1051,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Routes: OpenStreetMap, OSRM, NTC, LMT'**
   String get routeCredits;
+
+  /// Settings: the bus routes' section, and the Routes page's title.
+  ///
+  /// In en, this message translates to:
+  /// **'Routes'**
+  String get routes;
+
+  /// Settings: opens the list of bus routes.
+  ///
+  /// In en, this message translates to:
+  /// **'All routes'**
+  String get allRoutes;
+
+  /// The search field on the Routes page.
+  ///
+  /// In en, this message translates to:
+  /// **'Route number'**
+  String get routeNumberHint;
+
+  /// The Routes page before any route file has come.
+  ///
+  /// In en, this message translates to:
+  /// **'No routes yet'**
+  String get noRoutes;
+
+  /// The Routes page when no route has the number searched for.
+  ///
+  /// In en, this message translates to:
+  /// **'No route numbered {number}'**
+  String noRouteNumbered(String number);
+
+  /// A route's two end towns.
+  ///
+  /// In en, this message translates to:
+  /// **'{from} to {to}'**
+  String routeEnds(String from, String to);
+
+  /// The towns a long-distance route passes, in order.
+  ///
+  /// In en, this message translates to:
+  /// **'Via {towns}'**
+  String routeVia(String towns);
+
+  /// A route a rider removed, in the list of routes.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed'**
+  String get routeRemoved;
+
+  /// Hides a route's buses for both riders.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removeRoute;
+
+  /// Asked before a route is removed.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this route for both of you?'**
+  String get removeRouteQuestion;
+
+  /// Shows a removed route's buses again.
+  ///
+  /// In en, this message translates to:
+  /// **'Put back'**
+  String get putBackRoute;
+
+  /// Opens one direction's board lines for editing.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit board'**
+  String get editBoard;
+
+  /// A board whose lines a rider changed.
+  ///
+  /// In en, this message translates to:
+  /// **'Edited'**
+  String get boardEdited;
+
+  /// The board's Tamil line, when editing it.
+  ///
+  /// In en, this message translates to:
+  /// **'Tamil'**
+  String get lineTamil;
+
+  /// The board's Sinhala line, when editing it.
+  ///
+  /// In en, this message translates to:
+  /// **'Sinhala'**
+  String get lineSinhala;
+
+  /// The board's English line, when editing it.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get lineEnglish;
+
+  /// Where a route comes from: OpenStreetMap.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenStreetMap'**
+  String get routeSourceOsm;
+
+  /// Where a route comes from: NTC's timetables.
+  ///
+  /// In en, this message translates to:
+  /// **'NTC timetable'**
+  String get routeSourceNtc;
+
+  /// Where a route comes from: LMT's Metro buses.
+  ///
+  /// In en, this message translates to:
+  /// **'LMT Metro'**
+  String get routeSourceLmt;
+
+  /// Under a route's map when part of its road is guessed.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashed: guessed road'**
+  String get guessedDashed;
 }
 
 class _AppLocalizationsDelegate

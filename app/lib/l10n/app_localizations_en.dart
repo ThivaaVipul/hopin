@@ -539,4 +539,70 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get routeCredits => 'Routes: OpenStreetMap, OSRM, NTC, LMT';
+
+  @override
+  String get routes => 'Routes';
+
+  @override
+  String get allRoutes => 'All routes';
+
+  @override
+  String get routeNumberHint => 'Route number';
+
+  @override
+  String get noRoutes => 'No routes yet';
+
+  @override
+  String noRouteNumbered(String number) {
+    return 'No route numbered $number';
+  }
+
+  @override
+  String routeEnds(String from, String to) {
+    return '$from to $to';
+  }
+
+  @override
+  String routeVia(String towns) {
+    return 'Via $towns';
+  }
+
+  @override
+  String get routeRemoved => 'Removed';
+
+  @override
+  String get removeRoute => 'Remove';
+
+  @override
+  String get removeRouteQuestion => 'Remove this route for both of you?';
+
+  @override
+  String get putBackRoute => 'Put back';
+
+  @override
+  String get editBoard => 'Edit board';
+
+  @override
+  String get boardEdited => 'Edited';
+
+  @override
+  String get lineTamil => 'Tamil';
+
+  @override
+  String get lineSinhala => 'Sinhala';
+
+  @override
+  String get lineEnglish => 'English';
+
+  @override
+  String get routeSourceOsm => 'OpenStreetMap';
+
+  @override
+  String get routeSourceNtc => 'NTC timetable';
+
+  @override
+  String get routeSourceLmt => 'LMT Metro';
+
+  @override
+  String get guessedDashed => 'Dashed: guessed road';
 }

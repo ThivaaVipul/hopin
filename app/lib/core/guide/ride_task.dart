@@ -63,6 +63,11 @@ String placeButton(int index) => 'place$index';
 /// From the app: a guide was saved under [rideKey]; guide to it.
 const guideNow = 'guide';
 
+/// Set when the ride service stops; the native backstop keeps quiet until
+/// the rider is on foot again (RideDetection.kt), so Not a bus and End aren't
+/// undone in the same vehicle.
+const quietKey = 'ride.quiet';
+
 /// From the app: share the ride under this id ({shareCommand: id}), or stop.
 const shareCommand = 'share';
 const stopShareCommand = 'stopShare';
@@ -268,22 +273,13 @@ class RideTask extends TaskHandler {
   }
 
   /// "On a bus?": quiet, with the rider's first two places, Yes when there
-  /// are fewer, and Not a bus.
+  /// are fewer, and Not a bus. Asked once, on the alert: the ride's own
+  /// notification stays "Checking your ride" (it opens Hopin, whose card
+  /// asks the same if the alert was swiped away).
   Future<void> _askOnABus() async {
     final l = _l!;
     _asking = true;
     final places = _config.places.take(RideConfig.buttons).toList();
-    await FlutterForegroundTask.updateService(
-      notificationTitle: l.onABus,
-      notificationText: '',
-      notificationButtons: [
-        for (final (i, place) in places.indexed)
-          NotificationButton(id: placeButton(i), text: place.name),
-        if (places.length < RideConfig.buttons)
-          NotificationButton(id: yesButton, text: l.yes),
-        NotificationButton(id: notBusButton, text: l.notABus),
-      ],
-    );
     await _alert(
       l.onABus,
       '',
@@ -588,6 +584,10 @@ class RideTask extends TaskHandler {
   Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {
     if (kDebugMode) debugPrint('guide: ended, arrived: $_arrived');
     _lost();
+    await FlutterForegroundTask.saveData(
+      key: quietKey,
+      value: '${DateTime.now().millisecondsSinceEpoch}',
+    );
     await _endShare();
     // Ending stops a buzz still playing; arriving lets its tap finish.
     if (!_arrived) await Vibration.cancel();

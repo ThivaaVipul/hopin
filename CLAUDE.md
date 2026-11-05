@@ -39,7 +39,7 @@ Dart tests mirror `lib/` under `app/test/`.
 - Every synced document has `updatedAt` (a server timestamp). Deletes are soft (`deletedAt`).
 - Access is enforced in `firebase/firestore.rules`, never only in the UI. A rules change starts with a failing rules test.
 - Bus logic and guide maths live in `lib/core/ride/` as plain Dart with no Flutter or plugin imports, tested against synthetic traces in `test/fixtures/traces/` (never real rides).
-- Native Android code is kept to what Dart can't do: the activity transition receiver, the boot receiver, and the phone channel in `MainActivity` (the maker's settings, and handing a downloaded update to Android's installer). Location in the background runs only inside the ride foreground service.
+- Native Android code is kept to what Dart can't do: the activity transition receiver (with its backstop readings), the boot receiver, the "On a bus" quick settings tile, and the phone channel in `MainActivity` (the maker's settings, and handing a downloaded update to Android's installer). Location in the background runs only inside the ride foreground service.
 - Everything works offline. Nothing on a ride waits on the network.
 - Notifications are local. No push service.
 - User-facing text lives in the ARB files (`lib/l10n/`, English and Tamil), never in code. English is the default; Tamil is the person's choice in Settings, independent of the phone's language. Sinhala appears only in place and board names, which are data.

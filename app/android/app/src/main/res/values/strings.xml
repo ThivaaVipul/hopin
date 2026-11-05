@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The quick settings tile's label: Android shows it, in the phone's
+     language (the app's own text lives in lib/l10n). -->
+<resources>
+    <string name="tile_on_a_bus">On a bus</string>
+</resources>

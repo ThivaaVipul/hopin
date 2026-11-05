@@ -27,6 +27,8 @@ ruff format .                 # CI fails on unformatted code
 ruff check .
 pytest scripts
 python scripts/map_style/build_styles.py   # regenerate the Board map styles from OpenFreeMap (app/assets/map and firebase/hosting/public/map); the outputs are committed
+pip install -r scripts/data/requirements.txt   # the route data job's own package (pdfplumber)
+python scripts/data/build_data.py --out <folder>   # build the route files into a folder outside the repo; they are never committed
 ```
 
 Dart tests mirror `lib/` under `app/test/`.
@@ -51,6 +53,7 @@ Dart tests mirror `lib/` under `app/test/`.
 - A release (`release.yml`) builds the signed arm64 APK, checks that it carries the release key's certificate, and publishes it as a GitHub Release, where the app looks for updates. Run it by hand with "build only" to test the pipeline without publishing.
 - Never create `v*` tags by hand, and never change the version in `app/pubspec.yaml` unless asked to force one.
 - Release logic lives in `scripts/release/` (Python, standard library only). Change it test-first.
+- Route data: `data.yml` (weekly, and by hand) rebuilds the route files and uploads them to the `data` release, a prerelease that is never marked latest. Never delete that release, make it latest or give it a `v*` tag. A source that fails keeps last week's file and fails the run.
 
 ## Constraints
 

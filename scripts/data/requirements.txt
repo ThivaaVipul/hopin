@@ -1,0 +1,3 @@
+# The route data job (build_data.py), pinned. Only NTC's sheets need a package:
+# pdfplumber reads their tables. The rest is Python's standard library.
+pdfplumber==0.11.10

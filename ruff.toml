@@ -1,7 +1,7 @@
 line-length = 100
 target-version = "py312"
 # Where this project's own modules live, so imports group as first-party.
-src = ["scripts/release", "scripts/map_style"]
+src = ["scripts/release", "scripts/map_style", "scripts/data"]
 # Python only: the Markdown docs aren't ruff's business, so docs-only pull
 # requests need no Python in CI.
 extend-exclude = ["*.md"]

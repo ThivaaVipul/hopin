@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/core/ride/bus_logic.dart';
 import 'package:hopin/core/ride/polyline.dart';
+import 'package:hopin/core/ride/routes.dart';
 
 /// The rider's answer to "On a bus?", or the guide's word for it.
 enum RideVerdict {
@@ -35,6 +36,7 @@ class RideRecord extends Equatable {
     this.guideTo,
     this.fromName,
     this.toName,
+    this.route,
   });
 
   /// Kept from [logic]'s ride, its vehicle part only (the walks either side
@@ -47,6 +49,7 @@ class RideRecord extends Equatable {
     required RideVerdict verdict,
     required DateTime endedAt,
     String? guideTo,
+    RouteTag? route,
   }) {
     final keepPath = verdict != RideVerdict.notBus;
     final ride = logic.ride;
@@ -69,6 +72,7 @@ class RideRecord extends Equatable {
           : const [],
       features: logic.features,
       guideTo: guideTo,
+      route: keepPath ? route : null,
     );
   }
 
@@ -97,10 +101,14 @@ class RideRecord extends Equatable {
   final String? fromName;
   final String? toName;
 
+  /// The bus it was, as tagged (docs/PLAN.md, Which bus).
+  final RouteTag? route;
+
   /// Still to be named: it has a path, and a name is missing.
   bool get unnamed => path.isNotEmpty && (fromName == null || toName == null);
 
-  /// Relabelled; marked Not a bus, it loses its path, halts and names.
+  /// Relabelled; marked Not a bus, it loses its path, halts, names and
+  /// its bus.
   RideRecord withVerdict(RideVerdict verdict) {
     final notBus = verdict == RideVerdict.notBus;
     return RideRecord(
@@ -115,8 +123,25 @@ class RideRecord extends Equatable {
       guideTo: guideTo,
       fromName: notBus ? null : fromName,
       toName: notBus ? null : toName,
+      route: notBus ? null : route,
     );
   }
+
+  /// Tagged with the bus it was, or untagged.
+  RideRecord withRoute(RouteTag? route) => RideRecord(
+    id: id,
+    startedAt: startedAt,
+    endedAt: endedAt,
+    verdict: verdict,
+    distanceM: distanceM,
+    path: path,
+    halts: halts,
+    features: features,
+    guideTo: guideTo,
+    fromName: fromName,
+    toName: toName,
+    route: route,
+  );
 
   RideRecord withNames({String? from, String? to}) => RideRecord(
     id: id,
@@ -130,6 +155,7 @@ class RideRecord extends Equatable {
     guideTo: guideTo,
     fromName: from ?? fromName,
     toName: to ?? toName,
+    route: route,
   );
 
   Map<String, Object?> toJson() => {
@@ -144,6 +170,7 @@ class RideRecord extends Equatable {
     'guideTo': guideTo,
     'fromName': fromName,
     'toName': toName,
+    'route': route?.toJson(),
   };
 
   static RideRecord? fromJson(Object? json) {
@@ -172,6 +199,7 @@ class RideRecord extends Equatable {
       guideTo: _text(json['guideTo']),
       fromName: _text(json['fromName']),
       toName: _text(json['toName']),
+      route: RouteTag.fromJson(json['route']),
     );
   }
 
@@ -199,6 +227,7 @@ class RideRecord extends Equatable {
     guideTo,
     fromName,
     toName,
+    route,
   ];
 }
 

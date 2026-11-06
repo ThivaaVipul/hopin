@@ -85,17 +85,24 @@ class WhichBus {
           ? _byTowns(direction, from, to, now)
           : _byRoad(direction, from, to, now, reach);
       if (option == null) continue;
-      // The same bus from two sources (or two mappings) shows once.
+      // The same bus from two sources (or two mappings, or a ridden road)
+      // shows once: the one with times, then the shorter walk.
       final board = direction.board;
       final key =
           '${plainNumber(direction.number)}|${board.en ?? board.ta ?? board.si}';
       final known = found[key];
-      if (known == null || _walk(option) < _walk(known)) found[key] = option;
+      if (known == null || _better(option, known)) found[key] = option;
     }
     return found.values.toList()..sort(_soonest);
   }
 
   static double _walk(BusOption option) => option.walkTo + option.walkFrom;
+
+  static bool _better(BusOption a, BusOption b) {
+    final aTimed = a.direction.times.isNotEmpty;
+    if (aTimed != b.direction.times.isNotEmpty) return aTimed;
+    return _walk(a) < _walk(b);
+  }
 
   /// Buses with times first, the soonest first; then by the walk.
   static int _soonest(BusOption a, BusOption b) {
@@ -363,4 +370,47 @@ RoadSpot roadSpot(List<GeoPoint> path, GeoPoint point) {
     along += step;
   }
   return best;
+}
+
+/// The buses a ride could have been (docs/PLAN.md, Which bus), likeliest
+/// first, for "Which bus?". With the ride's [path] (its bus part): the
+/// directions that go from where it got on to where it got off, the shortest
+/// walks first. During a ride, with only where the rider is ([here]): those
+/// whose road passes within a walk of it, or a long-distance one whose town
+/// is near, the nearest first.
+List<RouteDirection> likelyBuses(
+  Iterable<RouteDirection> directions, {
+  List<GeoPoint> path = const [],
+  GeoPoint? here,
+}) {
+  if (path.length >= 2) {
+    final options = const WhichBus().find(
+      directions,
+      from: path.first,
+      to: path.last,
+      now: DateTime.now(),
+    );
+    return [
+      for (final option
+          in [...options]..sort(
+            (a, b) => (a.walkTo + a.walkFrom).compareTo(b.walkTo + b.walkFrom),
+          ))
+        option.direction,
+    ];
+  }
+  if (here == null) return const [];
+  final near = <(double, RouteDirection)>[];
+  for (final direction in directions) {
+    final away = direction.long
+        ? [
+            ?direction.start,
+            for (final stop in direction.stops) stop.point,
+            ?direction.end,
+          ].map(here.distanceTo).fold(double.infinity, math.min)
+        : roadSpot(direction.road, here).away;
+    final within = direction.long ? WhichBus.town : WhichBus.walk;
+    if (away <= within) near.add((away, direction));
+  }
+  near.sort((a, b) => a.$1.compareTo(b.$1));
+  return [for (final (_, direction) in near) direction];
 }

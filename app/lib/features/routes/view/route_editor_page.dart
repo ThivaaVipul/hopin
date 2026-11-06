@@ -18,12 +18,15 @@ import 'package:hopin/l10n/app_localizations.dart';
 /// Adding a route by hand, or changing one's towns (docs/PLAN.md, Which
 /// bus): its number, where it starts, the towns on the way and where it
 /// ends, all picked from search, with the road OSRM draws through them on
-/// the map before Save.
+/// the map before Save. It pops the route as saved.
 class RouteEditorPage extends StatelessWidget {
-  const RouteEditorPage({super.key, this.routeId});
+  const RouteEditorPage({super.key, this.routeId, this.number});
 
   /// The hand route to change; null to add one.
   final String? routeId;
+
+  /// A new one's number, from "Which bus?".
+  final String? number;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +38,7 @@ class RouteEditorPage extends StatelessWidget {
         workspace.routes,
         context.read<Osrm>(),
         routeId: routeId,
+        number: number,
       )..start(),
       child: const _EditorView(),
     );
@@ -51,7 +55,7 @@ class _EditorView extends StatelessWidget {
     return BlocConsumer<RouteEditorCubit, RouteEditorState>(
       listenWhen: (before, now) => !before.saved && now.saved,
       listener: (context, state) {
-        if (context.canPop()) context.pop();
+        if (context.canPop()) context.pop(state.kept);
       },
       builder: (context, state) {
         final cubit = context.read<RouteEditorCubit>();

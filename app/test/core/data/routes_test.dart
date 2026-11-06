@@ -348,4 +348,37 @@ void main() {
       expect(back.last.distanceTo(long.last), lessThan(2));
     });
   });
+
+  test("a tagged ride's road joins its route, for both riders", () async {
+    final remote = FakeRemote();
+    final roads = RouteRoadsSync(db, remote);
+    await routes.refresh(routeFilesWith({'osm': routeFile('osm', '9')}));
+    await roads.start();
+    const ridden = [GeoPoint(6.91, 79.86), GeoPoint(6.96, 79.86)];
+    Map<String, Object?> road(String direction, {int? deletedAt}) => {
+      'uid': 'r2',
+      'route': 'osm:9',
+      'direction': direction,
+      'number': '9',
+      'road': encodePolyline(ridden),
+      'deletedAt': deletedAt,
+    };
+    remote.push('routeRoads', [
+      RemoteDoc('ride1abc', road('>North'), 5000000000),
+      // A direction this phone doesn't have: left out.
+      RemoteDoc('ride2abc', road('>Nowhere'), 5000000000),
+    ]);
+    await pumpEventQueue();
+    final all = await routes.watch().first;
+    expect(all.map((d) => (d.number, d.ridden)), [('9', false), ('9', true)]);
+    expect(all.last.path, ridden);
+    expect(all.last.board, all.first.board);
+
+    remote.push('routeRoads', [
+      RemoteDoc('ride1abc', road('>North', deletedAt: 6000000000), 6000000000),
+    ]);
+    await pumpEventQueue();
+    expect(await routes.watch().first, hasLength(1));
+    await roads.stop();
+  });
 }

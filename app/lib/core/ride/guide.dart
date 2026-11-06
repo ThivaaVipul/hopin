@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/core/places/place.dart';
 import 'package:hopin/core/ride/patterns.dart';
+import 'package:hopin/core/ride/routes.dart';
 
 /// One alert: [pattern] once you are within [metres] of your stop.
 class GuideStage extends Equatable {
@@ -71,6 +72,7 @@ class GuideRide extends Equatable {
     this.stages = defaultStages,
     this.language = 'en',
     this.share = false,
+    this.route,
   });
 
   final GeoPoint to;
@@ -90,6 +92,9 @@ class GuideRide extends Equatable {
   /// (docs/PLAN.md, Sharing and stops).
   final bool share;
 
+  /// The bus picked in the panel before Start: the ride is tagged with it.
+  final RouteTag? route;
+
   Destination get destination =>
       Destination(point: to, names: names, area: area);
 
@@ -104,6 +109,7 @@ class GuideRide extends Equatable {
     'stages': [for (final stage in stages) stage.toJson()],
     'language': language,
     'share': share,
+    'route': route?.toJson(),
   };
 
   static GuideRide? fromJson(Object? json) {
@@ -128,11 +134,21 @@ class GuideRide extends Equatable {
       stages: stages,
       language: text('language') ?? 'en',
       share: json['share'] == true,
+      route: RouteTag.fromJson(json['route']),
     );
   }
 
   @override
-  List<Object?> get props => [to, title, names, area, stages, language, share];
+  List<Object?> get props => [
+    to,
+    title,
+    names,
+    area,
+    stages,
+    language,
+    share,
+    route,
+  ];
 }
 
 /// Whole minutes for the board, never less than one.

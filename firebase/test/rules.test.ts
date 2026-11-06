@@ -377,6 +377,88 @@ describe('rides', () => {
     const { verdict: _v, ...noVerdict } = ride();
     await assertFails(setDoc(doc(db, 'people/r1/rides/a1'), noVerdict));
   });
+
+  it('carries the bus it was, as tagged', async () => {
+    const db = rider('r1');
+    const route = { id: 'osm:1', direction: 'Lake>Fort', number: '138', board: 'Fort' };
+    await assertSucceeds(setDoc(doc(db, 'people/r1/rides/a1'), ride({ route })));
+    await assertSucceeds(setDoc(doc(db, 'people/r1/rides/a1'), ride({ route: null })));
+    const { board: _b, ...noBoard } = route;
+    await assertSucceeds(setDoc(doc(db, 'people/r1/rides/a1'), ride({ route: noBoard })));
+    const bad: unknown[] = [
+      'osm:1',
+      { ...route, id: '' },
+      { ...route, id: 'x'.repeat(121) },
+      { ...route, direction: 'x'.repeat(201) },
+      { ...route, number: 'x'.repeat(13) },
+      { ...route, board: 7 },
+      { ...route, colour: 'amber' },
+      { direction: 'Lake>Fort', number: '138' },
+    ];
+    for (const tag of bad) {
+      await assertFails(setDoc(doc(db, 'people/r1/rides/a1'), ride({ route: tag })));
+    }
+  });
+});
+
+// A tagged bus ride's road (docs/PLAN.md, Which bus): its bus part, shared so
+// the route it was matches along it for both riders; only its rider writes,
+// and it is taken back by marking.
+function routeRoad(changes: Fields = {}): Fields {
+  return {
+    uid: 'r1',
+    route: 'ntc:15-87:SL',
+    direction: 'South>North',
+    number: '15-87',
+    road: '_p~iF~ps|U_ulLnnqC',
+    updatedAt: serverTimestamp(),
+    ...changes,
+  };
+}
+
+describe('ride roads', () => {
+  it("lets a rider share a tagged ride's road, and take it back", async () => {
+    await assertSucceeds(setDoc(doc(rider('r1'), 'routeRoads/ride1abc'), routeRoad()));
+    await assertSucceeds(getDoc(doc(rider('r2'), 'routeRoads/ride1abc')));
+    await assertSucceeds(
+      setDoc(doc(rider('r1'), 'routeRoads/ride1abc'), routeRoad({ deletedAt: serverTimestamp() })),
+    );
+    const since = where('updatedAt', '>', Timestamp.fromMillis(0));
+    await assertSucceeds(getDocs(query(collection(rider('r2'), 'routeRoads'), since)));
+  });
+
+  it("keeps everyone else out, and the other rider off one's own", async () => {
+    await seed('routeRoads/ride1abc', routeRoad({ updatedAt: Timestamp.now() }));
+    await assertFails(getDoc(doc(signedOut(), 'routeRoads/ride1abc')));
+    await assertFails(getDoc(doc(stranger('s1'), 'routeRoads/ride1abc')));
+    await assertFails(
+      setDoc(doc(rider('r2'), 'routeRoads/ride1abc'), routeRoad({ uid: 'r2' })),
+    );
+    await assertFails(deleteDoc(doc(rider('r1'), 'routeRoads/ride1abc')));
+  });
+
+  it('checks every field', async () => {
+    const db = rider('r1');
+    const bad: Fields[] = [
+      { uid: 'r2' },
+      { route: '' },
+      { direction: 'x'.repeat(201) },
+      { number: 'x'.repeat(13) },
+      { road: 7 },
+      { road: 'x'.repeat(20_001) },
+      { colour: 'amber' },
+      { updatedAt: Timestamp.now() },
+      { deletedAt: Timestamp.now() },
+    ];
+    for (const changes of bad) {
+      await assertFails(setDoc(doc(db, 'routeRoads/ride1abc'), routeRoad(changes)));
+    }
+    for (const key of ['uid', 'route', 'direction', 'number', 'road', 'updatedAt']) {
+      const { [key]: _gone, ...missing } = routeRoad();
+      await assertFails(setDoc(doc(db, 'routeRoads/ride1abc'), missing));
+    }
+    await assertFails(setDoc(doc(db, 'routeRoads/x'), routeRoad()));
+  });
 });
 
 // A live share (docs/PLAN.md, Sharing and stops): an unguessable id, the

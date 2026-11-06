@@ -299,6 +299,10 @@ class _Summary extends StatelessWidget {
               const SizedBox(height: 8),
               Text(l.guessedDashed, style: muted),
             ],
+            if (route.ridden.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(l.riddenTimes(route.ridden.length), style: muted),
+            ],
           ],
         ),
       ),

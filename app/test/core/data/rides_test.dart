@@ -1,10 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hopin/core/data/local/database.dart';
+import 'package:hopin/core/data/pooled_sync.dart';
 import 'package:hopin/core/data/remote/remote.dart';
 import 'package:hopin/core/data/rides_repository.dart';
 import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/core/ride/bus_logic.dart';
+import 'package:hopin/core/ride/polyline.dart';
 import 'package:hopin/core/ride/ride_record.dart';
+import 'package:hopin/core/ride/routes.dart';
 
 import '../../helpers/fakes.dart';
 
@@ -157,5 +160,95 @@ void main() {
     expect(ride.id, 'ride9');
     expect(ride.distanceM, 9000);
     expect(ride.features, {'minutes': 60});
+  });
+
+  group('the bus it was', () {
+    const tag = RouteTag(
+      route: 'osm:9',
+      direction: 'South>North',
+      number: '9',
+      board: 'North',
+    );
+    late RouteRoadsSync roads;
+
+    setUp(() async {
+      rides = RidesRepository(db, uid: 'r1');
+      roads = RouteRoadsSync(db, remote);
+      rides.onChange = () {
+        sync.push();
+        roads.push();
+      };
+      await sync.start();
+      await roads.start();
+    });
+
+    tearDown(() => roads.stop());
+
+    List<(String, Map<String, Object?>, bool)> roadPuts() => [
+      for (final put in remote.puts)
+        if (put.$1.startsWith('routeRoads/')) put,
+    ];
+
+    test('a tagged bus ride goes up with its bus, its road shared', () async {
+      await rides.save(bus.withRoute(tag));
+      await pumpEventQueue();
+      expect((await rides.watch().first).single.route, tag);
+      final ride = remote.puts.firstWhere((p) => p.$1 == '$collection/ride1');
+      expect(ride.$2['route'], tag.toJson());
+      final (path, data, deleted) = roadPuts().single;
+      expect(path, 'routeRoads/ride1');
+      expect(data, {
+        'uid': 'r1',
+        'route': 'osm:9',
+        'direction': 'South>North',
+        'number': '9',
+        'road': encodePolyline(bus.path),
+      });
+      expect(deleted, isFalse);
+    });
+
+    test(
+      'tagged on its page; untagged, Not a bus or deleted, the road goes',
+      () async {
+        final unsure = bus.withVerdict(RideVerdict.unknown);
+        await rides.save(unsure);
+        await rides.setRoute('ride1', tag);
+        await pumpEventQueue();
+        // Tagging what Hopin was unsure of says it was a bus.
+        final tagged = (await rides.watch().first).single;
+        expect((tagged.route, tagged.verdict), (tag, RideVerdict.bus));
+        expect(roadPuts().last.$3, isFalse);
+
+        await rides.setRoute('ride1', null);
+        await pumpEventQueue();
+        expect(roadPuts().last.$3, isTrue);
+
+        await rides.setRoute('ride1', tag);
+        await rides.setVerdict('ride1', RideVerdict.notBus);
+        await pumpEventQueue();
+        expect((await rides.watch().first).single.route, isNull);
+        expect(roadPuts().last.$3, isTrue);
+
+        await rides.setVerdict('ride1', RideVerdict.bus);
+        await rides.remove('ride1');
+        await pumpEventQueue();
+        expect(roadPuts().last.$3, isTrue);
+      },
+    );
+
+    test("takes a ride's bus from the server", () async {
+      remote.push(collection, [
+        RemoteDoc('ride9', {
+          'startedAt': DateTime.utc(2026, 1, 3, 7).microsecondsSinceEpoch,
+          'endedAt': DateTime.utc(2026, 1, 3, 8).microsecondsSinceEpoch,
+          'verdict': 'bus',
+          'distanceM': 9000,
+          'features': {'minutes': 60},
+          'route': tag.toJson(),
+        }, 5),
+      ]);
+      await pumpEventQueue();
+      expect((await rides.watch().first).single.route, tag);
+    });
   });
 }

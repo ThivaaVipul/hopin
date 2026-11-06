@@ -45,6 +45,7 @@ RouteMapProps routeMapProps(KnownRoute route, {required bool dark}) {
     roads: [
       for (final direction in files)
         if (direction.path.length > 1) direction.path,
+      for (final noted in route.ridden) noted.file.path,
     ],
     guessed: [
       for (final direction in files) ...[

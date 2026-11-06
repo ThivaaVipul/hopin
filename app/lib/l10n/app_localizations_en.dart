@@ -651,4 +651,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteRouteQuestion => 'Delete this route for both of you?';
+
+  @override
+  String get whichBus => 'Which bus?';
+
+  @override
+  String busTo(String number, String board) {
+    return '$number to $board';
+  }
+
+  @override
+  String get alongThisRide => 'Along this ride';
+
+  @override
+  String get nearYou => 'Near you';
+
+  @override
+  String addRouteNumbered(String number) {
+    return 'Add $number';
+  }
+
+  @override
+  String get notThisBus => 'Not this bus';
+
+  @override
+  String riddenTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ridden $count times',
+      one: 'Ridden once',
+    );
+    return '$_temp0';
+  }
 }

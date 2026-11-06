@@ -363,3 +363,67 @@ class HandRoutesSync extends _PooledSync {
         );
   }
 }
+
+/// Tagged bus rides' roads (`routeRoads/{rideId}`): this rider's go up, both
+/// riders' come down; taken back by marking.
+class RouteRoadsSync extends _PooledSync {
+  RouteRoadsSync(HopinDatabase db, Remote remote)
+    : super(db, remote, 'routeRoads', 'cursor.routeRoads');
+
+  @override
+  Future<List<(String, Map<String, Object?>, bool?, int)>> _pending() async => [
+    for (final row in await (_db.select(
+      _db.routeRoads,
+    )..where((r) => r.pendingSince.isNotNull())).get())
+      (
+        row.rideId,
+        {
+          'uid': row.uid,
+          'route': row.route,
+          'direction': row.direction,
+          'number': row.number,
+          'road': row.road,
+        },
+        row.deletedAt != null,
+        row.pendingSince!,
+      ),
+  ];
+
+  @override
+  Future<void> _sent(String id, int pendingSince) =>
+      (_db.update(_db.routeRoads)..where(
+            (r) => r.rideId.equals(id) & r.pendingSince.equals(pendingSince),
+          ))
+          .write(const RouteRoadsCompanion(pendingSince: Value(null)));
+
+  @override
+  Future<void> _take(RemoteDoc doc) async {
+    final local = await (_db.select(
+      _db.routeRoads,
+    )..where((r) => r.rideId.equals(doc.id))).getSingleOrNull();
+    if (local?.pendingSince != null) return;
+    final d = doc.data;
+    if (d case {
+      'uid': final String uid,
+      'route': final String route,
+      'direction': final String direction,
+      'number': final String number,
+    }) {
+      await _db
+          .into(_db.routeRoads)
+          .insertOnConflictUpdate(
+            RouteRoadsCompanion.insert(
+              rideId: doc.id,
+              uid: uid,
+              route: route,
+              direction: direction,
+              number: number,
+              road: d['road'] as String? ?? '',
+              updatedAt: doc.updatedAt,
+              deletedAt: Value(d['deletedAt'] as int?),
+              pendingSince: const Value(null),
+            ),
+          );
+    }
+  }
+}

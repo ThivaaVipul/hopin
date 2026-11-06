@@ -5,7 +5,9 @@ import 'package:hopin/app/widgets/led_dots.dart';
 import 'package:hopin/app/widgets/rolling.dart';
 import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/core/ride/guide.dart';
+import 'package:hopin/core/ride/routes.dart';
 import 'package:hopin/features/home/widgets/share_parts.dart';
+import 'package:hopin/features/routes/widgets/which_bus_sheet.dart';
 import 'package:hopin/l10n/app_localizations.dart';
 import 'package:hopin/l10n/time_left.dart';
 
@@ -24,6 +26,8 @@ class RideBoard extends StatelessWidget {
     required this.onKeep,
     this.sharing = false,
     this.onShare,
+    this.tag,
+    this.onWhichBus,
   });
 
   final GuideRide ride;
@@ -42,6 +46,10 @@ class RideBoard extends StatelessWidget {
   /// choices once shared.
   final bool sharing;
   final VoidCallback? onShare;
+
+  /// The ride's bus, once tagged; Which bus? tags it.
+  final RouteTag? tag;
+  final VoidCallback? onWhichBus;
 
   /// The progress lights.
   static const lights = 10;
@@ -206,6 +214,14 @@ class _Board extends StatelessWidget {
                     child: Text(l.keep),
                   ),
                   const SizedBox(width: 8),
+                ],
+                if (board.onWhichBus case final onWhichBus?) ...[
+                  WhichBusButton(
+                    tag: board.tag,
+                    onPressed: onWhichBus,
+                    ink: ink.text,
+                  ),
+                  const SizedBox(width: 4),
                 ],
                 if (board.onShare case final onShare?) ...[
                   ShareRideButton(

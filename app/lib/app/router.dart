@@ -76,7 +76,8 @@ GoRouter buildRouter(SessionCubit session, Listenable refresh) => GoRouter(
     // Before the route's own page, which would take "add" for an id.
     GoRoute(
       path: Routes.addRoute,
-      builder: (context, state) => const RouteEditorPage(),
+      builder: (context, state) =>
+          RouteEditorPage(number: state.extra as String?),
     ),
     GoRoute(
       path: '/routes/:id',

@@ -17,7 +17,7 @@ class RouteEditorState extends Equatable {
     this.road,
     this.drawing = false,
     this.failed = false,
-    this.saved = false,
+    this.kept,
     this.loaded = true,
   });
 
@@ -36,12 +36,16 @@ class RouteEditorState extends Equatable {
 
   /// The last try to draw the road failed (no network, or no road).
   final bool failed;
-  final bool saved;
+
+  /// The route as saved, once it is.
+  final HandRoute? kept;
 
   /// False while a route being changed loads.
   final bool loaded;
 
   bool get editing => id.isNotEmpty;
+
+  bool get saved => kept != null;
 
   /// Every town in order: the start, those on the way, the end.
   List<RouteTown> get towns => [?from, ...via, ?to];
@@ -63,7 +67,7 @@ class RouteEditorState extends Equatable {
     road,
     drawing,
     failed,
-    saved,
+    kept,
     loaded,
   ];
 }
@@ -72,8 +76,8 @@ class RouteEditorState extends Equatable {
 /// number, its two end towns and the towns on the way, with the road drawn
 /// by OSRM each time the towns change, shown before it is saved.
 class RouteEditorCubit extends Cubit<RouteEditorState> {
-  RouteEditorCubit(this._routes, this._osrm, {this.routeId})
-    : super(RouteEditorState(loaded: routeId == null));
+  RouteEditorCubit(this._routes, this._osrm, {this.routeId, String? number})
+    : super(RouteEditorState(number: number ?? '', loaded: routeId == null));
 
   /// At most this many towns on the way.
   static const maxVia = 5;
@@ -123,7 +127,7 @@ class RouteEditorCubit extends Cubit<RouteEditorState> {
   Future<void> save() async {
     final state = this.state;
     if (!state.canSave) return;
-    await _routes.saveHand(
+    final kept = await _routes.saveHand(
       HandRoute(
         id: state.id,
         number: state.number,
@@ -133,7 +137,7 @@ class RouteEditorCubit extends Cubit<RouteEditorState> {
         road: state.road!,
       ),
     );
-    if (!isClosed) emit(_with(saved: true));
+    if (!isClosed) emit(_with(kept: kept));
   }
 
   /// [next] with its road drawn afresh through its towns; an answer for
@@ -162,7 +166,7 @@ class RouteEditorCubit extends Cubit<RouteEditorState> {
     bool noRoad = false,
     bool drawing = false,
     bool failed = false,
-    bool? saved,
+    HandRoute? kept,
   }) {
     final s = base ?? state;
     return RouteEditorState(
@@ -174,7 +178,7 @@ class RouteEditorCubit extends Cubit<RouteEditorState> {
       road: noRoad ? null : (road ?? s.road),
       drawing: drawing,
       failed: failed,
-      saved: saved ?? s.saved,
+      kept: kept ?? s.kept,
       loaded: s.loaded,
     );
   }

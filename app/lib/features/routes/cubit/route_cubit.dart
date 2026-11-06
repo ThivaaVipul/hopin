@@ -38,11 +38,23 @@ class RouteCubit extends Cubit<RouteState> {
 
   void start() {
     _watch = _routes.watchNoted().listen((all) {
-      final directions = [
+      final mine = [
         for (final noted in all)
           if (noted.file.routeId == id) noted,
       ];
-      _route = directions.isEmpty ? null : KnownRoute(directions);
+      final directions = [
+        for (final noted in mine)
+          if (!noted.file.ridden) noted,
+      ];
+      _route = directions.isEmpty
+          ? null
+          : KnownRoute(
+              directions,
+              ridden: [
+                for (final noted in mine)
+                  if (noted.file.ridden) noted,
+              ],
+            );
       _routeIn = true;
       _show();
     });

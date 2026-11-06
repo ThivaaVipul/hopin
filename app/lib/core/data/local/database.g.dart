@@ -1382,6 +1382,15 @@ class $RidesTable extends Rides with TableInfo<$RidesTable, RideRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _routeMeta = const VerificationMeta('route');
+  @override
+  late final GeneratedColumn<String> route = GeneratedColumn<String>(
+    'route',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _updatedAtMeta = const VerificationMeta(
     'updatedAt',
   );
@@ -1428,6 +1437,7 @@ class $RidesTable extends Rides with TableInfo<$RidesTable, RideRow> {
     guideTo,
     fromName,
     toName,
+    route,
     updatedAt,
     deletedAt,
     pendingSince,
@@ -1519,6 +1529,12 @@ class $RidesTable extends Rides with TableInfo<$RidesTable, RideRow> {
         toName.isAcceptableOrUnknown(data['to_name']!, _toNameMeta),
       );
     }
+    if (data.containsKey('route')) {
+      context.handle(
+        _routeMeta,
+        route.isAcceptableOrUnknown(data['route']!, _routeMeta),
+      );
+    }
     if (data.containsKey('updated_at')) {
       context.handle(
         _updatedAtMeta,
@@ -1595,6 +1611,10 @@ class $RidesTable extends Rides with TableInfo<$RidesTable, RideRow> {
         DriftSqlType.string,
         data['${effectivePrefix}to_name'],
       ),
+      route: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}route'],
+      ),
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}updated_at'],
@@ -1636,6 +1656,9 @@ class RideRow extends DataClass implements Insertable<RideRow> {
   final String? guideTo;
   final String? fromName;
   final String? toName;
+
+  /// The bus it was, as tagged: RouteTag as JSON.
+  final String? route;
   final int updatedAt;
   final int? deletedAt;
   final int? pendingSince;
@@ -1651,6 +1674,7 @@ class RideRow extends DataClass implements Insertable<RideRow> {
     this.guideTo,
     this.fromName,
     this.toName,
+    this.route,
     required this.updatedAt,
     this.deletedAt,
     this.pendingSince,
@@ -1678,6 +1702,9 @@ class RideRow extends DataClass implements Insertable<RideRow> {
     }
     if (!nullToAbsent || toName != null) {
       map['to_name'] = Variable<String>(toName);
+    }
+    if (!nullToAbsent || route != null) {
+      map['route'] = Variable<String>(route);
     }
     map['updated_at'] = Variable<int>(updatedAt);
     if (!nullToAbsent || deletedAt != null) {
@@ -1710,6 +1737,9 @@ class RideRow extends DataClass implements Insertable<RideRow> {
       toName: toName == null && nullToAbsent
           ? const Value.absent()
           : Value(toName),
+      route: route == null && nullToAbsent
+          ? const Value.absent()
+          : Value(route),
       updatedAt: Value(updatedAt),
       deletedAt: deletedAt == null && nullToAbsent
           ? const Value.absent()
@@ -1737,6 +1767,7 @@ class RideRow extends DataClass implements Insertable<RideRow> {
       guideTo: serializer.fromJson<String?>(json['guideTo']),
       fromName: serializer.fromJson<String?>(json['fromName']),
       toName: serializer.fromJson<String?>(json['toName']),
+      route: serializer.fromJson<String?>(json['route']),
       updatedAt: serializer.fromJson<int>(json['updatedAt']),
       deletedAt: serializer.fromJson<int?>(json['deletedAt']),
       pendingSince: serializer.fromJson<int?>(json['pendingSince']),
@@ -1757,6 +1788,7 @@ class RideRow extends DataClass implements Insertable<RideRow> {
       'guideTo': serializer.toJson<String?>(guideTo),
       'fromName': serializer.toJson<String?>(fromName),
       'toName': serializer.toJson<String?>(toName),
+      'route': serializer.toJson<String?>(route),
       'updatedAt': serializer.toJson<int>(updatedAt),
       'deletedAt': serializer.toJson<int?>(deletedAt),
       'pendingSince': serializer.toJson<int?>(pendingSince),
@@ -1775,6 +1807,7 @@ class RideRow extends DataClass implements Insertable<RideRow> {
     Value<String?> guideTo = const Value.absent(),
     Value<String?> fromName = const Value.absent(),
     Value<String?> toName = const Value.absent(),
+    Value<String?> route = const Value.absent(),
     int? updatedAt,
     Value<int?> deletedAt = const Value.absent(),
     Value<int?> pendingSince = const Value.absent(),
@@ -1790,6 +1823,7 @@ class RideRow extends DataClass implements Insertable<RideRow> {
     guideTo: guideTo.present ? guideTo.value : this.guideTo,
     fromName: fromName.present ? fromName.value : this.fromName,
     toName: toName.present ? toName.value : this.toName,
+    route: route.present ? route.value : this.route,
     updatedAt: updatedAt ?? this.updatedAt,
     deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
     pendingSince: pendingSince.present ? pendingSince.value : this.pendingSince,
@@ -1807,6 +1841,7 @@ class RideRow extends DataClass implements Insertable<RideRow> {
       guideTo: data.guideTo.present ? data.guideTo.value : this.guideTo,
       fromName: data.fromName.present ? data.fromName.value : this.fromName,
       toName: data.toName.present ? data.toName.value : this.toName,
+      route: data.route.present ? data.route.value : this.route,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
       pendingSince: data.pendingSince.present
@@ -1829,6 +1864,7 @@ class RideRow extends DataClass implements Insertable<RideRow> {
           ..write('guideTo: $guideTo, ')
           ..write('fromName: $fromName, ')
           ..write('toName: $toName, ')
+          ..write('route: $route, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('pendingSince: $pendingSince')
@@ -1849,6 +1885,7 @@ class RideRow extends DataClass implements Insertable<RideRow> {
     guideTo,
     fromName,
     toName,
+    route,
     updatedAt,
     deletedAt,
     pendingSince,
@@ -1868,6 +1905,7 @@ class RideRow extends DataClass implements Insertable<RideRow> {
           other.guideTo == this.guideTo &&
           other.fromName == this.fromName &&
           other.toName == this.toName &&
+          other.route == this.route &&
           other.updatedAt == this.updatedAt &&
           other.deletedAt == this.deletedAt &&
           other.pendingSince == this.pendingSince);
@@ -1885,6 +1923,7 @@ class RidesCompanion extends UpdateCompanion<RideRow> {
   final Value<String?> guideTo;
   final Value<String?> fromName;
   final Value<String?> toName;
+  final Value<String?> route;
   final Value<int> updatedAt;
   final Value<int?> deletedAt;
   final Value<int?> pendingSince;
@@ -1901,6 +1940,7 @@ class RidesCompanion extends UpdateCompanion<RideRow> {
     this.guideTo = const Value.absent(),
     this.fromName = const Value.absent(),
     this.toName = const Value.absent(),
+    this.route = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.deletedAt = const Value.absent(),
     this.pendingSince = const Value.absent(),
@@ -1918,6 +1958,7 @@ class RidesCompanion extends UpdateCompanion<RideRow> {
     this.guideTo = const Value.absent(),
     this.fromName = const Value.absent(),
     this.toName = const Value.absent(),
+    this.route = const Value.absent(),
     required int updatedAt,
     this.deletedAt = const Value.absent(),
     this.pendingSince = const Value.absent(),
@@ -1941,6 +1982,7 @@ class RidesCompanion extends UpdateCompanion<RideRow> {
     Expression<String>? guideTo,
     Expression<String>? fromName,
     Expression<String>? toName,
+    Expression<String>? route,
     Expression<int>? updatedAt,
     Expression<int>? deletedAt,
     Expression<int>? pendingSince,
@@ -1958,6 +2000,7 @@ class RidesCompanion extends UpdateCompanion<RideRow> {
       if (guideTo != null) 'guide_to': guideTo,
       if (fromName != null) 'from_name': fromName,
       if (toName != null) 'to_name': toName,
+      if (route != null) 'route': route,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (deletedAt != null) 'deleted_at': deletedAt,
       if (pendingSince != null) 'pending_since': pendingSince,
@@ -1977,6 +2020,7 @@ class RidesCompanion extends UpdateCompanion<RideRow> {
     Value<String?>? guideTo,
     Value<String?>? fromName,
     Value<String?>? toName,
+    Value<String?>? route,
     Value<int>? updatedAt,
     Value<int?>? deletedAt,
     Value<int?>? pendingSince,
@@ -1994,6 +2038,7 @@ class RidesCompanion extends UpdateCompanion<RideRow> {
       guideTo: guideTo ?? this.guideTo,
       fromName: fromName ?? this.fromName,
       toName: toName ?? this.toName,
+      route: route ?? this.route,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
       pendingSince: pendingSince ?? this.pendingSince,
@@ -2037,6 +2082,9 @@ class RidesCompanion extends UpdateCompanion<RideRow> {
     if (toName.present) {
       map['to_name'] = Variable<String>(toName.value);
     }
+    if (route.present) {
+      map['route'] = Variable<String>(route.value);
+    }
     if (updatedAt.present) {
       map['updated_at'] = Variable<int>(updatedAt.value);
     }
@@ -2066,6 +2114,7 @@ class RidesCompanion extends UpdateCompanion<RideRow> {
           ..write('guideTo: $guideTo, ')
           ..write('fromName: $fromName, ')
           ..write('toName: $toName, ')
+          ..write('route: $route, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('deletedAt: $deletedAt, ')
           ..write('pendingSince: $pendingSince, ')
@@ -5784,6 +5833,572 @@ class HandRoutesCompanion extends UpdateCompanion<HandRouteRow> {
   }
 }
 
+class $RouteRoadsTable extends RouteRoads
+    with TableInfo<$RouteRoadsTable, RouteRoadRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RouteRoadsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _rideIdMeta = const VerificationMeta('rideId');
+  @override
+  late final GeneratedColumn<String> rideId = GeneratedColumn<String>(
+    'ride_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _uidMeta = const VerificationMeta('uid');
+  @override
+  late final GeneratedColumn<String> uid = GeneratedColumn<String>(
+    'uid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _routeMeta = const VerificationMeta('route');
+  @override
+  late final GeneratedColumn<String> route = GeneratedColumn<String>(
+    'route',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _directionMeta = const VerificationMeta(
+    'direction',
+  );
+  @override
+  late final GeneratedColumn<String> direction = GeneratedColumn<String>(
+    'direction',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _numberMeta = const VerificationMeta('number');
+  @override
+  late final GeneratedColumn<String> number = GeneratedColumn<String>(
+    'number',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _roadMeta = const VerificationMeta('road');
+  @override
+  late final GeneratedColumn<String> road = GeneratedColumn<String>(
+    'road',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _pendingSinceMeta = const VerificationMeta(
+    'pendingSince',
+  );
+  @override
+  late final GeneratedColumn<int> pendingSince = GeneratedColumn<int>(
+    'pending_since',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    rideId,
+    uid,
+    route,
+    direction,
+    number,
+    road,
+    updatedAt,
+    deletedAt,
+    pendingSince,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'route_roads';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RouteRoadRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('ride_id')) {
+      context.handle(
+        _rideIdMeta,
+        rideId.isAcceptableOrUnknown(data['ride_id']!, _rideIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_rideIdMeta);
+    }
+    if (data.containsKey('uid')) {
+      context.handle(
+        _uidMeta,
+        uid.isAcceptableOrUnknown(data['uid']!, _uidMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_uidMeta);
+    }
+    if (data.containsKey('route')) {
+      context.handle(
+        _routeMeta,
+        route.isAcceptableOrUnknown(data['route']!, _routeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_routeMeta);
+    }
+    if (data.containsKey('direction')) {
+      context.handle(
+        _directionMeta,
+        direction.isAcceptableOrUnknown(data['direction']!, _directionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_directionMeta);
+    }
+    if (data.containsKey('number')) {
+      context.handle(
+        _numberMeta,
+        number.isAcceptableOrUnknown(data['number']!, _numberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_numberMeta);
+    }
+    if (data.containsKey('road')) {
+      context.handle(
+        _roadMeta,
+        road.isAcceptableOrUnknown(data['road']!, _roadMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_roadMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    if (data.containsKey('pending_since')) {
+      context.handle(
+        _pendingSinceMeta,
+        pendingSince.isAcceptableOrUnknown(
+          data['pending_since']!,
+          _pendingSinceMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {rideId};
+  @override
+  RouteRoadRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RouteRoadRow(
+      rideId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ride_id'],
+      )!,
+      uid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uid'],
+      )!,
+      route: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}route'],
+      )!,
+      direction: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}direction'],
+      )!,
+      number: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}number'],
+      )!,
+      road: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}road'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      ),
+      pendingSince: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}pending_since'],
+      ),
+    );
+  }
+
+  @override
+  $RouteRoadsTable createAlias(String alias) {
+    return $RouteRoadsTable(attachedDatabase, alias);
+  }
+}
+
+class RouteRoadRow extends DataClass implements Insertable<RouteRoadRow> {
+  final String rideId;
+  final String uid;
+
+  /// The route's id and the direction's key (RouteTag).
+  final String route;
+  final String direction;
+  final String number;
+
+  /// The ride's bus part, an encoded polyline; empty once taken back.
+  final String road;
+  final int updatedAt;
+  final int? deletedAt;
+  final int? pendingSince;
+  const RouteRoadRow({
+    required this.rideId,
+    required this.uid,
+    required this.route,
+    required this.direction,
+    required this.number,
+    required this.road,
+    required this.updatedAt,
+    this.deletedAt,
+    this.pendingSince,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['ride_id'] = Variable<String>(rideId);
+    map['uid'] = Variable<String>(uid);
+    map['route'] = Variable<String>(route);
+    map['direction'] = Variable<String>(direction);
+    map['number'] = Variable<String>(number);
+    map['road'] = Variable<String>(road);
+    map['updated_at'] = Variable<int>(updatedAt);
+    if (!nullToAbsent || deletedAt != null) {
+      map['deleted_at'] = Variable<int>(deletedAt);
+    }
+    if (!nullToAbsent || pendingSince != null) {
+      map['pending_since'] = Variable<int>(pendingSince);
+    }
+    return map;
+  }
+
+  RouteRoadsCompanion toCompanion(bool nullToAbsent) {
+    return RouteRoadsCompanion(
+      rideId: Value(rideId),
+      uid: Value(uid),
+      route: Value(route),
+      direction: Value(direction),
+      number: Value(number),
+      road: Value(road),
+      updatedAt: Value(updatedAt),
+      deletedAt: deletedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deletedAt),
+      pendingSince: pendingSince == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pendingSince),
+    );
+  }
+
+  factory RouteRoadRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RouteRoadRow(
+      rideId: serializer.fromJson<String>(json['rideId']),
+      uid: serializer.fromJson<String>(json['uid']),
+      route: serializer.fromJson<String>(json['route']),
+      direction: serializer.fromJson<String>(json['direction']),
+      number: serializer.fromJson<String>(json['number']),
+      road: serializer.fromJson<String>(json['road']),
+      updatedAt: serializer.fromJson<int>(json['updatedAt']),
+      deletedAt: serializer.fromJson<int?>(json['deletedAt']),
+      pendingSince: serializer.fromJson<int?>(json['pendingSince']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'rideId': serializer.toJson<String>(rideId),
+      'uid': serializer.toJson<String>(uid),
+      'route': serializer.toJson<String>(route),
+      'direction': serializer.toJson<String>(direction),
+      'number': serializer.toJson<String>(number),
+      'road': serializer.toJson<String>(road),
+      'updatedAt': serializer.toJson<int>(updatedAt),
+      'deletedAt': serializer.toJson<int?>(deletedAt),
+      'pendingSince': serializer.toJson<int?>(pendingSince),
+    };
+  }
+
+  RouteRoadRow copyWith({
+    String? rideId,
+    String? uid,
+    String? route,
+    String? direction,
+    String? number,
+    String? road,
+    int? updatedAt,
+    Value<int?> deletedAt = const Value.absent(),
+    Value<int?> pendingSince = const Value.absent(),
+  }) => RouteRoadRow(
+    rideId: rideId ?? this.rideId,
+    uid: uid ?? this.uid,
+    route: route ?? this.route,
+    direction: direction ?? this.direction,
+    number: number ?? this.number,
+    road: road ?? this.road,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deletedAt: deletedAt.present ? deletedAt.value : this.deletedAt,
+    pendingSince: pendingSince.present ? pendingSince.value : this.pendingSince,
+  );
+  RouteRoadRow copyWithCompanion(RouteRoadsCompanion data) {
+    return RouteRoadRow(
+      rideId: data.rideId.present ? data.rideId.value : this.rideId,
+      uid: data.uid.present ? data.uid.value : this.uid,
+      route: data.route.present ? data.route.value : this.route,
+      direction: data.direction.present ? data.direction.value : this.direction,
+      number: data.number.present ? data.number.value : this.number,
+      road: data.road.present ? data.road.value : this.road,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+      pendingSince: data.pendingSince.present
+          ? data.pendingSince.value
+          : this.pendingSince,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RouteRoadRow(')
+          ..write('rideId: $rideId, ')
+          ..write('uid: $uid, ')
+          ..write('route: $route, ')
+          ..write('direction: $direction, ')
+          ..write('number: $number, ')
+          ..write('road: $road, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('pendingSince: $pendingSince')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    rideId,
+    uid,
+    route,
+    direction,
+    number,
+    road,
+    updatedAt,
+    deletedAt,
+    pendingSince,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RouteRoadRow &&
+          other.rideId == this.rideId &&
+          other.uid == this.uid &&
+          other.route == this.route &&
+          other.direction == this.direction &&
+          other.number == this.number &&
+          other.road == this.road &&
+          other.updatedAt == this.updatedAt &&
+          other.deletedAt == this.deletedAt &&
+          other.pendingSince == this.pendingSince);
+}
+
+class RouteRoadsCompanion extends UpdateCompanion<RouteRoadRow> {
+  final Value<String> rideId;
+  final Value<String> uid;
+  final Value<String> route;
+  final Value<String> direction;
+  final Value<String> number;
+  final Value<String> road;
+  final Value<int> updatedAt;
+  final Value<int?> deletedAt;
+  final Value<int?> pendingSince;
+  final Value<int> rowid;
+  const RouteRoadsCompanion({
+    this.rideId = const Value.absent(),
+    this.uid = const Value.absent(),
+    this.route = const Value.absent(),
+    this.direction = const Value.absent(),
+    this.number = const Value.absent(),
+    this.road = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.pendingSince = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RouteRoadsCompanion.insert({
+    required String rideId,
+    required String uid,
+    required String route,
+    required String direction,
+    required String number,
+    required String road,
+    required int updatedAt,
+    this.deletedAt = const Value.absent(),
+    this.pendingSince = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : rideId = Value(rideId),
+       uid = Value(uid),
+       route = Value(route),
+       direction = Value(direction),
+       number = Value(number),
+       road = Value(road),
+       updatedAt = Value(updatedAt);
+  static Insertable<RouteRoadRow> custom({
+    Expression<String>? rideId,
+    Expression<String>? uid,
+    Expression<String>? route,
+    Expression<String>? direction,
+    Expression<String>? number,
+    Expression<String>? road,
+    Expression<int>? updatedAt,
+    Expression<int>? deletedAt,
+    Expression<int>? pendingSince,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (rideId != null) 'ride_id': rideId,
+      if (uid != null) 'uid': uid,
+      if (route != null) 'route': route,
+      if (direction != null) 'direction': direction,
+      if (number != null) 'number': number,
+      if (road != null) 'road': road,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (pendingSince != null) 'pending_since': pendingSince,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RouteRoadsCompanion copyWith({
+    Value<String>? rideId,
+    Value<String>? uid,
+    Value<String>? route,
+    Value<String>? direction,
+    Value<String>? number,
+    Value<String>? road,
+    Value<int>? updatedAt,
+    Value<int?>? deletedAt,
+    Value<int?>? pendingSince,
+    Value<int>? rowid,
+  }) {
+    return RouteRoadsCompanion(
+      rideId: rideId ?? this.rideId,
+      uid: uid ?? this.uid,
+      route: route ?? this.route,
+      direction: direction ?? this.direction,
+      number: number ?? this.number,
+      road: road ?? this.road,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: deletedAt ?? this.deletedAt,
+      pendingSince: pendingSince ?? this.pendingSince,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (rideId.present) {
+      map['ride_id'] = Variable<String>(rideId.value);
+    }
+    if (uid.present) {
+      map['uid'] = Variable<String>(uid.value);
+    }
+    if (route.present) {
+      map['route'] = Variable<String>(route.value);
+    }
+    if (direction.present) {
+      map['direction'] = Variable<String>(direction.value);
+    }
+    if (number.present) {
+      map['number'] = Variable<String>(number.value);
+    }
+    if (road.present) {
+      map['road'] = Variable<String>(road.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (pendingSince.present) {
+      map['pending_since'] = Variable<int>(pendingSince.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RouteRoadsCompanion(')
+          ..write('rideId: $rideId, ')
+          ..write('uid: $uid, ')
+          ..write('route: $route, ')
+          ..write('direction: $direction, ')
+          ..write('number: $number, ')
+          ..write('road: $road, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('pendingSince: $pendingSince, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $SettingsTable extends Settings
     with TableInfo<$SettingsTable, SettingRow> {
   @override
@@ -6005,6 +6620,7 @@ abstract class _$HopinDatabase extends GeneratedDatabase {
   late final $RouteDataTable routeData = $RouteDataTable(this);
   late final $RouteNotesTable routeNotes = $RouteNotesTable(this);
   late final $HandRoutesTable handRoutes = $HandRoutesTable(this);
+  late final $RouteRoadsTable routeRoads = $RouteRoadsTable(this);
   late final $SettingsTable settings = $SettingsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -6022,6 +6638,7 @@ abstract class _$HopinDatabase extends GeneratedDatabase {
     routeData,
     routeNotes,
     handRoutes,
+    routeRoads,
     settings,
   ];
 }

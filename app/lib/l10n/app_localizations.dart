@@ -1261,6 +1261,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete this route for both of you?'**
   String get deleteRouteQuestion;
+
+  /// Tags a ride with the bus it is, on the ride bar, the ride board and a ride's page.
+  ///
+  /// In en, this message translates to:
+  /// **'Which bus?'**
+  String get whichBus;
+
+  /// A ride's bus: its number and its board.
+  ///
+  /// In en, this message translates to:
+  /// **'{number} to {board}'**
+  String busTo(String number, String board);
+
+  /// Which bus?: the buses that go the way the ride went.
+  ///
+  /// In en, this message translates to:
+  /// **'Along this ride'**
+  String get alongThisRide;
+
+  /// Which bus?: the buses whose road passes where you are.
+  ///
+  /// In en, this message translates to:
+  /// **'Near you'**
+  String get nearYou;
+
+  /// Which bus?: adds a route with the number typed, which Hopin doesn't know.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {number}'**
+  String addRouteNumbered(String number);
+
+  /// Which bus?: takes a ride's bus off it.
+  ///
+  /// In en, this message translates to:
+  /// **'Not this bus'**
+  String get notThisBus;
+
+  /// A route's page: how many tagged rides went along it.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Ridden once} other{Ridden {count} times}}'**
+  String riddenTimes(int count);
 }
 
 class _AppLocalizationsDelegate

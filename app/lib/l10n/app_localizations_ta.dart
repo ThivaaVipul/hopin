@@ -201,9 +201,6 @@ class AppLocalizationsTa extends AppLocalizations {
   String get channelGuide => 'பயண வழிகாட்டி';
 
   @override
-  String get channelAlerts => 'நிறுத்த எச்சரிக்கைகள்';
-
-  @override
   String get guideFailed => 'வழிகாட்டி தொடங்கவில்லை. மீண்டும் முயலவும்.';
 
   @override

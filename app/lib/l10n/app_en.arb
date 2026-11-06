@@ -280,10 +280,6 @@
   "@channelGuide": {
     "description": "Android's name for the guide's ongoing notification."
   },
-  "channelAlerts": "Stop alerts",
-  "@channelAlerts": {
-    "description": "Android's name for the alerts before your stop."
-  },
   "guideFailed": "The guide didn't start. Try again.",
   "@guideFailed": {
     "description": "Shown when Android refuses to start the guide."

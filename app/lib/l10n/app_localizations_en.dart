@@ -200,9 +200,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get channelGuide => 'Ride guide';
 
   @override
-  String get channelAlerts => 'Stop alerts';
-
-  @override
   String get guideFailed => 'The guide didn\'t start. Try again.';
 
   @override

@@ -37,7 +37,10 @@ class RideRecord extends Equatable {
     this.toName,
   });
 
-  /// Kept from [logic]'s ride; [verdict] decides whether the path goes too.
+  /// Kept from [logic]'s ride, its vehicle part only (the walks either side
+  /// left out); [verdict] decides whether the path goes too. [endedAt]
+  /// stands in when the ride had no fixes. The features are the whole
+  /// ride's: what the logic saw when it asked.
   factory RideRecord.fromLogic(
     BusLogic logic, {
     required String id,
@@ -46,18 +49,20 @@ class RideRecord extends Equatable {
     String? guideTo,
   }) {
     final keepPath = verdict != RideVerdict.notBus;
+    final ride = logic.ride;
+    final ended = ride.endedAt ?? endedAt;
     return RideRecord(
       id: id,
-      startedAt: logic.startedAt ?? endedAt,
-      endedAt: endedAt,
+      startedAt: ride.startedAt ?? ended,
+      endedAt: ended,
       verdict: verdict,
-      distanceM: logic.distance.round(),
+      distanceM: ride.distance.round(),
       path: keepPath
-          ? List.unmodifiable(logic.path.take(maxPath).map(_round))
+          ? List.unmodifiable(ride.path.take(maxPath).map(_round))
           : const [],
       halts: keepPath
           ? List.unmodifiable(
-              logic.halts
+              ride.halts
                   .take(maxHalts)
                   .map((h) => Halt(_round(h.point), h.seconds)),
             )

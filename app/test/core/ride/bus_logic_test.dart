@@ -100,6 +100,53 @@ void main() {
     expect(logic.topSpeed, lessThan(12));
   });
 
+  /// Walking: short bursts, with pauses at crossings that read as halts.
+  void walk(Trace trace, {int crossings = 4}) {
+    for (var i = 0; i < crossings; i++) {
+      trace
+        ..ride(3.2, const Duration(seconds: 10))
+        ..wait(const Duration(seconds: 20));
+    }
+  }
+
+  test('a ride keeps only its bus part, not the walks either side', () {
+    final trace = Trace.from(9000);
+    walk(trace);
+    trace.wait(const Duration(minutes: 1)); // at the stop
+    final boarded = trace.fixes.last;
+    for (var i = 0; i < 6; i++) {
+      trace
+        ..ride(9, const Duration(seconds: 45))
+        ..wait(const Duration(seconds: 30));
+    }
+    trace.ride(9, const Duration(seconds: 20));
+    final alighted = trace.fixes.last;
+    walk(trace);
+    final logic = score(trace);
+
+    // Every halt counts while riding, the walks' too, to decide on asking.
+    expect(logic.halts.length, greaterThan(7));
+    final ride = logic.ride;
+    expect(ride.halts, hasLength(6));
+    expect(ride.halts.every((h) => h.seconds >= 25 && h.seconds <= 35), isTrue);
+    expect(ride.path.first.distanceTo(boarded.point), lessThan(10));
+    expect(ride.path.last.distanceTo(alighted.point), lessThan(10));
+    expect(ride.distance, closeTo(6 * 405 + 180, 50));
+    expect(ride.startedAt, boarded.at);
+    expect(ride.endedAt, alighted.at);
+    expect(logic.vehicleAt, alighted.at);
+  });
+
+  test('a ride never at vehicle speed keeps all of it', () {
+    final trace = Trace.from(3000);
+    walk(trace, crossings: 6);
+    final logic = score(trace);
+    expect(logic.vehicleAt, isNull);
+    expect(logic.ride.halts, logic.halts);
+    expect(logic.ride.distance, logic.distance);
+    expect(logic.ride.endedAt, logic.lastAt);
+  });
+
   test('keeps the path sparse and the numbers for tuning', () {
     final logic = score(townBus());
     expect(logic.path.length, lessThan(townBus().fixes.length));
@@ -135,6 +182,10 @@ void main() {
     expect(RideRecord.fromJson(bus.toJson()), bus);
     expect(bus.path, isNotEmpty);
     expect(bus.halts, hasLength(6));
+    // Its times and distance are the bus part's.
+    expect(bus.startedAt, logic.ride.startedAt);
+    expect(bus.endedAt, logic.ride.endedAt);
+    expect(bus.distanceM, logic.ride.distance.round());
 
     final car = RideRecord.fromLogic(
       logic,

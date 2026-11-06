@@ -35,7 +35,8 @@ class Workspace {
       _haltsSync = HaltsSync(db, remote),
       _notesSync = StopNotesSync(db, remote),
       _routeNotesSync = RouteNotesSync(db, remote),
-      _handRoutesSync = HandRoutesSync(db, remote) {
+      _handRoutesSync = HandRoutesSync(db, remote),
+      _roadsSync = RouteRoadsSync(db, remote) {
     appSettings = AppSettings(settings);
     _settingsSync = SettingsSync(appSettings, settings, remote, uid);
     places.onChange = () => unawaited(_sync.push());
@@ -43,6 +44,7 @@ class Workspace {
     rides.onChange = () {
       unawaited(_ridesSync.push());
       unawaited(_haltsSync.push());
+      unawaited(_roadsSync.push());
     };
     stops.onChange = () => unawaited(_notesSync.push());
     routes.onChange = () {
@@ -76,6 +78,7 @@ class Workspace {
   final StopNotesSync _notesSync;
   final RouteNotesSync _routeNotesSync;
   final HandRoutesSync _handRoutesSync;
+  final RouteRoadsSync _roadsSync;
   RideNamer? _namer;
 
   /// Names the rides' ends; one for the workspace, so Home and the Rides page
@@ -97,6 +100,7 @@ class Workspace {
         _notesSync.start(),
         _routeNotesSync.start(),
         _handRoutesSync.start(),
+        _roadsSync.start(),
       ]);
     } else {
       await Future.wait([
@@ -107,6 +111,7 @@ class Workspace {
         _notesSync.stop(),
         _routeNotesSync.stop(),
         _handRoutesSync.stop(),
+        _roadsSync.stop(),
       ]);
     }
   }
@@ -120,6 +125,7 @@ class Workspace {
       _notesSync.stop(),
       _routeNotesSync.stop(),
       _handRoutesSync.stop(),
+      _roadsSync.stop(),
     ]);
     await _db.close();
   }

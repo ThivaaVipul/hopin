@@ -655,4 +655,37 @@ class AppLocalizationsTa extends AppLocalizations {
 
   @override
   String get deleteRouteQuestion => 'இந்த வழியை இருவருக்கும் நீக்கவா?';
+
+  @override
+  String get whichBus => 'எந்த பஸ்?';
+
+  @override
+  String busTo(String number, String board) {
+    return '$board செல்லும் $number';
+  }
+
+  @override
+  String get alongThisRide => 'இந்தப் பயண வழியில்';
+
+  @override
+  String get nearYou => 'உங்களுக்கு அருகில்';
+
+  @override
+  String addRouteNumbered(String number) {
+    return '$number ஐச் சேர்';
+  }
+
+  @override
+  String get notThisBus => 'இந்த பஸ் அல்ல';
+
+  @override
+  String riddenTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count முறை பயணித்தது',
+      one: 'ஒரு முறை பயணித்தது',
+    );
+    return '$_temp0';
+  }
 }

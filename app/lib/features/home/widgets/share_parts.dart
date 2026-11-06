@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:hopin/app/theme.dart';
 import 'package:hopin/app/widgets/led_dots.dart';
 import 'package:hopin/core/geo/geo.dart';
+import 'package:hopin/core/ride/routes.dart';
 import 'package:hopin/core/share/share.dart';
+import 'package:hopin/features/routes/widgets/which_bus_sheet.dart';
 import 'package:hopin/l10n/app_localizations.dart';
 import 'package:hopin/l10n/time_left.dart';
 
@@ -165,7 +167,7 @@ class _TickingState extends State<_Ticking> {
 }
 
 /// The slim bar of a bus ride Hopin noticed, with no guide: how long so
-/// far, Share and End.
+/// far, Which bus?, Share and End.
 class RideBar extends StatelessWidget {
   const RideBar({
     super.key,
@@ -173,12 +175,18 @@ class RideBar extends StatelessWidget {
     required this.sharing,
     required this.onShare,
     required this.onEnd,
+    this.tag,
+    this.onWhichBus,
   });
 
   final DateTime since;
   final bool sharing;
   final VoidCallback onShare;
   final VoidCallback onEnd;
+
+  /// The ride's bus, once tagged.
+  final RouteTag? tag;
+  final VoidCallback? onWhichBus;
 
   @override
   Widget build(BuildContext context) {
@@ -226,6 +234,10 @@ class RideBar extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
+            if (onWhichBus case final onWhichBus?) ...[
+              WhichBusButton(tag: tag, onPressed: onWhichBus),
+              const SizedBox(width: 4),
+            ],
             ShareRideButton(sharing: sharing, onPressed: onShare),
             const SizedBox(width: 8),
             OutlinedButton.icon(

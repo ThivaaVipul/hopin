@@ -3,6 +3,7 @@ import 'package:hopin/core/ride/guide.dart';
 import 'package:hopin/core/ride/patterns.dart';
 import 'package:hopin/core/ride/ride_config.dart';
 import 'package:hopin/core/ride/ride_record.dart';
+import 'package:hopin/core/ride/routes.dart';
 
 /// News from the running guide while the app is open.
 sealed class GuideEvent extends Equatable {
@@ -74,6 +75,16 @@ class ShareChanged extends GuideEvent {
 
   @override
   List<Object?> get props => [id];
+}
+
+/// The running ride's bus, as tagged ("Which bus?"), or untagged (null).
+class RideTagged extends GuideEvent {
+  const RideTagged(this.tag);
+
+  final RouteTag? tag;
+
+  @override
+  List<Object?> get props => [tag];
 }
 
 /// A bus ride with no guide is on, since [since]: Home shows its bar.
@@ -177,4 +188,8 @@ abstract interface class GuideService {
   Future<void> share(String id);
 
   Future<void> stopSharing();
+
+  /// Tags the running ride with its bus ("Which bus?"), or untags it; the
+  /// service keeps it with the ride and answers with [RideTagged].
+  Future<void> tag(RouteTag? tag);
 }

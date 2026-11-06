@@ -17,6 +17,7 @@ import 'package:hopin/core/ride/patterns.dart';
 import 'package:hopin/core/ride/polyline.dart';
 import 'package:hopin/core/ride/ride_config.dart';
 import 'package:hopin/core/ride/ride_record.dart';
+import 'package:hopin/core/ride/routes.dart';
 import 'package:hopin/core/search/nominatim.dart';
 import 'package:hopin/core/search/osrm.dart';
 import 'package:hopin/core/search/overpass.dart';
@@ -256,6 +257,7 @@ class FakeGuide implements GuideService {
   final configs = <RideConfig>[];
   final pending = <RideRecord>[];
   final forgotten = <String>[];
+  final tags = <RouteTag?>[];
   var detected = const Detection();
   var detectionAfterTurnOn = const Detection(
     on: true,
@@ -368,6 +370,12 @@ class FakeGuide implements GuideService {
   Future<void> stopSharing() async {
     sharing = null;
     emit(const ShareChanged(null));
+  }
+
+  @override
+  Future<void> tag(RouteTag? tag) async {
+    tags.add(tag);
+    emit(RideTagged(tag));
   }
 }
 

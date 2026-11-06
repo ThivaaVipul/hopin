@@ -67,7 +67,12 @@ class RoutesRepository {
   Stream<List<NotedDirection>> watchNoted() => _db
       .customSelect(
         'SELECT body FROM route_data',
-        readsFrom: {_db.routeData, _db.routeNotes, _db.handRoutes},
+        readsFrom: {
+          _db.routeData,
+          _db.routeNotes,
+          _db.handRoutes,
+          _db.routeRoads,
+        },
       )
       .watch()
       .asyncMap((rows) async {
@@ -75,11 +80,12 @@ class RoutesRepository {
         final hand = await (_db.select(
           _db.handRoutes,
         )..where((r) => r.deletedAt.isNull())).get();
+        final directions = [
+          for (final row in rows) ...?_parse(row.read<String>('body')),
+          for (final row in hand) ..._handRoute(row).directions,
+        ];
         return withNotes(
-          [
-            for (final row in rows) ...?_parse(row.read<String>('body')),
-            for (final row in hand) ..._handRoute(row).directions,
-          ],
+          [...directions, ...await _ridden(directions)],
           [
             for (final note in notes)
               RouteNote(
@@ -220,6 +226,23 @@ class RoutesRepository {
       ),
     );
     onChange?.call();
+  }
+
+  /// The tagged rides' roads, each as the direction it was tagged with
+  /// along where the bus went; a road whose direction the phone no longer
+  /// has is left out.
+  Future<List<RouteDirection>> _ridden(List<RouteDirection> directions) async {
+    final roads = await (_db.select(
+      _db.routeRoads,
+    )..where((r) => r.deletedAt.isNull())).get();
+    if (roads.isEmpty) return const [];
+    final byKey = {for (final d in directions) (d.routeId, d.noteKey): d};
+    return [
+      for (final road in roads)
+        if (byKey[(road.route, road.direction)] case final direction?)
+          if (_road(road.road) case final points when points.length >= 2)
+            direction.alongRide(points),
+    ];
   }
 
   static HandRoute _handRoute(HandRouteRow row) => HandRoute(

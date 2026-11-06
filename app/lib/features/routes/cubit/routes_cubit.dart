@@ -9,10 +9,13 @@ import 'package:hopin/core/ride/routes.dart';
 /// One route from the route files: its directions, each with the riders'
 /// newest note on it.
 class KnownRoute extends Equatable {
-  const KnownRoute(this.directions);
+  const KnownRoute(this.directions, {this.ridden = const []});
 
   /// Never empty; the list names the route by the first.
   final List<NotedDirection> directions;
+
+  /// The roads riders rode it along (tagged rides), beside its own.
+  final List<NotedDirection> ridden;
 
   RouteDirection get first => directions.first.direction;
   String get id => first.routeId;
@@ -32,18 +35,22 @@ class KnownRoute extends Equatable {
   }
 
   @override
-  List<Object?> get props => [directions];
+  List<Object?> get props => [directions, ridden];
 }
 
 /// [all]'s directions as routes, in number order ("2" before "15-87", and
 /// numbers that start with letters last).
 List<KnownRoute> groupRoutes(List<NotedDirection> all) {
   final byId = <String, List<NotedDirection>>{};
+  final ridden = <String, List<NotedDirection>>{};
   for (final noted in all) {
-    (byId[noted.file.routeId] ??= []).add(noted);
+    final into = noted.file.ridden ? ridden : byId;
+    (into[noted.file.routeId] ??= []).add(noted);
   }
-  return [for (final directions in byId.values) KnownRoute(directions)]
-    ..sort(_inNumberOrder);
+  return [
+    for (final MapEntry(key: id, value: directions) in byId.entries)
+      KnownRoute(directions, ridden: ridden[id] ?? const []),
+  ]..sort(_inNumberOrder);
 }
 
 int _inNumberOrder(KnownRoute a, KnownRoute b) {

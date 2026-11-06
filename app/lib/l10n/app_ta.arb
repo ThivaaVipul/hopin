@@ -193,5 +193,12 @@
   "roadFailed": "வீதியை வரைய முடியவில்லை. இணையத்தைச் சரிபார்த்து மீண்டும் முயலவும்.",
   "tryAgain": "மீண்டும் முயல்",
   "editTowns": "ஊர்களைத் திருத்து",
-  "deleteRouteQuestion": "இந்த வழியை இருவருக்கும் நீக்கவா?"
+  "deleteRouteQuestion": "இந்த வழியை இருவருக்கும் நீக்கவா?",
+  "whichBus": "எந்த பஸ்?",
+  "busTo": "{board} செல்லும் {number}",
+  "alongThisRide": "இந்தப் பயண வழியில்",
+  "nearYou": "உங்களுக்கு அருகில்",
+  "addRouteNumbered": "{number} ஐச் சேர்",
+  "notThisBus": "இந்த பஸ் அல்ல",
+  "riddenTimes": "{count, plural, =1{ஒரு முறை பயணித்தது} other{{count} முறை பயணித்தது}}"
 }

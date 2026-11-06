@@ -22,6 +22,7 @@ import 'package:hopin/features/home/widgets/maker_steps.dart';
 import 'package:hopin/features/home/widgets/question_card.dart';
 import 'package:hopin/features/home/widgets/ride_board.dart';
 import 'package:hopin/features/home/widgets/share_parts.dart';
+import 'package:hopin/features/routes/widgets/which_bus_sheet.dart';
 import 'package:hopin/features/update/cubit/update_cubit.dart';
 import 'package:hopin/features/update/widgets/update_banner.dart';
 import 'package:hopin/l10n/app_localizations.dart';
@@ -139,6 +140,19 @@ class _HomeViewState extends State<_HomeView> {
       case null:
         break;
     }
+  }
+
+  /// Which bus?, on the ride bar or the ride board: the buses near you
+  /// first.
+  Future<void> _whichBus(BuildContext context) async {
+    final cubit = context.read<HomeCubit>();
+    final choice = await askWhichBus(
+      context,
+      directions: cubit.directions,
+      here: cubit.state.me,
+      current: cubit.state.rideTag,
+    );
+    if (choice != null) await cubit.tagRide(choice.tag);
   }
 
   /// Rename, on a learned stop's panel.
@@ -332,6 +346,8 @@ class _HomeViewState extends State<_HomeView> {
               onKeep: cubit.keepGoing,
               sharing: state.sharing != null,
               onShare: () => unawaited(_share(context)),
+              tag: state.rideTag,
+              onWhichBus: () => unawaited(_whichBus(context)),
             ),
             HomeState(location: LocationStatus.explain) => ReasonCard(
               key: const ValueKey('location'),
@@ -350,6 +366,8 @@ class _HomeViewState extends State<_HomeView> {
               sharing: state.sharing != null,
               onShare: () => unawaited(_share(context)),
               onEnd: () => unawaited(cubit.endRide()),
+              tag: state.rideTag,
+              onWhichBus: () => unawaited(_whichBus(context)),
             ),
             HomeState(explainNotifications: true) => ReasonCard(
               key: const ValueKey('notifications'),

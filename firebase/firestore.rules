@@ -76,10 +76,22 @@ service cloud.firestore {
           return !(key in data) || data[key] == null || isString(data[key], 1, maxLength);
         }
 
+        // The bus a ride was (docs/PLAN.md, Which bus): its route's id, the
+        // direction it went, its number and its board.
+        function validTag(tag) {
+          return tag is map
+            && tag.keys().hasOnly(['id', 'direction', 'number', 'board'])
+            && tag.keys().hasAll(['id', 'direction', 'number'])
+            && isString(tag.id, 1, 120)
+            && isString(tag.direction, 1, 200)
+            && isString(tag.number, 1, 12)
+            && (!('board' in tag) || tag.board == null || isString(tag.board, 1, 200));
+        }
+
         function validRide() {
           let data = request.resource.data;
           let before = resource == null ? null : resource.data.get('deletedAt', null);
-          return data.keys().hasOnly(['startedAt', 'endedAt', 'verdict', 'distanceM', 'path', 'halts', 'features', 'fromName', 'toName', 'guideTo', 'updatedAt', 'deletedAt'])
+          return data.keys().hasOnly(['startedAt', 'endedAt', 'verdict', 'distanceM', 'path', 'halts', 'features', 'fromName', 'toName', 'guideTo', 'route', 'updatedAt', 'deletedAt'])
             && data.keys().hasAll(['startedAt', 'endedAt', 'verdict', 'distanceM', 'features', 'updatedAt'])
             && data.startedAt is timestamp
             && data.endedAt is timestamp
@@ -92,6 +104,7 @@ service cloud.firestore {
             && optionalText(data, 'fromName', 200)
             && optionalText(data, 'toName', 200)
             && optionalText(data, 'guideTo', 200)
+            && (!('route' in data) || data.route == null || validTag(data.route))
             && data.updatedAt == request.time
             && (!('deletedAt' in data) || data.deletedAt == null || data.deletedAt == request.time || data.deletedAt == before);
         }
@@ -201,6 +214,31 @@ service cloud.firestore {
       allow read: if isRider();
       allow create: if isRider() && rideId.matches('^[A-Za-z0-9]{8,40}$') && validHalts();
       allow update: if isRider() && resource.data.uid == request.auth.uid && validHalts();
+      allow delete: if false;
+    }
+
+    // A tagged bus ride's road (docs/PLAN.md, Which bus): its bus part, as an
+    // encoded polyline, pooled so the route it was matches along it for both
+    // riders; only the ride's rider writes, and it is taken back by marking
+    // with deletedAt, never deleted.
+    match /routeRoads/{rideId} {
+      function validRoad() {
+        let data = request.resource.data;
+        let before = resource == null ? null : resource.data.get('deletedAt', null);
+        return data.keys().hasOnly(['uid', 'route', 'direction', 'number', 'road', 'updatedAt', 'deletedAt'])
+          && data.keys().hasAll(['uid', 'route', 'direction', 'number', 'road', 'updatedAt'])
+          && data.uid == request.auth.uid
+          && isString(data.route, 1, 120)
+          && isString(data.direction, 1, 200)
+          && isString(data.number, 1, 12)
+          && isString(data.road, 0, 20000)
+          && data.updatedAt == request.time
+          && (!('deletedAt' in data) || data.deletedAt == null || data.deletedAt == request.time || data.deletedAt == before);
+      }
+
+      allow read: if isRider();
+      allow create: if isRider() && rideId.matches('^[A-Za-z0-9]{8,40}$') && validRoad();
+      allow update: if isRider() && resource.data.uid == request.auth.uid && validRoad();
       allow delete: if false;
     }
 

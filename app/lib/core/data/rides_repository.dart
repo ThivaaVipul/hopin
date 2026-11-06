@@ -4,15 +4,19 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:hopin/core/data/local/database.dart';
 import 'package:hopin/core/data/remote/remote.dart';
+import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/core/ride/bus_logic.dart';
+import 'package:hopin/core/ride/polyline.dart';
 import 'package:hopin/core/ride/ride_record.dart';
+import 'package:hopin/core/ride/routes.dart';
 import 'package:hopin/core/ride/stops.dart';
 
 /// The rider's logged rides (docs/PLAN.md, Ride detection). The ride service
 /// hands finished rides to the app, which keeps them here first, marked
 /// pending until [RidesSync] has sent them. A bus ride's halts also go into
-/// the pool both riders share, for the stops (Sharing and stops), when the
-/// rider's [uid] is known.
+/// the pool both riders share, for the stops (Sharing and stops), and a
+/// tagged bus ride's road into the ride roads, for the route it was (Which
+/// bus), when the rider's [uid] is known.
 class RidesRepository {
   RidesRepository(this._db, {this.uid, DateTime Function()? clock})
     : _clock = clock ?? DateTime.now;
@@ -73,16 +77,87 @@ class RidesRepository {
             guideTo: Value(ride.guideTo),
             fromName: Value(ride.fromName),
             toName: Value(ride.toName),
+            route: Value(_tagText(ride.route)),
             updatedAt: now,
             deletedAt: const Value(null),
             pendingSince: Value(now),
           ),
         );
-    await _pool(
+    final bus = ride.verdict == RideVerdict.bus;
+    await _pool(ride.id, bus ? ride.halts : const []);
+    await _shareRoad(
       ride.id,
-      ride.verdict == RideVerdict.bus ? ride.halts : const [],
+      bus && ride.path.length >= 2 ? ride.route : null,
+      ride.path,
     );
     onChange?.call();
+  }
+
+  /// Shares a tagged bus ride's road with the route it was, or takes the
+  /// ride's back (no [tag]); unchanged, nothing is written.
+  Future<void> _shareRoad(
+    String rideId,
+    RouteTag? tag,
+    List<GeoPoint> path,
+  ) async {
+    final uid = this.uid;
+    if (uid == null) return;
+    final row = await (_db.select(
+      _db.routeRoads,
+    )..where((r) => r.rideId.equals(rideId))).getSingleOrNull();
+    if (tag == null) {
+      if (row == null || row.deletedAt != null) return;
+      final now = _stamp();
+      await (_db.update(
+        _db.routeRoads,
+      )..where((r) => r.rideId.equals(rideId))).write(
+        RouteRoadsCompanion(
+          road: const Value(''),
+          deletedAt: Value(now),
+          updatedAt: Value(now),
+          pendingSince: Value(now),
+        ),
+      );
+      return;
+    }
+    final road = encodePolyline(path);
+    if (row != null &&
+        row.deletedAt == null &&
+        row.road == road &&
+        row.route == tag.route &&
+        row.direction == tag.direction &&
+        row.number == tag.number) {
+      return;
+    }
+    final now = _stamp();
+    await _db
+        .into(_db.routeRoads)
+        .insertOnConflictUpdate(
+          RouteRoadsCompanion.insert(
+            rideId: rideId,
+            uid: uid,
+            route: tag.route,
+            direction: tag.direction,
+            number: tag.number,
+            road: road,
+            updatedAt: now,
+            deletedAt: const Value(null),
+            pendingSince: Value(now),
+          ),
+        );
+  }
+
+  /// The bus a ride was, from its page: tagging a ride Hopin was unsure of
+  /// says it was a bus.
+  Future<void> setRoute(String id, RouteTag? tag) async {
+    final ride = await _ride(id);
+    if (ride == null || ride.path.isEmpty) return;
+    var tagged = ride.withRoute(tag);
+    if (tag != null && ride.verdict == RideVerdict.unknown) {
+      tagged = tagged.withVerdict(RideVerdict.bus);
+    }
+    if (tagged == ride) return;
+    await save(tagged);
   }
 
   /// Puts a bus ride's bus-like halts in the pool, or takes the ride's back
@@ -164,6 +239,7 @@ class RidesRepository {
       ),
     );
     await _pool(id, const []);
+    await _shareRoad(id, null, const []);
     onChange?.call();
   }
 
@@ -171,6 +247,18 @@ class RidesRepository {
   int _stamp() {
     final now = _clock().microsecondsSinceEpoch;
     return _lastStamp = now > _lastStamp ? now : _lastStamp + 1;
+  }
+}
+
+String? _tagText(RouteTag? tag) =>
+    tag == null ? null : jsonEncode(tag.toJson());
+
+Object? _tagJson(String? text) {
+  if (text == null) return null;
+  try {
+    return jsonDecode(text);
+  } on FormatException {
+    return null;
   }
 }
 
@@ -187,6 +275,7 @@ RideRecord rideFromRow(RideRow row) =>
       'guideTo': row.guideTo,
       'fromName': row.fromName,
       'toName': row.toName,
+      'route': _tagJson(row.route),
     }) ??
     RideRecord(
       id: row.id,
@@ -273,6 +362,7 @@ class RidesSync {
             'fromName': row.fromName,
             'toName': row.toName,
             'guideTo': row.guideTo,
+            'route': _tagJson(row.route),
           }, deleted: row.deletedAt != null);
         } on Object catch (error, stack) {
           onError?.call(error, stack);
@@ -317,6 +407,7 @@ class RidesSync {
                 guideTo: Value(d['guideTo'] as String?),
                 fromName: Value(d['fromName'] as String?),
                 toName: Value(d['toName'] as String?),
+                route: Value(_tagText(RouteTag.fromJson(d['route']))),
                 updatedAt: doc.updatedAt,
                 deletedAt: Value(d['deletedAt'] as int?),
                 pendingSince: const Value(null),

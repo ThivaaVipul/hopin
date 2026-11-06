@@ -633,6 +633,159 @@ void main() {
       await finish(tester);
     });
 
+    /// The 101's direction, as "Which bus?" tags it.
+    const fort = RouteTag(
+      route: 'osm:1',
+      direction: '>Fort',
+      number: '101',
+      board: 'Fort',
+    );
+
+    testWidgets('a bus picked before Start tags the ride with it', (
+      tester,
+    ) async {
+      guide.notifications = true;
+      await openPlace(tester, routeFiles: routeFilesWith(files));
+      await settleRoutes(tester);
+      await tester.tap(find.text('101'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Start'));
+      await tester.pumpAndSettle();
+      expect(guide.started.single.route, fort);
+      await finish(tester);
+    });
+
+    testWidgets('a noticed ride is tagged from its bar, the buses near first', (
+      tester,
+    ) async {
+      await openPlace(tester, routeFiles: routeFilesWith(files));
+      await settleRoutes(tester);
+      guide.emit(RideNoticed(DateTime.now()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Which bus?'));
+      await tester.pumpAndSettle();
+      expect(find.text('Near you'), findsOneWidget);
+      expect(find.text('CM9'), findsOneWidget);
+      await tester.tap(find.text('101'));
+      await tester.pumpAndSettle();
+      expect(guide.tags.single, fort);
+      // The bar shows its number now.
+      expect(find.widgetWithText(OutlinedButton, '101'), findsOneWidget);
+      await finish(tester);
+    });
+
+    /// An unsure ride along the 101's road, from near Slave Island to the Fort.
+    RideRecord unsure() => RideRecord(
+      id: 'ride1abc',
+      startedAt: DateTime.now().subtract(const Duration(hours: 1)).toUtc(),
+      endedAt: DateTime.now().subtract(const Duration(minutes: 40)).toUtc(),
+      verdict: RideVerdict.unknown,
+      distanceM: 900,
+      path: const [GeoPoint(6.9270, 79.8510), GeoPoint(6.9344, 79.8501)],
+    );
+
+    Future<void> openRide(
+      WidgetTester tester, {
+      Locale locale = const Locale('en'),
+    }) async {
+      guide.pending.add(unsure());
+      await start(
+        tester,
+        locale: locale,
+        location: FakeLocation(access: LocationAccess.granted),
+        routeFiles: routeFilesWith(files),
+      );
+      auth.emit(rider);
+      await tester.pumpAndSettle();
+      await settleRoutes(tester);
+      final tamil = locale.languageCode == 'ta';
+      await tester.tap(find.byTooltip(tamil ? 'அமைப்புகள்' : 'Settings'));
+      await tester.pumpAndSettle();
+      final all = find.text(tamil ? 'எல்லாப் பயணங்களும்' : 'All rides');
+      await showInSettings(tester, all);
+      await tester.tap(all);
+      await tester.pumpAndSettle();
+      await settleRoutes(tester);
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+      await settleRoutes(tester);
+    }
+
+    testWidgets(
+      "a ride's page: Which bus?, the bus along it first, then none",
+      (tester) async {
+        await openRide(tester);
+        await tester.tap(find.text('Which bus?'));
+        await tester.pumpAndSettle();
+        await settleRoutes(tester);
+        expect(find.text('Along this ride'), findsOneWidget);
+        await tester.tap(find.text('101'));
+        await tester.pumpAndSettle();
+        await settleRoutes(tester);
+        expect(find.text('101 to Fort'), findsOneWidget);
+        // Tagging an unsure ride says it was a bus; its road is shared.
+        expect(
+          tester
+              .widget<BoardChoice>(find.widgetWithText(BoardChoice, 'Bus'))
+              .selected,
+          isTrue,
+        );
+        final road = remote.puts.lastWhere(
+          (p) => p.$1.startsWith('routeRoads/'),
+        );
+        expect(road.$1, 'routeRoads/ride1abc');
+        expect(road.$2['route'], 'osm:1');
+
+        await tester.tap(find.text('101 to Fort'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Not this bus'));
+        await tester.pumpAndSettle();
+        await settleRoutes(tester);
+        expect(find.text('Which bus?'), findsOneWidget);
+        expect(
+          remote.puts.lastWhere((p) => p.$1.startsWith('routeRoads/')).$3,
+          isTrue,
+        );
+        await finish(tester);
+      },
+    );
+
+    testWidgets(
+      'a number Hopin does not know offers Add, its number filled in',
+      (tester) async {
+        await openRide(tester);
+        await tester.tap(find.text('Which bus?'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), '777');
+        await tester.pumpAndSettle();
+        expect(find.text('101'), findsNothing);
+        await tester.tap(find.text('Add 777'));
+        await tester.pumpAndSettle();
+        expect(find.text('Add a route'), findsOneWidget);
+        expect(find.widgetWithText(TextField, '777'), findsOneWidget);
+        await finish(tester);
+      },
+    );
+
+    testWidgets('Which bus? fits a small phone in Tamil with large text', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1080, 2160)
+        ..devicePixelRatio = 3;
+      tester.platformDispatcher.textScaleFactorTestValue = 1.3;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await openRide(tester, locale: const Locale('ta'));
+      expect(find.text('எந்த பஸ்?'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.text('எந்த பஸ்?'));
+      await tester.pumpAndSettle();
+      expect(find.text('இந்தப் பயண வழியில்'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await finish(tester);
+    });
+
     testWidgets('the buses fit a small phone in Tamil with large text', (
       tester,
     ) async {

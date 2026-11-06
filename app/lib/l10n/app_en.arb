@@ -949,5 +949,51 @@
   "deleteRouteQuestion": "Delete this route for both of you?",
   "@deleteRouteQuestion": {
     "description": "Asked before a route added by hand is deleted."
+  },
+  "whichBus": "Which bus?",
+  "@whichBus": {
+    "description": "Tags a ride with the bus it is, on the ride bar, the ride board and a ride's page."
+  },
+  "busTo": "{number} to {board}",
+  "@busTo": {
+    "description": "A ride's bus: its number and its board.",
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "board": {
+        "type": "String"
+      }
+    }
+  },
+  "alongThisRide": "Along this ride",
+  "@alongThisRide": {
+    "description": "Which bus?: the buses that go the way the ride went."
+  },
+  "nearYou": "Near you",
+  "@nearYou": {
+    "description": "Which bus?: the buses whose road passes where you are."
+  },
+  "addRouteNumbered": "Add {number}",
+  "@addRouteNumbered": {
+    "description": "Which bus?: adds a route with the number typed, which Hopin doesn't know.",
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "notThisBus": "Not this bus",
+  "@notThisBus": {
+    "description": "Which bus?: takes a ride's bus off it."
+  },
+  "riddenTimes": "{count, plural, =1{Ridden once} other{Ridden {count} times}}",
+  "@riddenTimes": {
+    "description": "A route's page: how many tagged rides went along it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

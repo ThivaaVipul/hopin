@@ -11,6 +11,7 @@ import 'package:hopin/core/ride/guide.dart';
 import 'package:hopin/core/ride/patterns.dart';
 import 'package:hopin/core/ride/ride_config.dart';
 import 'package:hopin/core/ride/ride_record.dart';
+import 'package:hopin/core/ride/routes.dart';
 import 'package:hopin/l10n/app_localizations.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:vibration/vibration.dart';
@@ -53,6 +54,8 @@ class ForegroundGuideService implements GuideService {
       case 'sharing':
         final id = message['id'];
         _events.add(ShareChanged(id is String ? id : null));
+      case 'tagged':
+        _events.add(RideTagged(RouteTag.fromJson(message['tag'])));
       case 'riding':
         if (message['since'] case final int since) {
           _events.add(RideNoticed(DateTime.fromMicrosecondsSinceEpoch(since)));
@@ -296,6 +299,10 @@ class ForegroundGuideService implements GuideService {
   @override
   Future<void> share(String id) async =>
       FlutterForegroundTask.sendDataToTask({shareCommand: id});
+
+  @override
+  Future<void> tag(RouteTag? tag) async =>
+      FlutterForegroundTask.sendDataToTask({tagCommand: tag?.toJson()});
 
   @override
   Future<void> stopSharing() async =>

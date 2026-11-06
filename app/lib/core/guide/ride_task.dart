@@ -15,6 +15,7 @@ import 'package:hopin/core/ride/guide_engine.dart';
 import 'package:hopin/core/ride/patterns.dart';
 import 'package:hopin/core/ride/ride_config.dart';
 import 'package:hopin/core/ride/ride_record.dart';
+import 'package:hopin/core/ride/routes.dart';
 import 'package:hopin/core/share/share.dart';
 import 'package:hopin/core/share/shares.dart';
 import 'package:hopin/firebase_options.dart';
@@ -57,6 +58,9 @@ const guideNow = 'guide';
 /// the rider is on foot again (RideDetection.kt), so Not a bus and End aren't
 /// undone in the same vehicle.
 const quietKey = 'ride.quiet';
+
+/// From the app: the ride's bus ({tagCommand: RouteTag JSON, or null}).
+const tagCommand = 'tag';
 
 /// From the app: share the ride under this id ({shareCommand: id}), or stop.
 const shareCommand = 'share';
@@ -106,6 +110,9 @@ class RideTask extends TaskHandler {
   var _arrived = false;
   var _gaveUp = false;
 
+  /// The bus the ride is, as tagged in the app or picked before Start.
+  RouteTag? _tag;
+
   /// The open share, if any (docs/PLAN.md, Sharing and stops).
   String? _shareId;
   ShareWriter? _shares;
@@ -142,6 +149,7 @@ class RideTask extends TaskHandler {
     _ride = ride;
     _engine = GuideEngine(ride);
     _ready = false;
+    if (ride.route case final route?) _tag = route;
     _verdict = RideVerdict.bus;
     _asking = false;
     if (kDebugMode) debugPrint('guide: started to ${ride.title}');
@@ -387,6 +395,11 @@ class RideTask extends TaskHandler {
 
   Map<String, Object?> _sharingMessage() => {'type': 'sharing', 'id': _shareId};
 
+  Map<String, Object?> _taggedMessage() => {
+    'type': 'tagged',
+    'tag': _tag?.toJson(),
+  };
+
   /// Where a guided ride is going, for its share.
   ShareGoal? _goal() {
     final ride = _ride;
@@ -519,6 +532,10 @@ class RideTask extends TaskHandler {
       if (_shareId != null) {
         FlutterForegroundTask.sendDataToMain(_sharingMessage());
       }
+      if (_tag != null) FlutterForegroundTask.sendDataToMain(_taggedMessage());
+    } else if (data case {tagCommand: final Object? tag}) {
+      _tag = RouteTag.fromJson(tag);
+      FlutterForegroundTask.sendDataToMain(_taggedMessage());
     } else if (data case {shareCommand: final String id}) {
       unawaited(_startShare(id));
     } else if (data == stopShareCommand) {
@@ -575,6 +592,7 @@ class RideTask extends TaskHandler {
       verdict: verdict,
       endedAt: _logic.lastAt ?? DateTime.now(),
       guideTo: _ride?.title,
+      route: _tag,
     ).toJson();
     await FlutterForegroundTask.saveData(
       key: '$pendingRidePrefix$_rideId',

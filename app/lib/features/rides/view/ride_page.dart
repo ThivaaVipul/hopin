@@ -10,6 +10,7 @@ import 'package:hopin/core/ride/ride_record.dart';
 import 'package:hopin/features/rides/cubit/ride_cubit.dart';
 import 'package:hopin/features/rides/widgets/ride_map.dart';
 import 'package:hopin/features/rides/widgets/ride_parts.dart';
+import 'package:hopin/features/routes/widgets/which_bus_sheet.dart';
 import 'package:hopin/l10n/app_localizations.dart';
 
 /// One ride (docs/PLAN.md, Rides page): its path on the map, then its times,
@@ -25,7 +26,8 @@ class RidePage extends StatelessWidget {
     if (workspace == null) return const SizedBox.shrink();
     return BlocProvider(
       key: ValueKey('${workspace.uid}/$id'),
-      create: (context) => RideCubit(workspace.rides, id)..start(),
+      create: (context) =>
+          RideCubit(workspace.rides, id, routes: workspace.routes)..start(),
       child: const _RideView(),
     );
   }
@@ -171,10 +173,69 @@ class _Details extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             _Label(ride: ride),
+            if (ride.path.isNotEmpty && ride.verdict != RideVerdict.notBus) ...[
+              const SizedBox(height: 8),
+              _WhichBus(ride: ride),
+            ],
           ],
         ),
       ),
     );
+  }
+}
+
+/// The bus the ride was: Which bus? until it's tagged, then its number and
+/// board; tapping asks, the buses along the ride first.
+class _WhichBus extends StatelessWidget {
+  const _WhichBus({required this.ride});
+
+  final RideRecord ride;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final colors = context.colors;
+    final route = ride.route;
+    return InkWell(
+      onTap: () => unawaited(_ask(context)),
+      borderRadius: BorderRadius.circular(12),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 52),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            children: [
+              Icon(Icons.directions_bus_outlined, color: colors.amber),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  route == null
+                      ? l.whichBus
+                      : l.busTo(route.number, route.board ?? ''),
+                  style: context.text.bodyLarge?.copyWith(
+                    color: route == null ? colors.amber : colors.onBoard,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right, color: colors.onBoardMuted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _ask(BuildContext context) async {
+    final cubit = context.read<RideCubit>();
+    final directions = await cubit.directions();
+    if (!context.mounted) return;
+    final choice = await askWhichBus(
+      context,
+      directions: directions,
+      path: ride.path,
+      current: ride.route,
+    );
+    if (choice != null) await cubit.setRoute(choice.tag);
   }
 }
 

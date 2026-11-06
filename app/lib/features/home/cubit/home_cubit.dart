@@ -54,6 +54,7 @@ class HomeState extends Equatable {
     this.stop,
     this.buses = const [],
     this.bus,
+    this.rideTag,
   });
 
   final List<SavedPlace> places;
@@ -110,6 +111,9 @@ class HomeState extends Equatable {
   /// The bus picked in the panel: the map shows its road and where to board.
   final BusOption? bus;
 
+  /// The running ride's bus, as tagged ("Which bus?") or picked before Start.
+  final RouteTag? rideTag;
+
   static const _keep = Object();
 
   /// Fields left out keep their value; nullable ones take an explicit null.
@@ -135,6 +139,7 @@ class HomeState extends Equatable {
     Object? stop = _keep,
     List<BusOption>? buses,
     Object? bus = _keep,
+    Object? rideTag = _keep,
   }) => HomeState(
     places: places ?? this.places,
     location: location ?? this.location,
@@ -163,6 +168,7 @@ class HomeState extends Equatable {
     stop: identical(stop, _keep) ? this.stop : stop as Stop?,
     buses: buses ?? this.buses,
     bus: identical(bus, _keep) ? this.bus : bus as BusOption?,
+    rideTag: identical(rideTag, _keep) ? this.rideTag : rideTag as RouteTag?,
   );
 
   /// A new destination; the stop panel goes unless [stop] is its stop, and
@@ -201,6 +207,7 @@ class HomeState extends Equatable {
     stop,
     buses,
     bus,
+    rideTag,
   ];
 }
 
@@ -444,6 +451,11 @@ class HomeCubit extends Cubit<HomeState> {
       stages: await _workspace.appSettings.stages(),
       language: language,
       share: destination.saved?.shareRides ?? false,
+      // A bus picked in the panel tags the ride with it.
+      route: switch (state.bus) {
+        final bus? => RouteTag.of(bus.direction, language: language),
+        null => null,
+      },
     );
     if (isClosed) return;
     if (state.location != LocationStatus.granted) {
@@ -509,8 +521,19 @@ class HomeCubit extends Cubit<HomeState> {
         status: null,
         near: null,
         makerSteps: maker == PhoneMaker.other ? null : maker,
+        rideTag: ride.route,
       ),
     );
+  }
+
+  /// Every route direction Hopin knows, for "Which bus?".
+  List<RouteDirection> get directions => _routes;
+
+  /// "Which bus?" on the ride bar or the ride board: the running ride is
+  /// that bus (or untagged).
+  Future<void> tagRide(RouteTag? tag) async {
+    emit(state.copyWith(rideTag: tag));
+    await _guide.tag(tag);
   }
 
   /// End, on the ride board: back to the destination panel.
@@ -529,6 +552,9 @@ class HomeCubit extends Cubit<HomeState> {
         return;
       case ShareChanged(:final id):
         emit(state.copyWith(sharing: id));
+        return;
+      case RideTagged(:final tag):
+        emit(state.copyWith(rideTag: tag));
         return;
       case RideNoticed(:final since):
         if (state.ride == null) emit(state.copyWith(noticedSince: since));
@@ -553,8 +579,8 @@ class HomeCubit extends Cubit<HomeState> {
         );
         return;
       case GuideEnded():
-        // Whatever ended, the ride's share and bar went with it.
-        emit(state.copyWith(sharing: null, noticedSince: null));
+        // Whatever ended, the ride's share, bar and bus went with it.
+        emit(state.copyWith(sharing: null, noticedSince: null, rideTag: null));
         if (state.ride == null) return;
       case GuideUpdate():
         if (state.ride == null) return;
@@ -582,6 +608,7 @@ class HomeCubit extends Cubit<HomeState> {
           GuideStarted() ||
           RideLogged() ||
           ShareChanged() ||
+          RideTagged() ||
           RideNoticed():
         break;
     }
@@ -620,7 +647,9 @@ class HomeCubit extends Cubit<HomeState> {
   /// End, on the ride bar of a noticed ride.
   Future<void> endRide() async {
     await _guide.end();
-    if (!isClosed) emit(state.copyWith(noticedSince: null, sharing: null));
+    if (!isClosed) {
+      emit(state.copyWith(noticedSince: null, sharing: null, rideTag: null));
+    }
   }
 
   void _onShares(List<LiveShare> open) {

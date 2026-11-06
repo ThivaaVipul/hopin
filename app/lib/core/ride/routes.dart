@@ -65,6 +65,7 @@ class RouteDirection extends Equatable {
     this.end,
     this.stand,
     this.times = const [],
+    this.ridden = false,
     this._noteKey,
   });
 
@@ -105,6 +106,10 @@ class RouteDirection extends Equatable {
   /// Departures from the first stop (LMT) or the start town (NTC).
   final List<Departures> times;
 
+  /// A road a rider rode on this bus (a tagged ride's bus part), standing
+  /// beside the route's own as another way to match it.
+  final bool ridden;
+
   /// What the riders' notes know this direction by: its ends as the route
   /// file names them, so a note's own board lines don't change it.
   String get noteKey =>
@@ -131,6 +136,25 @@ class RouteDirection extends Equatable {
     end: end,
     stand: stand,
     times: times,
+    ridden: ridden,
+    noteKey: noteKey,
+  );
+
+  /// This direction along [road], where a rider rode it: matched by that
+  /// road alone, with no times (its departures are from its first stop, not
+  /// from where the ride got on).
+  RouteDirection alongRide(List<GeoPoint> road) => RouteDirection(
+    routeId: routeId,
+    source: source,
+    number: number,
+    board: board,
+    also: also,
+    classes: classes,
+    origin: origin,
+    path: road,
+    start: road.firstOrNull,
+    end: road.lastOrNull,
+    ridden: true,
     noteKey: noteKey,
   );
 
@@ -147,6 +171,62 @@ class RouteDirection extends Equatable {
 
   @override
   List<Object?> get props => [routeId, number, board, origin, path.length];
+}
+
+/// The bus a ride was (docs/PLAN.md, Which bus): a route's direction, by
+/// its [RouteDirection.routeId] and [RouteDirection.noteKey], with its
+/// number and its board as they read when it was tagged.
+class RouteTag extends Equatable {
+  const RouteTag({
+    required this.route,
+    required this.direction,
+    required this.number,
+    this.board,
+  });
+
+  /// [direction] as a tag, its board in [language].
+  factory RouteTag.of(RouteDirection direction, {required String language}) =>
+      RouteTag(
+        route: direction.routeId,
+        direction: direction.noteKey,
+        number: direction.number,
+        board: direction.board.inLanguage(language) ?? direction.board.si,
+      );
+
+  final String route;
+  final String direction;
+  final String number;
+  final String? board;
+
+  bool matches(RouteDirection direction) =>
+      direction.routeId == route && direction.noteKey == this.direction;
+
+  Map<String, Object?> toJson() => {
+    'id': route,
+    'direction': direction,
+    'number': number,
+    'board': board,
+  };
+
+  static RouteTag? fromJson(Object? json) {
+    if (json case {
+      'id': final String route,
+      'direction': final String direction,
+      'number': final String number,
+    }) {
+      final board = json['board'];
+      return RouteTag(
+        route: route,
+        direction: direction,
+        number: number,
+        board: board is String ? board : null,
+      );
+    }
+    return null;
+  }
+
+  @override
+  List<Object?> get props => [route, direction, number, board];
 }
 
 /// A town a route added by hand names: where it is, and its names.

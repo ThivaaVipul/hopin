@@ -23,8 +23,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-        // flutter_local_notifications needs it, even on Android 8 and later.
-        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
@@ -79,7 +77,6 @@ flutter {
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     // Activity transitions for ride detection; the version geolocator uses.
     implementation("com.google.android.gms:play-services-location:21.2.0")
 }

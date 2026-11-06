@@ -6,9 +6,7 @@ import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_foreground_task/flutter_foreground_task.dart'
-    hide NotificationVisibility;
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:hopin/core/geo/geo.dart';
 import 'package:hopin/core/ride/bus_logic.dart';
@@ -23,14 +21,6 @@ import 'package:hopin/firebase_options.dart';
 import 'package:hopin/l10n/app_localizations.dart';
 import 'package:hopin/l10n/time_left.dart';
 import 'package:vibration/vibration.dart';
-
-/// A button on one of the ride service's alerts (On a bus?, Keep): handed
-/// to the service like the app's answers.
-@pragma('vm:entry-point')
-void alertButtonPressed(NotificationResponse response) {
-  final id = response.actionId;
-  if (id != null) FlutterForegroundTask.sendDataToTask(id);
-}
 
 /// Where the running guide's ride is kept, for the service and the app.
 const rideKey = 'guide.ride';
@@ -81,13 +71,12 @@ void startRideTask() => FlutterForegroundTask.setTaskHandler(RideTask());
 /// every ride through [BusLogic]. Started by the app it guides at once;
 /// woken by Android's vehicle transition it first watches the ride (a fix
 /// every 10 seconds) and asks "On a bus?" once it looks like one: a place
-/// button guides there, Not a bus stops.
+/// button guides there, Not a bus stops. Everything it says is on its one
+/// notification, which changes in place, with a buzz where it matters.
 class RideTask extends TaskHandler {
-  static const _alertId = 7;
-  static const _amber = Color(0xFFFFB020);
-
-  /// Without moving this long after leaving the vehicle, the ride is over;
-  /// without moving this long at all, too.
+  /// This long after Android says the vehicle was left, and the vehicle
+  /// part last moving, the ride is over (walking on doesn't count); without
+  /// moving at all this long, too.
   static const _offAfter = Duration(minutes: 2);
   static const _stillAfter = Duration(minutes: 15);
 
@@ -95,7 +84,6 @@ class RideTask extends TaskHandler {
   static const _keepAfter = Duration(minutes: 2);
   static const _keepAfterMetres = 300.0;
 
-  final _alerts = FlutterLocalNotificationsPlugin();
   final _logic = BusLogic();
   final _rideId =
       '${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}'
@@ -111,6 +99,10 @@ class RideTask extends TaskHandler {
   String? _shown;
   RideVerdict? _verdict;
   var _asking = false;
+
+  /// A guide's "Get ready" stage came: its notification says so until
+  /// "Get off next".
+  var _ready = false;
   var _arrived = false;
   var _gaveUp = false;
 
@@ -127,12 +119,6 @@ class RideTask extends TaskHandler {
     _config = RideConfig.fromJson(_decode(config));
     final ride = await _savedRide();
     _l = lookupAppLocalizations(Locale(ride?.language ?? _config.language));
-    await _alerts.initialize(
-      settings: const InitializationSettings(
-        android: AndroidInitializationSettings('ic_notification'),
-      ),
-      onDidReceiveBackgroundNotificationResponse: alertButtonPressed,
-    );
     if (ride != null) {
       _guide(ride);
     } else {
@@ -155,6 +141,7 @@ class RideTask extends TaskHandler {
   void _guide(GuideRide ride) {
     _ride = ride;
     _engine = GuideEngine(ride);
+    _ready = false;
     _verdict = RideVerdict.bus;
     _asking = false;
     if (kDebugMode) debugPrint('guide: started to ${ride.title}');
@@ -192,15 +179,25 @@ class RideTask extends TaskHandler {
     if (_engine == null) unawaited(_checkOver());
   }
 
-  /// A watched ride is over once the vehicle is left and you stop moving.
+  /// A watched ride is over a little after the vehicle is left: once
+  /// Android says so and neither that nor the vehicle part's last move is
+  /// recent (walking on from the stop doesn't keep it going), or once
+  /// nothing at all has moved for a long while.
   Future<void> _checkOver() async {
     final exit = int.tryParse(
       await FlutterForegroundTask.getData<String>(key: vehicleExitKey) ?? '',
     );
-    final left = exit != null && exit > _startedAt.millisecondsSinceEpoch;
+    final now = DateTime.now();
     final moved = _logic.movedAt ?? _logic.startedAt ?? _startedAt;
-    final still = DateTime.now().difference(moved);
-    if ((left && still >= _offAfter) || still >= _stillAfter) {
+    final still = now.difference(moved);
+    var off = false;
+    if (exit != null && exit > _startedAt.millisecondsSinceEpoch) {
+      final left = DateTime.fromMillisecondsSinceEpoch(exit);
+      final vehicle = _logic.vehicleAt ?? moved;
+      final since = left.isAfter(vehicle) ? left : vehicle;
+      off = now.difference(since) >= _offAfter;
+    }
+    if (off || still >= _stillAfter) {
       await FlutterForegroundTask.stopService();
     }
   }
@@ -241,26 +238,17 @@ class RideTask extends TaskHandler {
     _shareFix(fix.point);
     switch (step.alert) {
       case StageDue(:final index):
-        final last = index == ride.stages.length - 1;
-        await _alert(
-          last ? l.getOffNext : l.getReady,
-          _to(status),
-          buzz: ride.stages[index].pattern.buzz.repeated(2),
-        );
+        _ready = index < ride.stages.length - 1;
+        await _buzz(ride.stages[index].pattern.buzz.repeated(2));
       case StopPassed():
-        await _alert(l.passedStop, _to(status), buzz: passedBuzz);
+        await _buzz(passedBuzz);
       case Arrived():
         _arrived = true;
         await _buzz(arrivedBuzz);
         await FlutterForegroundTask.stopService();
         return;
       case StillGoing():
-        await _alert(
-          l.stillGoing(ride.title),
-          _to(status),
-          buzz: AlertPattern.gentleDoubleTap.buzz.repeated(2),
-          buttons: [AndroidNotificationAction(keepButton, l.keep)],
-        );
+        await _buzz(AlertPattern.gentleDoubleTap.buzz.repeated(2));
       case GaveUp():
         _gaveUp = true;
         await _buzz(arrivedBuzz);
@@ -272,23 +260,24 @@ class RideTask extends TaskHandler {
     await _show(status);
   }
 
-  /// "On a bus?": quiet, with the rider's first two places, Yes when there
-  /// are fewer, and Not a bus. Asked once, on the alert: the ride's own
-  /// notification stays "Checking your ride" (it opens Hopin, whose card
-  /// asks the same if the alert was swiped away).
+  /// "On a bus?", on the ride's own notification (no second one), with a
+  /// gentle buzz: the rider's first two places, Yes when there are fewer,
+  /// and Not a bus (Android shows three buttons at most). Hopin's card asks
+  /// the same when it's open.
   Future<void> _askOnABus() async {
     final l = _l!;
     _asking = true;
     final places = _config.places.take(RideConfig.buttons).toList();
-    await _alert(
-      l.onABus,
-      '',
-      buttons: [
+    await _buzz(AlertPattern.gentleDoubleTap.buzz);
+    await FlutterForegroundTask.updateService(
+      notificationTitle: l.onABus,
+      notificationText: '',
+      notificationButtons: [
         for (final (i, place) in places.indexed)
-          AndroidNotificationAction(placeButton(i), place.name),
+          NotificationButton(id: placeButton(i), text: place.name),
         if (places.length < RideConfig.buttons)
-          AndroidNotificationAction(yesButton, l.yes),
-        AndroidNotificationAction(notBusButton, l.notABus),
+          NotificationButton(id: yesButton, text: l.yes),
+        NotificationButton(id: notBusButton, text: l.notABus),
       ],
     );
     FlutterForegroundTask.sendDataToMain({'type': 'asking'});
@@ -299,7 +288,6 @@ class RideTask extends TaskHandler {
     if (!_asking) return;
     final l = _l!;
     _asking = false;
-    await _alerts.cancel(id: _alertId);
     FlutterForegroundTask.sendDataToMain({'type': 'answered'});
     if (id == notBusButton) {
       _verdict = RideVerdict.notBus;
@@ -320,11 +308,7 @@ class RideTask extends TaskHandler {
         'type': 'guiding',
         'ride': ride.toJson(),
       });
-      await FlutterForegroundTask.updateService(
-        notificationTitle: ride.title,
-        notificationText: l.findingYou,
-        notificationButtons: [NotificationButton(id: endButton, text: l.end)],
-      );
+      await _showGuideStart(ride);
       return;
     }
     await FlutterForegroundTask.updateService(
@@ -438,9 +422,19 @@ class RideTask extends TaskHandler {
     final ride = await _savedRide();
     if (ride == null) return;
     _asking = false;
-    await _alerts.cancel(id: _alertId);
     _guide(ride);
     _followFaster();
+    await _showGuideStart(ride);
+  }
+
+  /// A guide that just began: its notification until the first fix.
+  Future<void> _showGuideStart(GuideRide ride) async {
+    _shown = null;
+    await FlutterForegroundTask.updateService(
+      notificationTitle: ride.title,
+      notificationText: _l!.findingYou,
+      notificationButtons: [NotificationButton(id: endButton, text: _l!.end)],
+    );
   }
 
   /// Keep, in the notification or on the ride board.
@@ -456,7 +450,6 @@ class RideTask extends TaskHandler {
       at: status.at,
     );
     _status = kept;
-    await _alerts.cancel(id: _alertId);
     FlutterForegroundTask.sendDataToMain(statusMessage(kept));
     await _show(kept);
   }
@@ -469,47 +462,17 @@ class RideTask extends TaskHandler {
     );
   }
 
-  /// An alert on the lock screen, silent, the screen staying off; with
-  /// [buzz] played first. Alerts are a group of their own: left ungrouped,
-  /// some phones bundle them with the ride notification and hide both
-  /// notifications' buttons.
-  Future<void> _alert(
-    String title,
-    String body, {
-    Buzz? buzz,
-    List<AndroidNotificationAction> buttons = const [],
-  }) async {
-    if (buzz != null) await _buzz(buzz);
-    await _alerts.show(
-      id: _alertId,
-      title: title,
-      body: body,
-      notificationDetails: NotificationDetails(
-        android: AndroidNotificationDetails(
-          'alerts',
-          _l!.channelAlerts,
-          importance: Importance.high,
-          priority: Priority.high,
-          playSound: false,
-          enableVibration: false,
-          visibility: NotificationVisibility.public,
-          category: AndroidNotificationCategory.navigation,
-          icon: 'ic_notification',
-          color: _amber,
-          groupKey: 'app.hopin.alerts',
-          actions: buttons,
-        ),
-      ),
-    );
-  }
-
-  /// The ongoing notification, updated when its words change.
+  /// The ride's one notification during a guide, updated when its words
+  /// change: where it's going and how long, "Get ready", "Get off next",
+  /// "Passed your stop" or "Still going?" (with Keep), the stage's buzz
+  /// having played.
   Future<void> _show(GuideStatus status) async {
     final l = _l!;
     final to = _to(status);
     final left = status.left;
     final (title, text) = switch (status.phase) {
       _ when status.asking => (l.stillGoing(_ride!.title), to),
+      GuidePhase.riding when _ready => (l.getReady, to),
       GuidePhase.riding => (
         to,
         left == null ? '' : l.timeLeft(wholeMinutes(left)),
@@ -591,7 +554,6 @@ class RideTask extends TaskHandler {
     await _endShare();
     // Ending stops a buzz still playing; arriving lets its tap finish.
     if (!_arrived) await Vibration.cancel();
-    await _alerts.cancel(id: _alertId);
     await FlutterForegroundTask.removeData(key: rideKey);
     await _keepRide();
     FlutterForegroundTask.sendDataToMain(
@@ -602,11 +564,12 @@ class RideTask extends TaskHandler {
   /// Hands the finished ride to the app: kept until the app has it.
   Future<void> _keepRide() async {
     final verdict = _verdict ?? RideVerdict.unknown;
-    final short =
-        _logic.length < _keepAfter || _logic.distance < _keepAfterMetres;
+    // Its vehicle part: a walk that set it off is no ride.
+    final ride = _logic.ride;
+    final short = ride.length < _keepAfter || ride.distance < _keepAfterMetres;
     if (short && verdict != RideVerdict.notBus) return;
     if (_logic.startedAt == null) return;
-    final ride = RideRecord.fromLogic(
+    final record = RideRecord.fromLogic(
       _logic,
       id: _rideId,
       verdict: verdict,
@@ -615,9 +578,9 @@ class RideTask extends TaskHandler {
     ).toJson();
     await FlutterForegroundTask.saveData(
       key: '$pendingRidePrefix$_rideId',
-      value: jsonEncode(ride),
+      value: jsonEncode(record),
     );
-    FlutterForegroundTask.sendDataToMain({'type': 'ride', 'ride': ride});
+    FlutterForegroundTask.sendDataToMain({'type': 'ride', 'ride': record});
   }
 }
 

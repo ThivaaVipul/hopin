@@ -440,12 +440,6 @@ abstract class AppLocalizations {
   /// **'Ride guide'**
   String get channelGuide;
 
-  /// Android's name for the alerts before your stop.
-  ///
-  /// In en, this message translates to:
-  /// **'Stop alerts'**
-  String get channelAlerts;
-
   /// Shown when Android refuses to start the guide.
   ///
   /// In en, this message translates to:
